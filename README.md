@@ -6,3 +6,5 @@ Minimum complexity: include multiple shipments, different transport modes, trans
 
 Data requirements: nodes, road arcs, rail arcs, transfer terminals, shipment origins and destinations, shipment volumes, transport costs, travel times, emissions, handling costs, capacities, and deadlines.
 
+
+Typst link: https://typst.app/project/woPstnY2MSABit53tP4lle
