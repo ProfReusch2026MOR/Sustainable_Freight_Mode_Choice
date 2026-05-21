@@ -264,10 +264,6 @@ Ziel:
 
 ---
 
-## GitHub Projektstruktur
-
----
-
 ## GitHub Issues
 
 - Aufgabenverwaltung  
