@@ -261,3 +261,45 @@ Technologien:
 Ziel:
 
 - schnelle gute Lösungen für große Instanzen  
+
+---
+
+## GitHub Projektstruktur
+
+---
+
+## GitHub Issues
+
+- Aufgabenverwaltung  
+- Fortschrittskontrolle  
+- Diskussionen  
+- Verantwortlichkeiten  
+
+---
+
+## GitHub Projects
+
+- Sprintplanung  
+- Priorisierung  
+- Tracking  
+- Teamkoordination  
+
+---
+
+## Technische Umsetzung
+
+- Python  
+- Jupyter Notebook  
+- Pandas  
+- NetworkX  
+- Matplotlib  
+- Gurobi / PuLP / OR-Tools  
+
+---
+
+## Abgabeformat
+
+- Jupyter Notebook (mit Outputs)  
+- PDF-Export  
+- Repository-Dokumentation  
+- Visualisierungen  
