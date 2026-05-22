@@ -1,3 +1,5 @@
+<img width="1693" height="929" alt="image" src="https://github.com/user-attachments/assets/20bdd247-d42a-4f91-87f7-d887448eef8f" />
+
 # Sustainable Freight Mode Choice
 
 ## Projektmitglieder: 
