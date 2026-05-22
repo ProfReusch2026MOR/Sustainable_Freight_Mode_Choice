@@ -35,6 +35,18 @@ Zusätzlich werden Umschlagterminals berücksichtigt, an denen ein Wechsel zwisc
 
 ---
 
+## Entscheidungsfrage
+
+Im Mittelpunkt dieses Projekts steht die Frage, wie Gütertransporte in einem multimodalen Transportnetzwerk optimal geplant werden können. Unternehmen müssen täglich entscheiden, welche Verkehrsträger für bestimmte Sendungen eingesetzt werden sollen, um sowohl wirtschaftliche als auch ökologische Ziele zu erreichen. Dabei stehen verschiedene Transportmöglichkeiten wie LKW, Bahn, Schiff und Flugzeug zur Verfügung, die sich hinsichtlich Kosten, Lieferzeit, Kapazitäten und CO₂-Emissionen deutlich unterscheiden.
+
+Die zentrale Entscheidungsfrage lautet daher:
+
+Wie können mehrere Sendungen in einem multimodalen Transportnetzwerk so geplant werden, dass Transportkosten und Emissionen minimiert werden, während Lieferfristen, Kapazitätsgrenzen und Umschlagsprozesse eingehalten werden?
+
+Zur Beantwortung dieser Frage untersucht das Projekt, welche Routen und Verkehrsträger für einzelne Sendungen am sinnvollsten sind, wann intermodale Transporte vorteilhaft werden und wie Transporte konsolidiert werden können, um Ressourcen effizient zu nutzen. Das entwickelte Optimierungsmodell dient dabei als Entscheidungsunterstützung für nachhaltige und wirtschaftliche Transportstrategien in realen Logistiknetzwerken.
+
+---
+
 ## Reale Motivation
 
 Der weltweite Güterverkehr ist essenziell für globale Lieferketten und internationale Wirtschaftssysteme. Gleichzeitig verursacht der Transportsektor erhebliche Mengen an CO₂-Emissionen.
@@ -131,23 +143,6 @@ Typische Nutzung:
 - sehr teuer  
 - hohe Emissionen  
 - geringe Kapazität  
-
----
-
-## Intermodale Transporte
-
-Beispiele:
-
-- LKW → Bahn  
-- Schiff → LKW  
-- Flugzeug → LKW  
-- Bahn → Schiff  
-
-Eigenschaften an Terminals:
-
-- Umschlagskosten  
-- zusätzliche Zeit  
-- Kapazitätsgrenzen  
 
 ---
 
