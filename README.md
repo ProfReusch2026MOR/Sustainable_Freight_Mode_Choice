@@ -41,7 +41,7 @@ Im Mittelpunkt dieses Projekts steht die Frage, wie Gütertransporte in einem mu
 
 Die zentrale Entscheidungsfrage lautet daher:
 
-# Wie können mehrere Sendungen in einem multimodalen Transportnetzwerk so geplant werden, dass Transportkosten und Emissionen minimiert werden, während Lieferfristen, Kapazitätsgrenzen und Umschlagsprozesse eingehalten werden?
+### "Wie können mehrere Sendungen in einem multimodalen Transportnetzwerk so geplant werden, dass Transportkosten und Emissionen minimiert werden, während Lieferfristen, Kapazitätsgrenzen und Umschlagsprozesse eingehalten werden?"
 
 ---
 
