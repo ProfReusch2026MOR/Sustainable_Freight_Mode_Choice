@@ -41,9 +41,7 @@ Im Mittelpunkt dieses Projekts steht die Frage, wie Gütertransporte in einem mu
 
 Die zentrale Entscheidungsfrage lautet daher:
 
-Wie können mehrere Sendungen in einem multimodalen Transportnetzwerk so geplant werden, dass Transportkosten und Emissionen minimiert werden, während Lieferfristen, Kapazitätsgrenzen und Umschlagsprozesse eingehalten werden?
-
-Zur Beantwortung dieser Frage untersucht das Projekt, welche Routen und Verkehrsträger für einzelne Sendungen am sinnvollsten sind, wann intermodale Transporte vorteilhaft werden und wie Transporte konsolidiert werden können, um Ressourcen effizient zu nutzen. Das entwickelte Optimierungsmodell dient dabei als Entscheidungsunterstützung für nachhaltige und wirtschaftliche Transportstrategien in realen Logistiknetzwerken.
+# Wie können mehrere Sendungen in einem multimodalen Transportnetzwerk so geplant werden, dass Transportkosten und Emissionen minimiert werden, während Lieferfristen, Kapazitätsgrenzen und Umschlagsprozesse eingehalten werden?
 
 ---
 
