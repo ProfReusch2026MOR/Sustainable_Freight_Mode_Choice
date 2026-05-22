@@ -25,19 +25,6 @@ Zusätzlich werden Umschlagterminals berücksichtigt, an denen ein Wechsel zwisc
 
 ---
 
-## Operations-Research-Entscheidungsfrage
-
-Wie können mehrere Sendungen in einem multimodalen Transportnetzwerk so geplant werden, dass Transportkosten und CO₂-Emissionen minimiert werden, während Lieferfristen, Umschlagsprozesse und Kapazitätsgrenzen eingehalten werden?
-
-Dabei muss entschieden werden:
-
-- welche Routen verwendet werden  
-- welcher Verkehrsträger gewählt wird  
-- wann ein Moduswechsel sinnvoll ist  
-- welche Transporte gemeinsam konsolidiert werden können  
-
----
-
 ## Reale Motivation
 
 Der weltweite Güterverkehr ist essenziell für globale Lieferketten und internationale Wirtschaftssysteme. Gleichzeitig verursacht der Transportsektor erhebliche Mengen an CO₂-Emissionen.
@@ -238,7 +225,6 @@ Minimierung von:
 Technologien:
 
 - Python  
-- Gurobi  
 - PuLP  
 - OR-Tools  
 
@@ -247,7 +233,6 @@ Technologien:
 - Laufzeit  
 - Gap  
 - Zielfunktionswert  
-- Bounds  
 
 ---
 
@@ -261,41 +246,3 @@ Technologien:
 Ziel:
 
 - schnelle gute Lösungen für große Instanzen  
-
----
-
-## GitHub Issues
-
-- Aufgabenverwaltung  
-- Fortschrittskontrolle  
-- Diskussionen  
-- Verantwortlichkeiten  
-
----
-
-## GitHub Projects
-
-- Sprintplanung  
-- Priorisierung  
-- Tracking  
-- Teamkoordination  
-
----
-
-## Technische Umsetzung
-
-- Python  
-- Jupyter Notebook  
-- Pandas  
-- NetworkX  
-- Matplotlib  
-- Gurobi / PuLP / OR-Tools  
-
----
-
-## Abgabeformat
-
-- Jupyter Notebook (mit Outputs)  
-- PDF-Export  
-- Repository-Dokumentation  
-- Visualisierungen  
