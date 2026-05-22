@@ -1,5 +1,15 @@
 # Sustainable Freight Mode Choice
 
+## Projektmitglieder: 
+
+- Benedikt
+- Phil Kahlert
+- Laurens Rüther
+- Luis Kruse
+- Sam
+
+---
+
 ## Projektbeschreibung
 
 Dieses Projekt beschäftigt sich mit der nachhaltigen Planung und Optimierung von Gütertransporten in einem multimodalen Transportnetzwerk. Ziel ist es, Sendungen effizient über verschiedene Verkehrsträger zu transportieren und dabei wirtschaftliche, zeitliche sowie ökologische Aspekte gleichzeitig zu berücksichtigen.
