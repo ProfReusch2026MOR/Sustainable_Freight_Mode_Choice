@@ -79,7 +79,7 @@ Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten un
 
 | Teammitglied | Bisher erledigte Aufgabe | Aktuelle Aufagbe | Nächste Aufgabe |
 |--------------|--------------------------|------------------|-----------------|
-| Luis Kruse | Inhalt B | Inhalt C |
+| Luis Kruse | Datensammlung und Vorverarbeitun primär Luftfracht, Projektumfang festgelegt, Problemstellung definiert, Zielsetzung definiert | Inhalt C |
 | Laurens Rüther| Inhalt E | Inhalt F |
 | Phil Kahlert |
 | Benedikt 
