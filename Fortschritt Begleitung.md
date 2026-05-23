@@ -78,9 +78,12 @@ Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten un
 
 
 | Teammitglied | Bisher erledigte Aufgabe | Aktuelle Aufagbe | Nächste Aufgabe |
-|----------|----------|----------|
-| Inhalt A | Inhalt B | Inhalt C |
-| Inhalt D | Inhalt E | Inhalt F |
+|--------------|--------------------------|------------------|-----------------|
+| Luis Kruse | Inhalt B | Inhalt C |
+| Laurens Rüther| Inhalt E | Inhalt F |
+| Phil Kahlert |
+| Benedikt 
+| Sam|
 ---
 
 ## Bekannte Probleme / Risiken
