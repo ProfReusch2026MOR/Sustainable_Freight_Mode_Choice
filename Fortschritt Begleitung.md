@@ -15,7 +15,7 @@ Sustainable Freight Mode Choice
 ---
 
 ## Entscheidungsfrage
-> Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten und Emissionen minimieren?
+Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten und Emissionen minimieren?
 
 ---
 
