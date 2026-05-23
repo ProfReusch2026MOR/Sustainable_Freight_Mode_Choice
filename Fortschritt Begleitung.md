@@ -77,7 +77,7 @@ Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten un
 | Sam |
 
 
-| Spalte 1 | Spalte 2 | Spalte 3 |
+| Teammitglied | Bisher erledigte Aufgabe | Aktuelle Aufagbe | Nächste Aufgabe |
 |----------|----------|----------|
 | Inhalt A | Inhalt B | Inhalt C |
 | Inhalt D | Inhalt E | Inhalt F |
