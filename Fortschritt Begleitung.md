@@ -76,6 +76,11 @@ Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten un
 | Benedikt |
 | Sam |
 
+
+| Spalte 1 | Spalte 2 | Spalte 3 |
+|----------|----------|----------|
+| Inhalt A | Inhalt B | Inhalt C |
+| Inhalt D | Inhalt E | Inhalt F |
 ---
 
 ## Bekannte Probleme / Risiken
