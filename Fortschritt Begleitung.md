@@ -1,102 +1,113 @@
-# Project Progress Summary
+# Projektfortschritt Zusammenfassung
 
-## Project Title
+## Projekttitel
 Sustainable Freight Mode Choice
 
 ---
 
-## Team Members
+## Teammitglieder
 - Luis Kruse
-- Laurens Rüther 
+- Laurens Rüther
 - Phil Kahlert
 - Benedikt
 - Sam
 
 ---
 
-## Decision Question
-Wie können wir Liefer­routen optimieren und gleichzeitig Kosten, Lieferzeiten und Emissionen minimieren?
+## Entscheidungsfrage
+> Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten und Emissionen minimieren?
 
 ---
 
-## Current Status
+## Aktueller Status
 
-### Data
-- 
+### Daten
+- Erste Datensätze wurden gesammelt und analysiert
+- Relevante Transport- und Emissionsdaten identifiziert
+- Datenbereinigung und Strukturierung in Bearbeitung
 
-### Model
-- 
+### Modell
+- Erste mathematische Modellierung erstellt
+- Entscheidungsvariablen und Nebenbedingungen definiert
+- Zielkonflikte zwischen Kosten, Zeit und Emissionen berücksichtigt
 
-### Solver / Heuristic
--
+### Solver / Heuristik
+- Geeignete Solver werden aktuell evaluiert
+- Vergleich verschiedener Optimierungsansätze geplant
 
-### Experiments
--
-
----
-
-## Literature Status
-- 
-
----
-
-## Completed Tasks
-- [x] Define project scope
-- [x] Collect initial data
-- [x] Draft mathematical model
-- [x] Review related literature
-- [ ] Run large-scale experiments
-- [ ] Finalize evaluation metrics
+### Experimente
+- Erste Testinstanzen vorbereitet
+- Kleine Beispielrechnungen durchgeführt
+- Skalierung auf größere Datensätze noch ausstehend
 
 ---
 
-## Open Tasks
-- Improve model performance
-- Complete experimental evaluation
-- Validate results with additional datasets
-- Prepare final presentation
-- Write project documentation
+## Stand der Literaturrecherche
+- Relevante wissenschaftliche Quellen recherchiert
+- Literatur zu Multi-Objective Optimization untersucht
+- Weitere Papers zur Emissionsreduktion im Güterverkehr werden analysiert
 
 ---
 
-## Individual Contribution Summary
+## Abgeschlossene Aufgaben
+- [x] Projektumfang definiert
+- [x] Erste Daten gesammelt
+- [ ] Mathematisches Modell entworfen
+- [x] Literaturrecherche durchgeführt
+- [ ] Experimente im großen Maßstab durchführen
+- [ ] Bewertungsmetriken finalisieren
 
-| Team Member | Work Completed So Far | Evidence in Repository | Part Presented in Meeting | Next Task Owned |
+---
+
+## Offene Aufgaben
+- Modellleistung verbessern
+- Experimentelle Evaluation abschließen
+- Ergebnisse mit zusätzlichen Datensätzen validieren
+- Abschlusspräsentation vorbereiten
+- Projektdokumentation fertigstellen
+
+---
+
+## Zusammenfassung der individuellen Beiträge
+
+| Teammitglied | Bisher erledigte Arbeit | Nachweis im Repository | Präsentierter Teil im Meeting | Nächste Aufgabe |
 |---|---|---|---|---|
-| Name 1 | e.g. data generation, preprocessing | Commit / notebook / issue | Data overview | Extend dataset |
-| Name 2 | e.g. model formulation | PR / model file | Mathematical model | Improve constraints |
-| Name 3 | e.g. literature review | Literature summary | Related work | Compare approaches |
-| Name 4 | e.g. experiments and evaluation | Experiment notebook | Experimental setup | Run benchmarks |
+| Luis Kruse | Datensammlung und Vorverarbeitung | Commits / Notebook | Datenübersicht | Datensätze erweitern |
+| Laurens Rüther | Modellformulierung | Modell-Datei / PR | Mathematisches Modell | Nebenbedingungen verbessern |
+| Phil Kahlert | Literaturrecherche | Literaturzusammenfassung | Verwandte Arbeiten | Weitere Ansätze vergleichen |
+| Benedikt | Experimente und Tests | Experiment-Notebook | Experimenteller Aufbau | Benchmark-Tests durchführen |
+| Sam | Projektkoordination und Dokumentation | Issues / Dokumentation | Projektüberblick | Abschlussdokumentation |
 
 ---
 
-## Future Task Ownership
+## Zukünftige Aufgabenverteilung
 
-| Task | Responsible Person | Deadline |
+| Aufgabe | Verantwortliche Person | Deadline |
 |---|---|---|
-| Data refinement | Name | DD.MM.YYYY |
-| Model optimization | Name | DD.MM.YYYY |
-| Experimental evaluation | Name | DD.MM.YYYY |
-| Documentation | Name | DD.MM.YYYY |
+| Datenaufbereitung verbessern | Luis Kruse | TT.MM.JJJJ |
+| Modelloptimierung | Laurens Rüther | TT.MM.JJJJ |
+| Experimentelle Evaluation | Benedikt | TT.MM.JJJJ |
+| Literaturvergleich erweitern | Phil Kahlert | TT.MM.JJJJ |
+| Dokumentation finalisieren | Sam | TT.MM.JJJJ |
 
 ---
 
-## Known Problems / Risks
-- Limited data availability
-- Computational performance issues
-- Time constraints for experiments
-- Potential model overfitting
-- Unclear evaluation benchmarks
+## Bekannte Probleme / Risiken
+- Begrenzte Datenverfügbarkeit
+- Hoher Rechenaufwand bei größeren Instanzen
+- Zeitliche Einschränkungen für umfangreiche Experimente
+- Risiko von Overfitting im Modell
+- Noch unklare Vergleichs- und Bewertungsmetriken
 
 ---
 
-## Questions for Feedback
-- Is the current model formulation appropriate?
-- Are the selected evaluation metrics sufficient?
-- Should additional heuristics or baselines be included?
-- Is the project scope realistic for the remaining timeline?
+## Fragen für Feedback
+- Ist die aktuelle Modellformulierung sinnvoll?
+- Sind die gewählten Bewertungsmetriken ausreichend?
+- Sollten zusätzliche Heuristiken oder Vergleichsmodelle integriert werden?
+- Ist der aktuelle Projektumfang realistisch für die verbleibende Zeit?
 
 ---
 
-## Additional Notes
-*Optional section for meeting notes, decisions, or comments.*
+## Zusätzliche Notizen
+*Optionaler Bereich für Meeting-Notizen, Entscheidungen oder Kommentare.*
