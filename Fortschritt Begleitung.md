@@ -63,32 +63,19 @@ Sustainable Freight Mode Choice
 - Modellleistung verbessern
 - Experimentelle Evaluation abschließen
 - Ergebnisse mit zusätzlichen Datensätzen validieren
-- Abschlusspräsentation vorbereiten
 - Projektdokumentation fertigstellen
 
 ---
 
 ## Zusammenfassung der individuellen Beiträge
 
-| Teammitglied | Bisher erledigte Arbeit | Nachweis im Repository | Präsentierter Teil im Meeting | Nächste Aufgabe |
+| Teammitglied | Bisher erledigte Aufgabe | Aktuelle Aufagbe | Nächste Aufgabe |
 |---|---|---|---|---|
-| Luis Kruse | Datensammlung und Vorverarbeitung | Commits / Notebook | Datenübersicht | Datensätze erweitern |
-| Laurens Rüther | Modellformulierung | Modell-Datei / PR | Mathematisches Modell | Nebenbedingungen verbessern |
-| Phil Kahlert | Literaturrecherche | Literaturzusammenfassung | Verwandte Arbeiten | Weitere Ansätze vergleichen |
-| Benedikt | Experimente und Tests | Experiment-Notebook | Experimenteller Aufbau | Benchmark-Tests durchführen |
-| Sam | Projektkoordination und Dokumentation | Issues / Dokumentation | Projektüberblick | Abschlussdokumentation |
-
----
-
-## Zukünftige Aufgabenverteilung
-
-| Aufgabe | Verantwortliche Person | Deadline |
-|---|---|---|
-| Datenaufbereitung verbessern | Luis Kruse | TT.MM.JJJJ |
-| Modelloptimierung | Laurens Rüther | TT.MM.JJJJ |
-| Experimentelle Evaluation | Benedikt | TT.MM.JJJJ |
-| Literaturvergleich erweitern | Phil Kahlert | TT.MM.JJJJ |
-| Dokumentation finalisieren | Sam | TT.MM.JJJJ |
+| Luis Kruse | Datensammlung und Vorverarbeitun primär Luftfracht, Projektumfang festgelegt, Problemstellung definiert, Zielsetzung definiert | Datensätze erweitern, Netzwerk aufbauen | Daten an den Solver anpassen, Daten zur Verfügung stellen |
+| Laurens Rüther |  
+| Phil Kahlert | 
+| Benedikt | 
+| Sam | 
 
 ---
 
@@ -96,18 +83,13 @@ Sustainable Freight Mode Choice
 - Begrenzte Datenverfügbarkeit
 - Hoher Rechenaufwand bei größeren Instanzen
 - Zeitliche Einschränkungen für umfangreiche Experimente
-- Risiko von Overfitting im Modell
 - Noch unklare Vergleichs- und Bewertungsmetriken
+- noch keine genaueren heuristischen Ansätze 
 
 ---
 
 ## Fragen für Feedback
 - Ist die aktuelle Modellformulierung sinnvoll?
-- Sind die gewählten Bewertungsmetriken ausreichend?
-- Sollten zusätzliche Heuristiken oder Vergleichsmodelle integriert werden?
-- Ist der aktuelle Projektumfang realistisch für die verbleibende Zeit?
+- Ist die Datengrundlage ausreichend und inwiefern muss diese erweitert werden?
+- Wie genaue muss das Modell ausfallen im Hinblick auf Umschlagszeiten, Lagerzeiten, Routen?
 
----
-
-## Zusätzliche Notizen
-*Optionaler Bereich für Meeting-Notizen, Entscheidungen oder Kommentare.*
