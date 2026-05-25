@@ -1,0 +1,8 @@
+check,value,rule
+nodes,40,>0
+road arcs,52,>0
+air arcs,46,>0
+sea arcs,32,>0
+rail arcs,20,>0
+deadline min,6,>0
+deadline max,20,<30

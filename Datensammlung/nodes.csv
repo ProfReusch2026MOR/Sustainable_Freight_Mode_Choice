@@ -1,0 +1,41 @@
+node_id,city,node_type,lat,lon,data_status
+NYC_W,New York/New Jersey,warehouse,40.7128,-74.006,synthetic_plausible
+CHI_W,Chicago,warehouse,41.8781,-87.6298,synthetic_plausible
+LAX_W,Los Angeles,warehouse,34.0522,-118.2437,synthetic_plausible
+SAO_W,São Paulo,warehouse,-23.5505,-46.6333,synthetic_plausible
+PAN_W,Panama City/Colón,warehouse,8.9824,-79.5199,synthetic_plausible
+RTM_W,Rotterdam,warehouse,51.9244,4.4777,synthetic_plausible
+DUI_W,Duisburg,warehouse,51.4344,6.7623,synthetic_plausible
+IST_W,Istanbul,warehouse,41.0082,28.9784,synthetic_plausible
+CAS_W,Casablanca,warehouse,33.5731,-7.5898,synthetic_plausible
+JNB_W,Johannesburg,warehouse,-26.2041,28.0473,synthetic_plausible
+DXB_W,Dubai,warehouse,25.2048,55.2708,synthetic_plausible
+BOM_W,Mumbai,warehouse,19.076,72.8777,synthetic_plausible
+DEL_W,Delhi,warehouse,28.6139,77.209,synthetic_plausible
+SIN_W,Singapur,warehouse,1.3521,103.8198,synthetic_plausible
+BKK_W,Bangkok,warehouse,13.7563,100.5018,synthetic_plausible
+SHA_W,Shanghai,warehouse,31.2304,121.4737,synthetic_plausible
+SZX_W,Shenzhen,warehouse,22.5431,114.0579,synthetic_plausible
+TYO_W,Tokio,warehouse,35.6762,139.6503,synthetic_plausible
+SYD_W,Sydney,warehouse,-33.8688,151.2093,synthetic_plausible
+AKL_W,Auckland,warehouse,-36.8485,174.7633,synthetic_plausible
+NYC_PORT,New York/New Jersey,seaport,40.6825,-74.0465,real_or_plausible
+LAX_PORT,Los Angeles,seaport,33.7363,-118.2648,real_or_plausible
+RTM_PORT,Rotterdam,seaport,51.947,4.114,real_or_plausible
+DUI_RAIL,Duisburg,rail_terminal,51.442,6.759,real_or_plausible
+IST_PORT,Istanbul,seaport,40.97,28.88,real_or_plausible
+DXB_AIR,Dubai,airport,25.2532,55.3657,real_or_plausible
+SIN_AIR,Singapur,airport,1.3644,103.9915,real_or_plausible
+SHA_PORT,Shanghai,seaport,31.4,121.5,real_or_plausible
+SZX_AIR,Shenzhen,airport,22.6393,113.8107,real_or_plausible
+BKK_AIR,Bangkok,airport,13.69,100.7501,real_or_plausible
+BOM_AIR,Mumbai,airport,19.0896,72.8656,real_or_plausible
+DEL_AIR,Delhi,airport,28.5562,77.1,real_or_plausible
+SYD_AIR,Sydney,airport,-33.9461,151.1772,real_or_plausible
+AKL_AIR,Auckland,airport,-37.0082,174.785,real_or_plausible
+PAN_PORT,Panama City/Colón,seaport,9.3539,-79.9,real_or_plausible
+CAS_AIR,Casablanca,airport,33.3675,-7.5899,real_or_plausible
+JNB_AIR,Johannesburg,airport,-26.1337,28.242,real_or_plausible
+TYO_AIR,Tokio,airport,35.7767,140.3189,real_or_plausible
+SAO_AIR,São Paulo,airport,-23.4346,-46.4731,real_or_plausible
+CHI_AIR,Chicago,airport,41.9742,-87.9073,real_or_plausible

@@ -1,0 +1,11 @@
+shipment_id,origin_node,dest_node,weight_t,volume_m3,deadline_days,service_class
+S1,NYC_W,RTM_W,12.4,18.2,14,standard
+S2,LAX_W,SHA_W,8.1,13.5,10,express
+S3,SAO_W,DXB_W,5.6,9.4,16,standard
+S4,PAN_W,DUI_W,9.8,11.0,12,standard
+S5,CAS_W,JNB_W,7.2,10.5,8,express
+S6,DEL_W,SIN_W,3.9,4.8,6,standard
+S7,BKK_W,SYD_W,6.7,12.1,14,standard
+S8,SZX_W,NYC_W,11.2,17.3,9,express
+S9,TYO_W,LAX_W,4.1,6.5,7,express
+S10,AKL_W,RTM_W,2.8,5.2,20,standard
