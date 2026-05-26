@@ -72,7 +72,7 @@ Wie können wir Lieferrouten optimieren und gleichzeitig Kosten, Lieferzeiten un
 | Teammitglied | Bisher erledigte Aufgabe | Aktuelle Aufagbe | Nächste Aufgabe |
 |--------------|--------------------------|------------------|-----------------|
 | Luis Kruse | Datensammlung und Vorverarbeitun primär Luftfracht, Projektumfang festgelegt, Problemstellung definiert, Zielsetzung definiert | Datensätze erweitern, Netzwerk aufbauen | Daten an den Solver anpassen, Daten zur Verfügung stellen |
-| Laurens Rüther 
+| Laurens Rüther | Datensammlung und Literaturrecherche | Ausarbeitung des multimodalen Netzwerk | Daten realitätsnäher gestalten |
 | Phil Kahlert | Erstellung eines ersten test Solvers | Einlesen und aufbereiten der realen Datensätze | 
 | Benedikt | Konzeption einer ersten Datenstruktur und erste formale Modellbeschreibung | Anpassung des Modells zur parallelen Abbildung mehrerer Versendungen | Einbindung und Validierung der realen Datensätze im Modell |
 | Sam |
