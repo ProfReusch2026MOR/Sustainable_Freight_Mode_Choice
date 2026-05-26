@@ -17,6 +17,7 @@ pdf:
 		--metadata reference-section-title="Literatur" \
 		--toc \
 		--toc-depth=2 \
+		--number-sections \
 		--include-in-header=$(LATEX_DIR)/chapterbreak.tex \
 		--include-in-header=$(LATEX_DIR)/codeformat.tex \
 		--metadata toc-title="Inhaltsverzeichnis" \
