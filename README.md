@@ -4,11 +4,11 @@
 
 ## Projektmitglieder: 
 
-- Benedikt
-- Phil Kahlert
-- Laurens Rüther
-- Luis Kruse
-- Sam
+- Benedikt (bennewehn)
+- Phil Kahlert (phil-kl)
+- Laurens Rüther (LaurensRuether
+- Luis Kruse (Ikruse301) 
+- Minglu Li - Sam  (Sam1806927581) 
 
 ---
 
