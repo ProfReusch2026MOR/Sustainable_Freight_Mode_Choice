@@ -94,7 +94,7 @@ Transportkosten und CO₂-Emissionen zu minimieren, während gleichzeitig Liefer
 
 
 = Notebook 
-#let mainSolverNotebook = json("../documentation/main.ipynb")
+#let mainSolverNotebook = json("../notebooks/main.ipynb")
 
 #callisto.render(nb: mainSolverNotebook)
 
