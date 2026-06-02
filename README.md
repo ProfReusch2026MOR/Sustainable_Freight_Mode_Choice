@@ -6,7 +6,7 @@
 
 - Benedikt (bennewehn)
 - Phil Kahlert (phil-kl)
-- Laurens Rüther (LaurensRuether
+- Laurens Rüther (LaurensRuether)
 - Luis Kruse (Ikruse301) 
 - Minglu Li - Sam  (Sam1806927581) 
 
