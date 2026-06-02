@@ -5,6 +5,8 @@
 #import "acronyms.typ": acronyms
 #import "abstract.typ": abstract
 #import "appendix.typ": appendix
+#import "@preview/callisto:0.2.5"
+
 
 #let language = "de" // "de" or "en"
 #show: supercharged-dhbw.with(
@@ -46,7 +48,7 @@
   appendix: appendix(), // From "appendix.typ"
   acronyms: acronyms, // displays the acronyms defined in the acronyms dictionary
   at-university: true , // if true the company name on the title page and the confidentiality statement are hidden
-  bibliography: bibliography("sources.bib"),
+  bibliography: bibliography("../literature/sources.bib"),
   bib-style: "ieee",
   date: datetime(day: 01, month: 01, year: 1970),
   header: (
@@ -91,15 +93,8 @@ Transportkosten und CO₂-Emissionen zu minimieren, während gleichzeitig Liefer
 
 
 
-== Unter
-=== Unter2 
+= Notebook 
+#let mainSolverNotebook = json("../documentation/main.ipynb")
 
-
-
-
-
-
-
-
-
+#callisto.render(nb: mainSolverNotebook)
 
