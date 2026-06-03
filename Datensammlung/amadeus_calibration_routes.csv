@@ -1,0 +1,11 @@
+route_id,origin_warehouse,origin_airport,destination_warehouse,destination_airport,corridor,notes
+R01,NYC_W,EWR,LAX_W,LAX,North America,USA transcontinental
+R02,NYC_W,EWR,RTM_W,AMS,North America-Europe,Transatlantic via Amsterdam for Rotterdam region
+R03,CHI_W,ORD,DXB_W,DXB,North America-Middle East,Intercontinental hub-to-hub
+R04,LAX_W,LAX,AKL_W,AKL,Pacific-Oceania,Long-haul Pacific
+R05,SAO_W,GRU,RTM_W,AMS,South America-Europe,Europe gateway for Rotterdam region
+R06,PAN_W,PTY,NYC_W,EWR,Central America-North America,Regional/intercontinental connector
+R07,IST_W,IST,SHA_W,PVG,Europe-Asia,Turkey to East China
+R08,DEL_W,DEL,SIN_W,SIN,South Asia-Southeast Asia,Major Asian trade lane
+R09,SYD_W,SYD,SZX_W,SZX,Oceania-Greater China,Australia to South China
+R10,JNB_W,JNB,DXB_W,DXB,Africa-Middle East,Africa to Gulf hub
