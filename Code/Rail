@@ -1,0 +1,137 @@
+import osmnx as ox
+import networkx as nx
+import folium
+import pandas as pd
+import logging
+import osmnx as ox
+
+# -------------------------------
+# OSMnx Logging aktivieren
+# -------------------------------
+
+logging.basicConfig(level=logging.INFO)
+
+ox.settings.log_console = True
+
+ox.settings.use_cache = True
+
+# --------------------------------------------------
+# EINGABEN
+# --------------------------------------------------
+
+start_station = "Bielefeld Hbf"
+target_station = "Paderborn Hbf"
+
+place = "North Rhine-Westphalia, Germany"
+
+# --------------------------------------------------
+# BAHNHÖFE SUCHEN
+# --------------------------------------------------
+
+tags = {"railway": "station"}
+
+stations = ox.features_from_place(
+    place,
+    tags
+)
+
+stations = stations[
+    stations["name"].notna()
+]
+
+# Bahnhof finden
+start_row = stations[
+    stations["name"].str.contains(
+        start_station,
+        case=False,
+        na=False
+    )
+].iloc[0]
+
+target_row = stations[
+    stations["name"].str.contains(
+        target_station,
+        case=False,
+        na=False
+    )
+].iloc[0]
+
+start_geom = start_row.geometry.centroid
+target_geom = target_row.geometry.centroid
+
+print("Start gefunden:", start_row["name"])
+print("Ziel gefunden:", target_row["name"])
+
+# --------------------------------------------------
+# SCHIENENNETZ LADEN
+# --------------------------------------------------
+
+custom_filter = '["railway"~"rail"]'
+
+G = ox.graph_from_place(
+    place,
+    custom_filter=custom_filter,
+    simplify=True
+)
+
+# --------------------------------------------------
+# NÄCHSTE GRAPHKNOTEN
+# --------------------------------------------------
+
+orig_node = ox.distance.nearest_nodes(
+    G,
+    X=start_geom.x,
+    Y=start_geom.y
+)
+
+dest_node = ox.distance.nearest_nodes(
+    G,
+    X=target_geom.x,
+    Y=target_geom.y
+)
+
+# --------------------------------------------------
+# KÜRZESTE ROUTE
+# --------------------------------------------------
+
+route = nx.shortest_path(
+    G,
+    orig_node,
+    dest_node,
+    weight="length"
+)
+
+distance = nx.path_weight(
+    G,
+    route,
+    weight="length"
+)
+
+print("\n----------------------")
+print("ERGEBNIS")
+print("----------------------")
+print("Start:", start_station)
+print("Ziel :", target_station)
+
+print(
+    f"Kürzeste Bahndistanz: "
+    f"{distance/1000:.2f} km"
+)
+
+# --------------------------------------------------
+# KARTE ERZEUGEN
+# --------------------------------------------------
+
+route_map = ox.plot_route_folium(
+    G,
+    route
+)
+
+route_map.save(
+    "rail_route.html"
+)
+
+print(
+    "\nKarte gespeichert als:"
+)
+print("rail_route.html")
