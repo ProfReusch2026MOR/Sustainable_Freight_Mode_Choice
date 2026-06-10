@@ -21,7 +21,7 @@
     ),
     (
       name: "Luis Kruse",
-      student-id:"50137130",
+      student-id: "50137130",
       course: "Operations Research",
       course-of-studies: "Ingenieurwissenschaften und Mathematik",
     ),
@@ -43,11 +43,10 @@
       course: "Operations Research",
       course-of-studies: "Ingenieurwissenschaften und Mathematik",
     ),
-    
   ),
   appendix: appendix(), // From "appendix.typ"
   acronyms: acronyms, // displays the acronyms defined in the acronyms dictionary
-  at-university: true , // if true the company name on the title page and the confidentiality statement are hidden
+  at-university: true, // if true the company name on the title page and the confidentiality statement are hidden
   bibliography: bibliography("../literature/sources.bib"),
   bib-style: "ieee",
   date: datetime(day: 01, month: 01, year: 1970),
@@ -63,7 +62,7 @@
   university: "Hochschule Bielefeld, University of Applied Sciences and Arts", // unused, but break if removed xD
   university-location: "Bielefeld Germany", // unused, but break if removed xD
   university-short: "HSBI",
-  city: "Bielefeld"
+  city: "Bielefeld",
   // for more options check the package documentation (https://typst.app/universe/package/supercharged-dhbw)
 )
 
@@ -93,7 +92,7 @@ Transportkosten und CO₂-Emissionen zu minimieren, während gleichzeitig Liefer
 
 
 
-= Notebook 
+= Notebook
 #let mainSolverNotebook = json("../notebooks/main.ipynb")
 
 #callisto.render(nb: mainSolverNotebook)

@@ -1,7 +1,7 @@
 #import "@preview/codelst:2.0.2": *
-#import "acronym-lib.typ": init-acronyms, print-acronyms, acr, acrpl, acrs, acrspl, acrl, acrlpl, acrf, acrfpl
-#import "glossary-lib.typ": init-glossary, print-glossary, gls
-#import "locale.typ": TABLE_OF_CONTENTS, LIST_OF_FIGURES, LIST_OF_TABLES, CODE_SNIPPETS, APPENDIX, REFERENCES
+#import "acronym-lib.typ": acr, acrf, acrfpl, acrl, acrlpl, acrpl, acrs, acrspl, init-acronyms, print-acronyms
+#import "glossary-lib.typ": gls, init-glossary, print-glossary
+#import "locale.typ": APPENDIX, CODE_SNIPPETS, LIST_OF_FIGURES, LIST_OF_TABLES, REFERENCES, TABLE_OF_CONTENTS
 #import "titlepage.typ": *
 #import "confidentiality-statement.typ": *
 #import "declaration-of-authorship.typ": *
@@ -54,7 +54,7 @@
   show-list-of-figures: true,
   show-list-of-tables: true,
   show-code-snippets: true,
-  show-abstract: true, 
+  show-abstract: true,
   numbering-alignment: center,
   toc-depth: 3,
   acronym-spacing: 5em,
@@ -153,15 +153,15 @@
 
   // set body font family
   set text(font: body-font, weight: "regular", lang: language, 11pt)
-  show heading.where(level:1): set text(font: heading-font, weight: "semibold", 14pt)
-  show heading.where(level:2): set text(font: heading-font, weight: "semibold", 13pt)
-  show heading.where(level:3): set text(font: heading-font, weight: "semibold", 12pt)
-  show heading.where(level:4): set text(font: heading-font, weight: "semibold", 12pt)
+  show heading.where(level: 1): set text(font: heading-font, weight: "semibold", 14pt)
+  show heading.where(level: 2): set text(font: heading-font, weight: "semibold", 13pt)
+  show heading.where(level: 3): set text(font: heading-font, weight: "semibold", 12pt)
+  show heading.where(level: 4): set text(font: heading-font, weight: "semibold", 12pt)
   show figure: set text(font: body-font, weight: "regular", 10pt)
   show footnote: set text(font: body-font, weight: "regular", 10pt)
   set cite(style: "alphanumeric")
-  show raw.where(block:false): set text(size: 1.05em)
-  show raw.where(block:true): set text(size: 1.05em)
+  show raw.where(block: false): set text(size: 1.05em)
+  show raw.where(block: true): set text(size: 1.05em)
 
   // heading numbering
   set heading(numbering: heading-numbering)
@@ -258,57 +258,56 @@
   }
 
   set page(
-    margin: (top: 8em, bottom: 8em, left:2.5cm, right:2.5cm),
+    margin: (top: 8em, bottom: 8em, left: 2.5cm, right: 2.5cm),
     header: [
       #set block(spacing: 0.75em)
       #context {
-        if (display-header) {
-          }
-          if (header-content != none) {
-            header.content
-          } else {
-            grid(
-              columns: (1fr, auto),
-              align: (left, right),
-              gutter: 2em,
-              if (show-header-chapter) {
-                align(left + bottom)[
-                  #let lvl = if here().page() == 2 { 2 } else { 1 }
-                  #let headings = query(heading.where(level: lvl))
+        if (display-header) {}
+        if (header-content != none) {
+          header.content
+        } else {
+          grid(
+            columns: (1fr, auto),
+            align: (left, right),
+            gutter: 2em,
+            if (show-header-chapter) {
+              align(left + bottom)[
+                #let lvl = if here().page() == 2 { 2 } else { 1 }
+                #let headings = query(heading.where(level: lvl))
 
-                  #let on_this = headings.filter(h => h.location().page() == here().page())
+                #let on_this = headings.filter(h => h.location().page() == here().page())
 
-                  #let to_show = if on_this.len() > 0 {
-                    on_this
-                  } else {
-                    let prevs = headings.filter(h => h.location().page() < here().page())
-                    if prevs.len() > 0 { (prevs.last(),) } else { () }
-                  }
+                #let to_show = if on_this.len() > 0 {
+                  on_this
+                } else {
+                  let prevs = headings.filter(h => h.location().page() < here().page())
+                  if prevs.len() > 0 { (prevs.last(),) } else { () }
+                }
 
-                  #for (i, h) in to_show.enumerate() {
-                    if i > 0 { " / " }
-                    [#h.body]
-                  }
-                ]
+                #for (i, h) in to_show.enumerate() {
+                  if i > 0 { " / " }
+                  [#h.body]
+                }
+              ]
+            },
+            stack(
+              dir: ltr,
+              spacing: 1em,
+              if (show-header-left-logo and logo-left != none) {
+                set image(height: left-logo-height / 2)
+                logo-left
               },
-              stack(
-                dir: ltr,
-                spacing: 1em,
-                if (show-header-left-logo and logo-left != none) {
-                  set image(height: left-logo-height / 2)
-                  logo-left
-                },
-                if (show-header-right-logo and logo-right != none) {
-                  set image(height: right-logo-height / 2)
-                  logo-right
-                },
-              ),
-            )
-            if (show-header-divider) {
-              line(length: 100%)
-            }
+              if (show-header-right-logo and logo-right != none) {
+                set image(height: right-logo-height / 2)
+                logo-right
+              },
+            ),
+          )
+          if (show-header-divider) {
+            line(length: 100%)
           }
         }
+      }
     ],
   )
 
@@ -358,7 +357,6 @@
   }
 
 
-
   show outline.entry.where(level: 1): it => {
     v(18pt, weak: true)
     strong(it)
@@ -366,7 +364,7 @@
 
 
   if (show-abstract and abstract != none) {
-    heading(level: 1, numbering: none, outlined: false)[#ABSTRACT.at(language)] 
+    heading(level: 1, numbering: none, outlined: false)[#ABSTRACT.at(language)]
     text(abstract)
   }
 
