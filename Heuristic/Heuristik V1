@@ -1,0 +1,441 @@
+import heapq
+import numpy as np
+from collections import defaultdict
+
+
+# ============================================================
+# 1. BASISDATEN
+# ============================================================
+
+hubs = [
+    {
+        "id": "BER",
+        "name": "Berlin",
+        "supported_modes": {"road", "rail", "air", "ship"},
+        "transfer_windows": {
+            ("road", "rail"): [4, 5, 6, 16, 17],
+            ("rail", "road"): [9, 10, 21, 22],
+            ("road", "air"): [7, 8, 15, 16],
+            ("air", "road"): [11, 12, 19, 20],
+            ("road", "ship"): [2, 3, 14, 15],
+            ("ship", "road"): [8, 9, 20, 21],
+            ("rail", "ship"): [5, 17],
+            ("ship", "rail"): [11, 23],
+        },
+    },
+    {
+        "id": "HAM",
+        "name": "Hamburg",
+        "supported_modes": {"road", "rail", "air", "ship"},
+        "transfer_windows": {
+            ("road", "rail"): [6, 7, 18, 19],
+            ("rail", "road"): [11, 12, 23],
+            ("road", "air"): [9, 10, 17, 18],
+            ("air", "road"): [13, 14, 21, 22],
+            ("road", "ship"): [6, 7, 18, 19],
+            ("ship", "road"): [10, 11, 22, 23],
+            ("rail", "ship"): [7, 19],
+            ("ship", "rail"): [9, 21],
+        },
+    },
+    {
+        "id": "FRA",
+        "name": "Frankfurt",
+        "supported_modes": {"road", "rail", "air", "ship"},
+        "transfer_windows": {
+            ("road", "rail"): [5, 6, 17, 18],
+            ("rail", "road"): [9, 10, 21],
+            ("road", "air"): [6, 7, 14, 15],
+            ("air", "road"): [10, 11, 18, 19],
+            ("road", "ship"): [4, 5, 16, 17],
+            ("ship", "road"): [10, 11, 22],
+            ("rail", "ship"): [6, 18],
+            ("ship", "rail"): [8, 20],
+        },
+    },
+    {
+        "id": "MUC",
+        "name": "Munich",
+        "supported_modes": {"road", "rail", "air"},
+        "transfer_windows": {
+            ("road", "rail"): [4, 5, 19, 20],
+            ("rail", "road"): [9, 10, 22],
+            ("road", "air"): [8, 9, 18, 19],
+            ("air", "road"): [12, 13, 22],
+        },
+    },
+]
+
+hubs_by_id = {hub["id"]: hub for hub in hubs}
+
+
+mode_factors = {
+    "road": {
+        "cost_per_ton_km": 1.20,
+        "emissions_kg_per_ton_km": 0.09,
+        "speed_kmh": 70,
+    },
+    "rail": {
+        "cost_per_ton_km": 0.70,
+        "emissions_kg_per_ton_km": 0.025,
+        "speed_kmh": 60,
+    },
+    "air": {
+        "cost_per_ton_km": 3.50,
+        "emissions_kg_per_ton_km": 0.60,
+        "speed_kmh": 500,
+    },
+    "ship": {
+        "cost_per_ton_km": 0.40,
+        "emissions_kg_per_ton_km": 0.015,
+        "speed_kmh": 25,
+    },
+}
+
+
+arc_templates = [
+    {"id": "BER_HAM_road", "from": "BER", "to": "HAM", "mode": "road", "dist": 290, "departure_hours": list(range(24))},
+    {"id": "BER_HAM_rail", "from": "BER", "to": "HAM", "mode": "rail", "dist": 285, "departure_hours": [6, 18]},
+    {"id": "BER_HAM_ship", "from": "BER", "to": "HAM", "mode": "ship", "dist": 350, "departure_hours": [4, 16]},
+
+    {"id": "HAM_FRA_road", "from": "HAM", "to": "FRA", "mode": "road", "dist": 500, "departure_hours": list(range(24))},
+    {"id": "HAM_FRA_rail", "from": "HAM", "to": "FRA", "mode": "rail", "dist": 510, "departure_hours": [8, 20]},
+    {"id": "HAM_FRA_ship", "from": "HAM", "to": "FRA", "mode": "ship", "dist": 620, "departure_hours": [8, 20]},
+
+    {"id": "FRA_MUC_road", "from": "FRA", "to": "MUC", "mode": "road", "dist": 400, "departure_hours": list(range(24))},
+    {"id": "FRA_MUC_rail", "from": "FRA", "to": "MUC", "mode": "rail", "dist": 410, "departure_hours": [7, 19]},
+    {"id": "FRA_MUC_air", "from": "FRA", "to": "MUC", "mode": "air", "dist": 380, "departure_hours": [8, 16]},
+
+    {"id": "BER_FRA_road", "from": "BER", "to": "FRA", "mode": "road", "dist": 550, "departure_hours": list(range(24))},
+    {"id": "BER_FRA_rail", "from": "BER", "to": "FRA", "mode": "rail", "dist": 540, "departure_hours": [6, 18]},
+    {"id": "BER_FRA_air", "from": "BER", "to": "FRA", "mode": "air", "dist": 500, "departure_hours": [9, 17]},
+
+    {"id": "BER_MUC_road", "from": "BER", "to": "MUC", "mode": "road", "dist": 600, "departure_hours": list(range(24))},
+    {"id": "BER_MUC_rail", "from": "BER", "to": "MUC", "mode": "rail", "dist": 585, "departure_hours": [6, 18]},
+    {"id": "BER_MUC_air", "from": "BER", "to": "MUC", "mode": "air", "dist": 520, "departure_hours": [9, 17]},
+
+    {"id": "HAM_MUC_road", "from": "HAM", "to": "MUC", "mode": "road", "dist": 800, "departure_hours": list(range(24))},
+    {"id": "HAM_MUC_rail", "from": "HAM", "to": "MUC", "mode": "rail", "dist": 780, "departure_hours": [8, 20]},
+    {"id": "HAM_MUC_air", "from": "HAM", "to": "MUC", "mode": "air", "dist": 650, "departure_hours": [11, 19]},
+]
+
+
+# ============================================================
+# 2. ZEITEXPANDIERTES NETZWERK ERZEUGEN
+# ============================================================
+
+def generate_time_arcs(
+    hubs,
+    hubs_by_id,
+    arc_templates,
+    mode_factors,
+    shipment_weight,
+    max_hour,
+    hours_per_day=24,
+):
+    time_arcs = []
+    planning_days = range((max_hour + hours_per_day - 1) // hours_per_day)
+
+    # Transport-Arcs
+    for template in arc_templates:
+        from_hub = template["from"]
+        to_hub = template["to"]
+        mode = template["mode"]
+        dist = template["dist"]
+
+        duration = int(np.ceil(dist / mode_factors[mode]["speed_kmh"]))
+
+        for day in planning_days:
+            for dep_h in template["departure_hours"]:
+                start_h = day * hours_per_day + dep_h
+                arrival_h = start_h + duration
+
+                if arrival_h <= max_hour:
+                    time_arcs.append(
+                        {
+                            "service_id": template["id"],
+                            "from": f"{from_hub}_{mode}_{start_h}",
+                            "to": f"{to_hub}_{mode}_{arrival_h}",
+                            "type": "transport",
+                            "mode": mode,
+                            "cost": dist * mode_factors[mode]["cost_per_ton_km"] * shipment_weight,
+                            "emissions": dist * mode_factors[mode]["emissions_kg_per_ton_km"] * shipment_weight,
+                            "duration": duration,
+                            "departure_h": start_h,
+                            "arrival_h": arrival_h,
+                        }
+                    )
+
+    # Waiting-Arcs
+    for hub in hubs:
+        for mode in sorted(hub["supported_modes"]):
+            for t in range(max_hour):
+                time_arcs.append(
+                    {
+                        "from": f"{hub['id']}_{mode}_{t}",
+                        "to": f"{hub['id']}_{mode}_{t + 1}",
+                        "type": "waiting",
+                        "mode": mode,
+                        "cost": 5.0 * shipment_weight,
+                        "emissions": 0.0,
+                        "duration": 1,
+                    }
+                )
+
+    # Transfer-Arcs
+    for hub in hubs:
+        windows = hub.get("transfer_windows", {})
+
+        for (m1, m2), start_times in windows.items():
+            for day in planning_days:
+                for st in start_times:
+                    t = day * hours_per_day + st
+
+                    if t + 2 <= max_hour:
+                        time_arcs.append(
+                            {
+                                "from": f"{hub['id']}_{m1}_{t}",
+                                "to": f"{hub['id']}_{m2}_{t + 2}",
+                                "type": "transfer",
+                                "mode": f"{m1}->{m2}",
+                                "cost": 50.0 * shipment_weight,
+                                "emissions": 5.0 * shipment_weight,
+                                "duration": 2,
+                            }
+                        )
+
+    return time_arcs
+
+
+# ============================================================
+# 3. HEURISTIK-SOLVER
+# ============================================================
+
+class HeuristicRoutingSolver:
+    def __init__(
+        self,
+        time_arcs,
+        start_hub,
+        end_hub,
+        start_time,
+        deadline,
+        max_price,
+        weights,
+        normalizers,
+    ):
+        self.time_arcs = time_arcs
+        self.start_hub = start_hub
+        self.end_hub = end_hub
+        self.start_time = start_time
+        self.deadline = deadline
+        self.max_price = max_price
+        self.weights = weights
+        self.normalizers = normalizers
+
+        self.outgoing = defaultdict(list)
+
+        for arc in time_arcs:
+            self.outgoing[arc["from"]].append(arc)
+
+    def get_hub(self, node):
+        return node.split("_")[0]
+
+    def get_time(self, node):
+        return int(node.rsplit("_", 1)[-1])
+
+    def arc_score(self, arc):
+        return (
+            self.weights["cost"] * (arc["cost"] / self.normalizers["cost"])
+            + self.weights["time"] * (arc["duration"] / self.normalizers["time"])
+            + self.weights["eco"] * (arc["emissions"] / self.normalizers["eco"])
+        )
+
+    def solve(self):
+        start_nodes = [
+            node
+            for node in self.outgoing
+            if self.get_hub(node) == self.start_hub
+            and self.get_time(node) == self.start_time
+        ]
+
+        if not start_nodes:
+            return {
+                "status": "infeasible",
+                "message": "Kein Startknoten gefunden.",
+                "path": [],
+            }
+
+        pq = []
+        best_score = {}
+
+        for node in start_nodes:
+            heapq.heappush(
+                pq,
+                (
+                    0.0,
+                    0.0,
+                    0.0,
+                    node,
+                    [],
+                ),
+            )
+
+        while pq:
+            score_so_far, cost_so_far, eco_so_far, current_node, path = heapq.heappop(pq)
+
+            current_hub = self.get_hub(current_node)
+            current_time = self.get_time(current_node)
+
+            if current_hub == self.end_hub and current_time <= self.deadline:
+                return {
+                    "status": "feasible",
+                    "path": path,
+                    "score": score_so_far,
+                    "cost": cost_so_far,
+                    "emissions": eco_so_far,
+                    "arrival_time": current_time,
+                    "duration": current_time - self.start_time,
+                }
+
+            for arc in self.outgoing.get(current_node, []):
+                next_node = arc["to"]
+                next_time = self.get_time(next_node)
+
+                if next_time > self.deadline:
+                    continue
+
+                new_cost = cost_so_far + arc["cost"]
+
+                if new_cost > self.max_price:
+                    continue
+
+                new_eco = eco_so_far + arc["emissions"]
+                new_score = score_so_far + self.arc_score(arc)
+
+                state = (next_node, round(new_cost, 2))
+
+                if state not in best_score or new_score < best_score[state]:
+                    best_score[state] = new_score
+
+                    heapq.heappush(
+                        pq,
+                        (
+                            new_score,
+                            new_cost,
+                            new_eco,
+                            next_node,
+                            path + [arc],
+                        ),
+                    )
+
+        return {
+            "status": "infeasible",
+            "message": "Keine zulässige Route gefunden.",
+            "path": [],
+        }
+
+
+# ============================================================
+# 4. AUSGABE
+# ============================================================
+
+def print_solution(result):
+    if result["status"] != "feasible":
+        print(result.get("message", "Keine Lösung gefunden."))
+        return
+
+    print("\nHeuristische Route gefunden:\n")
+
+    for arc in result["path"]:
+        print(
+            f"[{arc['from']}] -> [{arc['to']}] | "
+            f"Modus: {arc['mode']:10} | "
+            f"Typ: {arc['type']:10} | "
+            f"Kosten: {arc['cost']:8.2f} | "
+            f"CO2: {arc['emissions']:8.2f}"
+        )
+
+    print("\n" + "=" * 40)
+    print(f"Score:         {result['score']:10.4f}")
+    print(f"Kosten:        {result['cost']:10.2f} EUR")
+    print(f"CO2:           {result['emissions']:10.2f} kg")
+    print(f"Ankunft:       {result['arrival_time']:10d} h")
+    print(f"Dauer:         {result['duration']:10d} h")
+    print("=" * 40)
+
+
+# ============================================================
+# 5. BENUTZER-INPUT
+# ============================================================
+
+START_HUB = "BER"
+END_HUB = "MUC"
+
+START_TIME = 4
+DEADLINE = 36
+
+MAX_PRICE = 3000.0
+SHIPMENT_WEIGHT = 1.0
+
+MAX_HOUR = 48
+
+# Präferenzen:
+# Schnellste Route:
+W_COST = 0.0
+W_TIME = 1.0
+W_ECO = 0.0
+
+# Günstigste Route:
+# W_COST = 1.0
+# W_TIME = 0.0
+# W_ECO = 0.0
+
+# Nachhaltigste Route:
+# W_COST = 0.0
+# W_TIME = 0.0
+# W_ECO = 1.0
+
+# Gemischte Route:
+# W_COST = 0.4
+# W_TIME = 0.4
+# W_ECO = 0.2
+
+
+# ============================================================
+# 6. PROGRAMM AUSFÜHREN
+# ============================================================
+
+if __name__ == "__main__":
+
+    time_arcs = generate_time_arcs(
+        hubs=hubs,
+        hubs_by_id=hubs_by_id,
+        arc_templates=arc_templates,
+        mode_factors=mode_factors,
+        shipment_weight=SHIPMENT_WEIGHT,
+        max_hour=MAX_HOUR,
+    )
+
+    print(f"Anzahl generierter Arcs: {len(time_arcs)}")
+
+    solver = HeuristicRoutingSolver(
+        time_arcs=time_arcs,
+        start_hub=START_HUB,
+        end_hub=END_HUB,
+        start_time=START_TIME,
+        deadline=DEADLINE,
+        max_price=MAX_PRICE,
+        weights={
+            "cost": W_COST,
+            "time": W_TIME,
+            "eco": W_ECO,
+        },
+        normalizers={
+            "cost": 1500.0,
+            "time": 48.0,
+            "eco": 500.0,
+        },
+    )
+
+    result = solver.solve()
+    print_solution(result)
