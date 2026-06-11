@@ -68,31 +68,17 @@
 
 
 
-////////////////////////////////////////////////////////////////////////
-= #INTRODUCTION.at(language)
-Welche Routen und welche Abfolge von Transportmitteln (Straße, Schiene, Luft) sollten für
-eine gegebene Menge an Sendungen gewählt werden, um eine gewichtete Kombination aus
-Transportkosten und CO₂-Emissionen zu minimieren, während gleichzeitig Lieferfristen, Kapazitätsgrenzen im Netzwerk und spezifische Transportvorgaben für bestimmte Güter eingehalten werden?
+// ////////////////////////////////////////////////////////////////////////
 
+#include "introduction.typ"
+#include "literature.typ"
+#include "problem_description.typ"
+#include "implementation.typ"
+#include "results.typ"
+#include "discussion.typ"
+#include "conclusion.typ"
 
-
-= Problemformulierung
-
-
-== Transportmittel
-
-
-== Zielfunktion
-
-
-== Einschränkungen
-- Für jede einzelne Sendung muss ein gültiger Weg durch den gerichteten Graphen (bestehend aus Städten und Terminals) vom Ursprung zum Zielort berechnet werden
-- Das Modell muss sicherstellen, dass die gesamte Transport- und Transferzeit einer Sendung die für sie festgelegte Lieferfrist (Deadline) nicht überschreitet
-- Die gebündelten Volumina der Sendungen dürfen die maximalen Kapazitätsgrenzen der genutzten Strecken (Straße, Schiene, Luft) sowie die Abfertigungskapazitäten in den Transfer-Terminals nicht überschreiten (Wir nehmen an, dass die Kantenkapazität durch die Anzahl der verfügbaren Transportmittel (Lkw/Waggons/Flugzeuge) auf dieser Strecke limitiert ist und nicht durch die physische Straßeninfrastruktur)
-
-
-
-= Notebook
+= Jupyter Notebook
 #let mainSolverNotebook = json("../notebooks/main.ipynb")
 
 #callisto.render(nb: mainSolverNotebook)
