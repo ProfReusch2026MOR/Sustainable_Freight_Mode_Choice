@@ -5,3 +5,6 @@ documentation/main.pdf
 __pycache__/
 *.pyc
 freight_routing/__pycache__/
+
+# Ignore generated interactive HTML maps
+notebooks/*.html

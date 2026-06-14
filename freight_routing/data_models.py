@@ -75,10 +75,14 @@ class Hub:
         object.__setattr__(self, "supported_modes", modes)
         if self.latitude is not None:
             if not (-90.0 <= self.latitude <= 90.0):
-                raise ValueError(f"latitude must be between -90 and 90, got {self.latitude}")
+                raise ValueError(
+                    f"latitude must be between -90 and 90, got {self.latitude}"
+                )
         if self.longitude is not None:
             if not (-180.0 <= self.longitude <= 180.0):
-                raise ValueError(f"longitude must be between -180 and 180, got {self.longitude}")
+                raise ValueError(
+                    f"longitude must be between -180 and 180, got {self.longitude}"
+                )
         if self.waiting_cost_per_hour is not None:
             if self.waiting_cost_per_hour < 0:
                 raise ValueError("waiting_cost_per_hour must not be negative.")

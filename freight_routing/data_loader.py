@@ -95,7 +95,10 @@ class NetworkDataLoader:
         if "transfer" not in rfc:
             raise ValueError("Missing 'transfer' in 'default_fixed_costs'.")
         default_fixed_costs = FixedFactorDefaults(
-            transport={_normalize_mode(m): float(v) for m, v in rfc.get("transport", {}).items()},
+            transport={
+                _normalize_mode(m): float(v)
+                for m, v in rfc.get("transport", {}).items()
+            },
             waiting=float(rfc["waiting"]),
             transfer=float(rfc["transfer"]),
         )
@@ -108,7 +111,10 @@ class NetworkDataLoader:
         if "transfer" not in rfe:
             raise ValueError("Missing 'transfer' in 'default_fixed_emissions'.")
         default_fixed_emissions = FixedFactorDefaults(
-            transport={_normalize_mode(m): float(v) for m, v in rfe.get("transport", {}).items()},
+            transport={
+                _normalize_mode(m): float(v)
+                for m, v in rfe.get("transport", {}).items()
+            },
             waiting=float(rfe["waiting"]),
             transfer=float(rfe["transfer"]),
         )
