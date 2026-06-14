@@ -1,0 +1,7 @@
+# Ignore generated PDF documentation
+documentation/main.pdf
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+freight_routing/__pycache__/
