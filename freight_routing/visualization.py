@@ -5,8 +5,7 @@ from .data_models import NetworkData, _TimedArc, ArcType, TransportArcTemplate
 def create_network_map(
     network_data: NetworkData, 
     route: list[_TimedArc] | tuple[_TimedArc, ...] | None = None,
-    show_network: bool = True,
-    max_road_arcs: int | None = 2000
+    show_network: bool = True
 ) -> folium.Map:
     """Creates an interactive Folium map showing the network hubs, the static mode connections, and the optimized shipment route path.
     
@@ -14,7 +13,6 @@ def create_network_map(
         network_data: The loaded NetworkData object.
         route: Optional shipment routing path to overlay.
         show_network: Whether to display the static mode connections (separated into toggleable layers).
-        max_road_arcs: The maximum road (LKW) connections to render to protect file size and load times. Set to None to render all.
     """
     # Filter hubs that have valid coordinates for map centering and plotting
     hubs = [h for h in network_data.hubs.values() if h.latitude is not None and h.longitude is not None]
@@ -62,7 +60,6 @@ def create_network_map(
         }
         
         plotted_connections = set()
-        road_count = 0
         
         for template in network_data.arc_templates:
             if isinstance(template, TransportArcTemplate):
@@ -80,11 +77,6 @@ def create_network_map(
                 to_hub = network_data.hubs.get(to_id)
                 
                 if from_hub and to_hub and from_hub.latitude is not None and from_hub.longitude is not None and to_hub.latitude is not None and to_hub.longitude is not None:
-                    if mode == "road" and max_road_arcs is not None:
-                        road_count += 1
-                        if road_count > max_road_arcs:
-                            continue
-                            
                     group = mode_groups.get(mode)
                     if group:
                         color = mode_colors.get(mode, "gray")
