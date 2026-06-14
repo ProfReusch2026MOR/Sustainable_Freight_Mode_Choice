@@ -1,9 +1,13 @@
 import folium
 from folium.plugins import MarkerCluster
-from .data_models import NetworkData, _TimedArc, ArcType
+from .data_models import NetworkData, _TimedArc, ArcType, TransportArcTemplate
 
-def create_network_map(network_data: NetworkData, route: list[_TimedArc] | tuple[_TimedArc, ...] | None = None) -> folium.Map:
-    """Creates an interactive Folium map showing all network hubs and the path of the selected route."""
+def create_network_map(
+    network_data: NetworkData, 
+    route: list[_TimedArc] | tuple[_TimedArc, ...] | None = None,
+    show_network: bool = True
+) -> folium.Map:
+    """Creates an interactive Folium map showing the network hubs, the static mode connections, and the optimized shipment route path."""
     hubs = list(network_data.hubs.values())
     if not hubs:
         return folium.Map()
@@ -15,7 +19,7 @@ def create_network_map(network_data: NetworkData, route: list[_TimedArc] | tuple
     m = folium.Map(location=[avg_lat, avg_lon], zoom_start=4)
     
     # Use marker clustering for performance
-    marker_cluster = MarkerCluster(name="Hubs").add_to(m)
+    marker_cluster = MarkerCluster(name="Hubs (Clustered)").add_to(m)
     
     for hub in hubs:
         tooltip_html = f"<b>{hub.name}</b><br>ID: {hub.id}<br>Supported Modes: {', '.join(hub.supported_modes)}"
@@ -32,7 +36,69 @@ def create_network_map(network_data: NetworkData, route: list[_TimedArc] | tuple
         "ship": "purple"
     }
     
+    # 1. Visualize the entire network connections if requested
+    if show_network:
+        road_group = folium.FeatureGroup(name="Network: Road (LKW)", show=False)
+        rail_group = folium.FeatureGroup(name="Network: Rail (Bahn)", show=True)
+        air_group = folium.FeatureGroup(name="Network: Air (Flug)", show=True)
+        ship_group = folium.FeatureGroup(name="Network: Ship (Schiff)", show=True)
+        
+        mode_groups = {
+            "road": road_group,
+            "rail": rail_group,
+            "air": air_group,
+            "ship": ship_group
+        }
+        
+        plotted_connections = set()
+        road_count = 0
+        max_road_arcs = 1000  # Cap road rendering to prevent browser lockup
+        
+        for template in network_data.arc_templates:
+            if isinstance(template, TransportArcTemplate):
+                mode = template.mode
+                from_id = template.from_hub
+                to_id = template.to_hub
+                
+                # Check for duplicate connection to keep rendering clean
+                conn_key = (min(from_id, to_id), max(from_id, to_id), mode)
+                if conn_key in plotted_connections:
+                    continue
+                plotted_connections.add(conn_key)
+                
+                from_hub = network_data.hubs.get(from_id)
+                to_hub = network_data.hubs.get(to_id)
+                
+                if from_hub and to_hub:
+                    if mode == "road":
+                        road_count += 1
+                        if road_count > max_road_arcs:
+                            continue
+                            
+                    group = mode_groups.get(mode)
+                    if group:
+                        color = mode_colors.get(mode, "gray")
+                        tooltip = f"{mode.upper()}: {from_id} <-> {to_id} ({template.distance:.1f} km)"
+                        popup = f"<b>{mode.upper()} Connection</b><br>From: {from_hub.name}<br>To: {to_hub.name}<br>Distance: {template.distance:.1f} km"
+                        
+                        folium.PolyLine(
+                            locations=[
+                                [from_hub.latitude, from_hub.longitude],
+                                [to_hub.latitude, to_hub.longitude]
+                            ],
+                            color=color,
+                            weight=1.5,
+                            opacity=0.4,
+                            popup=popup,
+                            tooltip=tooltip
+                        ).add_to(group)
+                        
+        for group in mode_groups.values():
+            group.add_to(m)
+            
+    # 2. Visualize active shipment route if provided
     if route:
+        route_group = folium.FeatureGroup(name="Shipment Route Path", show=True)
         for arc in route:
             # Visualize only transport arcs (waiting/transfer happen within the same hub)
             if arc.arc_type == ArcType.TRANSPORT:
@@ -57,11 +123,12 @@ def create_network_map(network_data: NetworkData, route: list[_TimedArc] | tuple
                             [to_hub.latitude, to_hub.longitude]
                         ],
                         color=color,
-                        weight=5,
-                        opacity=0.85,
+                        weight=6,
+                        opacity=0.9,
                         popup=popup_html,
-                        tooltip=f"{arc.mode.upper()}: {from_hub.id} -> {to_hub.id}"
-                    ).add_to(m)
+                        tooltip=f"ROUTE ({arc.mode.upper()}): {from_hub.id} -> {to_hub.id}"
+                    ).add_to(route_group)
+        route_group.add_to(m)
                     
     folium.LayerControl().add_to(m)
     return m
