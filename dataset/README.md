@@ -29,6 +29,8 @@ Each hub represents a node in the physical transportation network (e.g., an airp
   "id": "BER",
   "name": "Berlin Brandenburger Airport",
   "supported_modes": ["road", "air"],
+  "latitude": 52.5200,
+  "longitude": 13.4050,
   "waiting_cost_per_hour": 4.5,
   "waiting_emissions_per_hour": 0.1
 }
@@ -38,8 +40,10 @@ Each hub represents a node in the physical transportation network (e.g., an airp
 * `id`: **Required**. String, must not be empty. Must be unique.
 * `name`: **Required**. String, must not be empty.
 * `supported_modes`: **Required**. List of strings. Must contain at least one mode.
-* `waiting_cost_per_hour`: *Optional*. Float $\ge 0$. Falls back to `default_variable_factors.waiting_cost_per_hour` (default `5.0`) if omitted.
-* `waiting_emissions_per_hour`: *Optional*. Float $\ge 0$. Falls back to `default_variable_factors.waiting_emissions_per_hour` (default `0.0`) if omitted.
+* `latitude`: **Required**. Float between `-90.0` and `90.0` (inclusive).
+* `longitude`: **Required**. Float between `-180.0` and `180.0` (inclusive).
+* `waiting_cost_per_hour`: *Optional*. Float $\ge 0$. Falls back to `default_variable_factors.waiting_cost_per_hour` if omitted.
+* `waiting_emissions_per_hour`: *Optional*. Float $\ge 0$. Falls back to `default_variable_factors.waiting_emissions_per_hour` if omitted.
 
 ---
 
@@ -207,12 +211,16 @@ Here is a minimal conforming JSON dataset:
     {
       "id": "BER",
       "name": "Berlin Hub",
-      "supported_modes": ["road", "rail"]
+      "supported_modes": ["road", "rail"],
+      "latitude": 52.5200,
+      "longitude": 13.4050
     },
     {
       "id": "MUC",
       "name": "Munich Hub",
-      "supported_modes": ["road", "rail"]
+      "supported_modes": ["road", "rail"],
+      "latitude": 48.1351,
+      "longitude": 11.5820
     }
   ],
   "mode_factors": {

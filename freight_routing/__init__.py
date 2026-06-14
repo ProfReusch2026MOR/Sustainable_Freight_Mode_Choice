@@ -17,6 +17,7 @@ from .data_models import (
     UserArcTemplate,
 )
 from .model import TimeExpandedFreightRoutingModel
+from .visualization import create_network_map
 
 __all__ = [
     "ArcTemplate",
@@ -34,4 +35,5 @@ __all__ = [
     "TransferArcTemplate",
     "TransportArcTemplate",
     "UserArcTemplate",
+    "create_network_map",
 ]

@@ -8,3 +8,6 @@ msgspec>=0.21.0
 # Analysis & Utilities
 numpy>=2.0.0
 pandas>=2.0.0
+geopy>=2.4.0
+folium>=0.15.0
+python-dotenv>=1.0.0
