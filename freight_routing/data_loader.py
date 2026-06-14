@@ -161,14 +161,14 @@ class NetworkDataLoader:
 
     @staticmethod
     def _parse_hub(raw_hub: dict[str, Any]) -> Hub:
-        if "latitude" not in raw_hub or "longitude" not in raw_hub:
-            raise ValueError(f"Hub {raw_hub.get('id')} is missing coordinates.")
+        lat = raw_hub.get("latitude")
+        lon = raw_hub.get("longitude")
         return Hub(
             id=raw_hub["id"],
             name=raw_hub["name"],
             supported_modes=tuple(raw_hub["supported_modes"]),
-            latitude=float(raw_hub["latitude"]),
-            longitude=float(raw_hub["longitude"]),
+            latitude=float(lat) if lat is not None else None,
+            longitude=float(lon) if lon is not None else None,
             waiting_cost_per_hour=raw_hub.get("waiting_cost_per_hour"),
             waiting_emissions_per_hour=raw_hub.get("waiting_emissions_per_hour"),
         )

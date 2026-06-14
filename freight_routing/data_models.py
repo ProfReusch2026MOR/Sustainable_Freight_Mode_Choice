@@ -58,8 +58,8 @@ class Hub:
     id: str
     name: str
     supported_modes: tuple[str, ...]
-    latitude: float
-    longitude: float
+    latitude: float | None = None
+    longitude: float | None = None
     waiting_cost_per_hour: float | None = None
     waiting_emissions_per_hour: float | None = None
 
@@ -73,10 +73,12 @@ class Hub:
         if not modes:
             raise ValueError("supported_modes must not be empty.")
         object.__setattr__(self, "supported_modes", modes)
-        if not (-90.0 <= self.latitude <= 90.0):
-            raise ValueError(f"latitude must be between -90 and 90, got {self.latitude}")
-        if not (-180.0 <= self.longitude <= 180.0):
-            raise ValueError(f"longitude must be between -180 and 180, got {self.longitude}")
+        if self.latitude is not None:
+            if not (-90.0 <= self.latitude <= 90.0):
+                raise ValueError(f"latitude must be between -90 and 90, got {self.latitude}")
+        if self.longitude is not None:
+            if not (-180.0 <= self.longitude <= 180.0):
+                raise ValueError(f"longitude must be between -180 and 180, got {self.longitude}")
         if self.waiting_cost_per_hour is not None:
             if self.waiting_cost_per_hour < 0:
                 raise ValueError("waiting_cost_per_hour must not be negative.")
