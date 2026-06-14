@@ -2,6 +2,8 @@
 
 # Sustainable Freight Mode Choice
 
+[![CI](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/actions/workflows/ci.yml/badge.svg)](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/actions/workflows/ci.yml)
+
 ## Projektmitglieder: 
 
 - Benedikt (bennewehn)
