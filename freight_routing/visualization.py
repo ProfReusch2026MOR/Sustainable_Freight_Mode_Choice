@@ -5,10 +5,19 @@ from .data_models import NetworkData, _TimedArc, ArcType, TransportArcTemplate
 def create_network_map(
     network_data: NetworkData, 
     route: list[_TimedArc] | tuple[_TimedArc, ...] | None = None,
-    show_network: bool = True
+    show_network: bool = True,
+    max_road_arcs: int | None = 2000
 ) -> folium.Map:
-    """Creates an interactive Folium map showing the network hubs, the static mode connections, and the optimized shipment route path."""
-    hubs = list(network_data.hubs.values())
+    """Creates an interactive Folium map showing the network hubs, the static mode connections, and the optimized shipment route path.
+    
+    Args:
+        network_data: The loaded NetworkData object.
+        route: Optional shipment routing path to overlay.
+        show_network: Whether to display the static mode connections (separated into toggleable layers).
+        max_road_arcs: The maximum road (LKW) connections to render to protect file size and load times. Set to None to render all.
+    """
+    # Filter hubs that have valid coordinates for map centering and plotting
+    hubs = [h for h in network_data.hubs.values() if h.latitude is not None and h.longitude is not None]
     if not hubs:
         return folium.Map()
     
@@ -16,7 +25,9 @@ def create_network_map(
     avg_lat = sum(h.latitude for h in hubs) / len(hubs)
     avg_lon = sum(h.longitude for h in hubs) / len(hubs)
     
-    m = folium.Map(location=[avg_lat, avg_lon], zoom_start=4)
+    # prefer_canvas=True instructs Leaflet to render polylines using HTML5 Canvas rather than SVG,
+    # boosting performance significantly for dense datasets.
+    m = folium.Map(location=[avg_lat, avg_lon], zoom_start=4, prefer_canvas=True)
     
     # Use marker clustering for performance
     marker_cluster = MarkerCluster(name="Hubs (Clustered)").add_to(m)
@@ -52,7 +63,6 @@ def create_network_map(
         
         plotted_connections = set()
         road_count = 0
-        max_road_arcs = 1000  # Cap road rendering to prevent browser lockup
         
         for template in network_data.arc_templates:
             if isinstance(template, TransportArcTemplate):
@@ -69,8 +79,8 @@ def create_network_map(
                 from_hub = network_data.hubs.get(from_id)
                 to_hub = network_data.hubs.get(to_id)
                 
-                if from_hub and to_hub:
-                    if mode == "road":
+                if from_hub and to_hub and from_hub.latitude is not None and from_hub.longitude is not None and to_hub.latitude is not None and to_hub.longitude is not None:
+                    if mode == "road" and max_road_arcs is not None:
                         road_count += 1
                         if road_count > max_road_arcs:
                             continue
@@ -105,7 +115,7 @@ def create_network_map(
                 from_hub = network_data.hubs.get(arc.from_node.hub_id)
                 to_hub = network_data.hubs.get(arc.to_node.hub_id)
                 
-                if from_hub and to_hub:
+                if from_hub and to_hub and from_hub.latitude is not None and from_hub.longitude is not None and to_hub.latitude is not None and to_hub.longitude is not None:
                     color = mode_colors.get(arc.mode, "orange")
                     popup_html = (
                         f"<b>Route Segment</b><br>"

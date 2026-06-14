@@ -40,8 +40,8 @@ Each hub represents a node in the physical transportation network (e.g., an airp
 * `id`: **Required**. String, must not be empty. Must be unique.
 * `name`: **Required**. String, must not be empty.
 * `supported_modes`: **Required**. List of strings. Must contain at least one mode.
-* `latitude`: **Required**. Float between `-90.0` and `90.0` (inclusive).
-* `longitude`: **Required**. Float between `-180.0` and `180.0` (inclusive).
+* `latitude`: *Optional*. Float between `-90.0` and `90.0` (inclusive). Used for geographic visualization.
+* `longitude`: *Optional*. Float between `-180.0` and `180.0` (inclusive). Used for geographic visualization.
 * `waiting_cost_per_hour`: *Optional*. Float $\ge 0$. Falls back to `default_variable_factors.waiting_cost_per_hour` if omitted.
 * `waiting_emissions_per_hour`: *Optional*. Float $\ge 0$. Falls back to `default_variable_factors.waiting_emissions_per_hour` if omitted.
 
