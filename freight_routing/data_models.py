@@ -387,3 +387,4 @@ class RoutingResult:
     total_variable_cost: float = 0.0
     total_fixed_emissions: float = 0.0
     total_variable_emissions: float = 0.0
+    diagnostics: tuple[str, ...] = ()

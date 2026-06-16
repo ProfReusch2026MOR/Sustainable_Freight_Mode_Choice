@@ -446,6 +446,31 @@ class TimeExpandedFreightRoutingModel:
             cat=pulp.LpBinary,
         )
 
+        # Slack variables for soft constraints (infeasibility diagnostics)
+        self.slack_deadline = pulp.LpVariable.dicts(
+            "SlackDeadline",
+            shipment_indices,
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+        self.slack_price = pulp.LpVariable.dicts(
+            "SlackPrice",
+            shipment_indices,
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+        self.slack_emissions = pulp.LpVariable.dicts(
+            "SlackEmissions",
+            shipment_indices,
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+        self.slack_total_budget = pulp.LpVariable(
+            "SlackTotalBudget",
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+
         # Dynamic vehicle count variables
         self.vehicle_count = {}
         for i, arc in enumerate(self.all_arcs):
@@ -506,11 +531,17 @@ class TimeExpandedFreightRoutingModel:
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
 
+        # Dynamic penalty factor Big-M for soft constraints
+        penalty_m = max(c_max, t_max, e_max, 1000.0) * 100.0
+
         self.prob += (
             self.objective_weights.cost * ((total_cost - c_min) / (c_max - c_min))
             + self.objective_weights.time * ((total_time - t_min) / (t_max - t_min))
-            + self.objective_weights.emissions
-            * ((total_emissions - e_min) / (e_max - e_min))
+            + self.objective_weights.emissions * ((total_emissions - e_min) / (e_max - e_min))
+            + penalty_m * pulp.lpSum(self.slack_deadline[k] for k in shipment_indices)
+            + penalty_m * pulp.lpSum(self.slack_price[k] for k in shipment_indices)
+            + penalty_m * pulp.lpSum(self.slack_emissions[k] for k in shipment_indices if shipments[k].max_emissions is not None)
+            + penalty_m * self.slack_total_budget
         )
 
         ########################################
@@ -555,13 +586,14 @@ class TimeExpandedFreightRoutingModel:
                 == 1
             )
 
-            # Deadline constraint
+            # Soft deadline constraint
             self.prob += (
                 pulp.lpSum(
                     node.time_min * self.use_arc[(i, k)]
                     for node in end_nodes
                     for i in incoming_by_node.get(node, [])
                 )
+                - self.slack_deadline[k]
                 <= shipment.deadline
             )
 
@@ -601,26 +633,30 @@ class TimeExpandedFreightRoutingModel:
         #   budget and emission constraints    #
         ########################################
         for k, shipment in enumerate(shipments):
+            # Soft price budget constraint
             self.prob += (
                 pulp.lpSum(
                     self.use_arc[(i, k)] * arc.cost * shipment.weight
                     for i, arc in enumerate(self.all_arcs)
                 )
+                - self.slack_price[k]
                 <= shipment.max_price
             )
 
             if shipment.max_emissions is not None:
+                # Soft emissions budget constraint
                 self.prob += (
                     pulp.lpSum(
                         self.use_arc[(i, k)] * arc.emissions * shipment.weight
                         for i, arc in enumerate(self.all_arcs)
                     )
+                    - self.slack_emissions[k]
                     <= shipment.max_emissions
                 )
 
-        # Total combined budget limit across all shipments (including fixed costs)
+        # Soft total combined budget limit across all shipments (including fixed costs)
         total_budget = sum(shipment.max_price for shipment in shipments)
-        self.prob += total_cost <= total_budget
+        self.prob += total_cost - self.slack_total_budget <= total_budget
 
         ########################################
         #           solver execution           #
@@ -629,7 +665,48 @@ class TimeExpandedFreightRoutingModel:
         status = self.prob.solve(highs_py)
 
         self.status = pulp.LpStatus[status]
+        diagnostics = []
+        is_optimal = (self.status == "Optimal")
+
         if self.status == "Optimal":
+            # Check for soft constraint violations
+            for k, shipment in enumerate(shipments):
+                slack_dl = pulp.value(self.slack_deadline[k])
+                slack_pr = pulp.value(self.slack_price[k])
+                slack_em = pulp.value(self.slack_emissions[k]) if shipment.max_emissions is not None else 0.0
+
+                if slack_dl and slack_dl > 1e-3:
+                    diagnostics.append(
+                        f"Shipment '{shipment.id}': Deadline is too tight. "
+                        f"Requires an extra {slack_dl:.1f} minutes to route successfully."
+                    )
+                    is_optimal = False
+                if slack_pr and slack_pr > 1e-3:
+                    diagnostics.append(
+                        f"Shipment '{shipment.id}': Budget is too low. "
+                        f"Requires an extra {slack_pr:.2f} EUR to cover costs."
+                    )
+                    is_optimal = False
+                if slack_em and slack_em > 1e-3:
+                    diagnostics.append(
+                        f"Shipment '{shipment.id}': Emissions limit is too restrictive. "
+                        f"Requires an additional {slack_em:.1f} kg CO2 allowance."
+                    )
+                    is_optimal = False
+
+            slack_tot = pulp.value(self.slack_total_budget)
+            if slack_tot and slack_tot > 1e-3:
+                diagnostics.append(
+                    f"Global: Combined price budget is too low. "
+                    f"Requires an extra {slack_tot:.2f} EUR to cover overall costs."
+                )
+                is_optimal = False
+
+            if diagnostics:
+                print("--- INFEASIBILITY DIAGNOSTIC REPORT ---")
+                for msg in diagnostics:
+                    print(f"❌ {msg}")
+
             # filter decision variables using a > 0.5 threshold
             # to remain robust against small floating-point solver tolerances.
             self.total_fixed_cost = sum(
@@ -687,7 +764,7 @@ class TimeExpandedFreightRoutingModel:
 
         return RoutingResult(
             status=self.status,
-            is_optimal=(self.status == "Optimal"),
+            is_optimal=is_optimal,
             total_cost=self.total_cost,
             total_emissions=self.total_emissions,
             total_time=self.total_time,
@@ -696,6 +773,7 @@ class TimeExpandedFreightRoutingModel:
             total_variable_cost=self.total_variable_cost,
             total_fixed_emissions=self.total_fixed_emissions,
             total_variable_emissions=self.total_variable_emissions,
+            diagnostics=tuple(diagnostics),
         )
 
     def _validate_shipments(self, shipments: tuple[Shipment, ...]) -> None:
