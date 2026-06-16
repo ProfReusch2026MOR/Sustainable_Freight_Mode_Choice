@@ -14,7 +14,6 @@ Für größere Instanzen werden die Daten aus CSV-Dateien (`road_arcs.csv`, `air
 Das in ch:problem-description formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Kantenvariablen $x_(a,k)$ sowie die Bündelungsvariablen $y_a$ und $z_a$ werden als `LpBinary` bzw. `LpInteger` deklariert.
 Als zugrundeliegender Solver wird der COIN-OR Branch-and-Cut Solver (*CBC*) verwendet. Der Solver durchsucht den Lösungsraum systematisch mittels Branch-and-Bound und Schnittebenenverfahren (Cutting Planes), um globale Optimalität nachzuweisen.
 
-== Heuristische Lösung (Multimodaler Dijkstra-Algorithmus)
 = Heuristische Lösung (Multimodaler Dijkstra-Algorithmus)
 
 Neben dem exakten MILP-Modell wurde eine heuristische Lösung entwickelt, um auch für größere Transportnetzwerke in kurzer Zeit hochwertige Lösungen bestimmen zu können. Während exakte Optimierungsverfahren mit zunehmender Netzwerkgröße und Anzahl möglicher Transportalternativen einen hohen Rechenaufwand verursachen, ermöglichen heuristische Verfahren die Ermittlung guter Lösungen innerhalb deutlich kürzerer Laufzeiten.
