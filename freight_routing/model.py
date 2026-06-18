@@ -8,7 +8,6 @@ import pulp
 from .data_models import (
     ArcType,
     FixedFactorDefaults,
-    Hub,
     NetworkData,
     NetworkNode,
     ObjectiveWeights,
@@ -537,10 +536,16 @@ class TimeExpandedFreightRoutingModel:
         self.prob += (
             self.objective_weights.cost * ((total_cost - c_min) / (c_max - c_min))
             + self.objective_weights.time * ((total_time - t_min) / (t_max - t_min))
-            + self.objective_weights.emissions * ((total_emissions - e_min) / (e_max - e_min))
+            + self.objective_weights.emissions
+            * ((total_emissions - e_min) / (e_max - e_min))
             + penalty_m * pulp.lpSum(self.slack_deadline[k] for k in shipment_indices)
             + penalty_m * pulp.lpSum(self.slack_price[k] for k in shipment_indices)
-            + penalty_m * pulp.lpSum(self.slack_emissions[k] for k in shipment_indices if shipments[k].max_emissions is not None)
+            + penalty_m
+            * pulp.lpSum(
+                self.slack_emissions[k]
+                for k in shipment_indices
+                if shipments[k].max_emissions is not None
+            )
             + penalty_m * self.slack_total_budget
         )
 
@@ -666,14 +671,18 @@ class TimeExpandedFreightRoutingModel:
 
         self.status = pulp.LpStatus[status]
         diagnostics = []
-        is_optimal = (self.status == "Optimal")
+        is_optimal = self.status == "Optimal"
 
         if self.status == "Optimal":
             # Check for soft constraint violations
             for k, shipment in enumerate(shipments):
                 slack_dl = pulp.value(self.slack_deadline[k])
                 slack_pr = pulp.value(self.slack_price[k])
-                slack_em = pulp.value(self.slack_emissions[k]) if shipment.max_emissions is not None else 0.0
+                slack_em = (
+                    pulp.value(self.slack_emissions[k])
+                    if shipment.max_emissions is not None
+                    else 0.0
+                )
 
                 if slack_dl and slack_dl > 1e-3:
                     diagnostics.append(
