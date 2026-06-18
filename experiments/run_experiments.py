@@ -349,6 +349,27 @@ def _scale(values: list[float], size: int, reverse: bool = False) -> list[float]
     return scaled
 
 
+def _clustered_point_annotations(
+    xs: list[float],
+    ys: list[float],
+    labels: list[str],
+) -> str:
+    grouped: dict[tuple[float, float], list[str]] = {}
+    for x, y, label in zip(xs, ys, labels):
+        grouped.setdefault((round(x, 1), round(y, 1)), []).append(label)
+
+    annotations = []
+    for (x, y), group_labels in grouped.items():
+        annotations.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="#1f77b4" />')
+        for index, label in enumerate(group_labels):
+            y_offset = -12 + index * 15
+            annotations.append(
+                f'<text x="{x + 10:.1f}" y="{y + y_offset:.1f}" '
+                f'font-size="12" font-family="Arial">lambda = {label}</text>'
+            )
+    return "\n".join(annotations)
+
+
 def write_cost_emissions_svg(path: Path, rows: list[dict[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     width, height = 720, 420
@@ -360,11 +381,7 @@ def write_cost_emissions_svg(path: Path, rows: list[dict[str, str]]) -> None:
     xs = [margin + value for value in _scale(costs, plot_w)]
     ys = [margin + value for value in _scale(emissions, plot_h, reverse=True)]
     points = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, ys))
-    circles = "\n".join(
-        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="#1f77b4" />'
-        f'<text x="{x + 8:.1f}" y="{y - 8:.1f}" font-size="12">lambda={label}</text>'
-        for x, y, label in zip(xs, ys, labels)
-    )
+    annotations = _clustered_point_annotations(xs, ys, labels)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
   <rect width="100%" height="100%" fill="white"/>
   <text x="{width / 2}" y="28" text-anchor="middle" font-size="18" font-family="Arial">Cost-Emission Sensitivity</text>
@@ -373,7 +390,7 @@ def write_cost_emissions_svg(path: Path, rows: list[dict[str, str]]) -> None:
   <text x="{width / 2}" y="{height - 16}" text-anchor="middle" font-size="13" font-family="Arial">Total cost (EUR)</text>
   <text x="18" y="{height / 2}" text-anchor="middle" font-size="13" font-family="Arial" transform="rotate(-90 18 {height / 2})">Total emissions (kg CO2)</text>
   <polyline points="{points}" fill="none" stroke="#1f77b4" stroke-width="2"/>
-  {circles}
+  {annotations}
 </svg>
 """
     path.write_text(svg, encoding="utf-8")

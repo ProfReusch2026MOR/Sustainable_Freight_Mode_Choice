@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from experiments.run_experiments import (
+    _clustered_point_annotations,
     lambda_to_weights,
     mode_share_percentages,
     result_to_row,
@@ -98,6 +99,21 @@ class ExperimentSummaryTests(unittest.TestCase):
         self.assertEqual(row["road_share_pct"], "70.00")
         self.assertEqual(row["rail_share_pct"], "30.00")
         self.assertEqual(row["shipment_count"], "2")
+
+    def test_clustered_point_annotations_stack_overlapping_lambda_labels(self):
+        annotations = _clustered_point_annotations(
+            xs=[100.0, 100.0, 100.0],
+            ys=[200.0, 200.0, 200.0],
+            labels=["0", "0.1", "5"],
+        )
+
+        text_lines = [line for line in annotations.splitlines() if "<text" in line]
+
+        self.assertEqual(len(text_lines), 3)
+        self.assertIn("lambda = 0", text_lines[0])
+        self.assertIn("lambda = 0.1", text_lines[1])
+        self.assertIn("lambda = 5", text_lines[2])
+        self.assertEqual(len(set(text_lines)), 3)
 
 
 if __name__ == "__main__":
