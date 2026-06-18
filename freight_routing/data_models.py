@@ -309,6 +309,7 @@ class _TimedArc:
     cost: float
     emissions: float
     capacity: float
+    distance: float = 0.0
     max_vehicles: int | None = None
     fixed_cost: float | None = None
     fixed_emissions: float | None = None
@@ -379,6 +380,7 @@ class VariableFactorDefaults:
 class RoutingResult:
     status: str
     is_optimal: bool
+    objective_value: float | None
     total_cost: float
     total_emissions: float
     total_time: float

@@ -295,6 +295,7 @@ class TimeExpandedFreightRoutingModel:
                                     cost=cost,
                                     emissions=emissions,
                                     capacity=transport_capacity,
+                                    distance=template.distance,
                                     max_vehicles=template.max_vehicles,
                                     fixed_cost=template.fixed_cost,
                                     fixed_emissions=template.fixed_emissions,
@@ -399,8 +400,20 @@ class TimeExpandedFreightRoutingModel:
             self.nodes.add(arc.from_node)
             self.nodes.add(arc.to_node)
 
-    def solve(self, shipments: Iterable[Shipment]) -> RoutingResult:
+    def solve(
+        self,
+        shipments: Iterable[Shipment],
+        time_limit_sec: float | None = None,
+    ) -> RoutingResult:
         """Solve the routing problem for explicitly provided shipments."""
+        return self._solve(shipments, time_limit_sec=time_limit_sec)
+
+    def _solve(
+        self,
+        shipments: Iterable[Shipment],
+        time_limit_sec: float | None = None,
+    ) -> RoutingResult:
+        """Solve the routing problem with an optional solver time limit."""
         shipments = tuple(shipments)
         if not shipments:
             raise ValueError("shipments must not be empty.")
@@ -666,10 +679,11 @@ class TimeExpandedFreightRoutingModel:
         ########################################
         #           solver execution           #
         ########################################
-        highs_py = pulp.HiGHS(msg=False)
+        highs_py = pulp.HiGHS(msg=False, timeLimit=time_limit_sec)
         status = self.prob.solve(highs_py)
 
         self.status = pulp.LpStatus[status]
+        self.objective_value = pulp.value(self.prob.objective)
         diagnostics = []
         is_optimal = self.status == "Optimal"
 
@@ -778,6 +792,7 @@ class TimeExpandedFreightRoutingModel:
             total_emissions=self.total_emissions,
             total_time=self.total_time,
             shipment_routes={k: tuple(v) for k, v in self.shipment_routes.items()},
+            objective_value=self.objective_value,
             total_fixed_cost=self.total_fixed_cost,
             total_variable_cost=self.total_variable_cost,
             total_fixed_emissions=self.total_fixed_emissions,
