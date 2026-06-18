@@ -1,0 +1,7 @@
+air_share_pct,cost_weight,emissions_weight,instance,is_optimal,lambda,method,objective_value,rail_share_pct,road_share_pct,route_count,runtime_sec,ship_share_pct,shipment_count,status,time_limit_sec,time_weight,total_cost_eur,total_emissions_kg,total_time_min
+0.00,1.000000,0.000000,small,True,0,HiGHS MILP,0.002861,0.00,100.00,10,4.771,0.00,3,Optimal,15,0.000000,921.27,125.35,346.00
+0.00,0.909091,0.090909,small,True,0.1,HiGHS MILP,0.002808,0.00,100.00,10,4.694,0.00,3,Optimal,15,0.000000,921.27,125.35,346.00
+0.00,0.666667,0.333333,small,True,0.5,HiGHS MILP,0.002669,0.00,100.00,10,4.749,0.00,3,Optimal,15,0.000000,921.27,125.35,346.00
+0.00,0.500000,0.500000,small,True,1,HiGHS MILP,0.002573,0.00,100.00,10,4.523,0.00,3,Optimal,15,0.000000,921.27,125.35,346.00
+0.00,0.333333,0.666667,small,True,2,HiGHS MILP,0.002478,0.00,100.00,10,4.864,0.00,3,Optimal,15,0.000000,921.27,125.35,346.00
+0.00,0.166667,0.833333,small,True,5,HiGHS MILP,0.002382,0.00,100.00,10,4.462,0.00,3,Optimal,15,0.000000,921.27,125.35,346.00

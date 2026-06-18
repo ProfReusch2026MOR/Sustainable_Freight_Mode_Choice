@@ -45,9 +45,9 @@ PROFILES = {
         InstanceSpec("smoke_small", max_routes=8, shipment_count=3, time_limit_sec=15),
     ),
     "presentation": (
-        InstanceSpec("small", max_routes=10, shipment_count=20, time_limit_sec=30),
-        InstanceSpec("medium", max_routes=50, shipment_count=100, time_limit_sec=60),
-        InstanceSpec("large", max_routes=200, shipment_count=500, time_limit_sec=120),
+        InstanceSpec("small", max_routes=10, shipment_count=3, time_limit_sec=15),
+        InstanceSpec("medium", max_routes=20, shipment_count=5, time_limit_sec=15),
+        InstanceSpec("large", max_routes=30, shipment_count=8, time_limit_sec=20),
     ),
 }
 
@@ -249,6 +249,11 @@ def run_computational_experiments(
 ) -> list[dict[str, str]]:
     rows = []
     for spec in specs:
+        print(
+            f"Running {spec.name}: {spec.max_routes} routes, "
+            f"{spec.shipment_count} shipments...",
+            flush=True,
+        )
         network = build_subnetwork(base_network, spec.max_routes)
         shipments = generate_shipments(spec.name, network, spec.shipment_count)
         shipment_weights = {shipment.id: shipment.weight for shipment in shipments}
@@ -269,7 +274,10 @@ def run_computational_experiments(
                 mode_shares=shares,
                 shipment_count=len(shipments),
             )
-            | {"route_count": str(len(network.arc_templates))}
+            | {
+                "route_count": str(len(network.arc_templates)),
+                "time_limit_sec": f"{spec.time_limit_sec:.0f}",
+            }
         )
     return rows
 
@@ -283,6 +291,10 @@ def run_sensitivity_analysis(
     shipment_weights = {shipment.id: shipment.weight for shipment in shipments}
     rows = []
     for lambda_value in LAMBDA_VALUES:
+        print(
+            f"Running sensitivity lambda={lambda_value:g} on {spec.name}...",
+            flush=True,
+        )
         weights = lambda_to_weights(lambda_value)
         result, runtime_sec = solve_instance(
             spec.name,
@@ -307,6 +319,7 @@ def run_sensitivity_analysis(
                 "emissions_weight": f"{weights.emissions:.6f}",
                 "time_weight": f"{weights.time:.6f}",
                 "route_count": str(len(network.arc_templates)),
+                "time_limit_sec": f"{spec.time_limit_sec:.0f}",
             }
         )
         rows.append(row)
