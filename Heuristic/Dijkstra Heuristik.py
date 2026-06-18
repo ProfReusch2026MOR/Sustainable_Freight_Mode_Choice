@@ -1,5 +1,4 @@
 """
-Adaptive Multi-Objective A*-Heuristik fuer multimodale Transportnetzwerke.
 
 Diese Version gibt gezielt vier Routentypen aus:
 
@@ -31,7 +30,6 @@ from typing import Dict, List, Tuple, Optional, Any
 USER_INPUT = {
     # Pfad zu deiner JSON-Datei
     "input_file": "multimodal_network.json",
-
     # Start- und Ziel-Hub
     # Beispiele:
     # "BER_3970" = Berlin Terminal
@@ -41,11 +39,9 @@ USER_INPUT = {
     # "NEW_283" = New York City Terminal
     # "SHA_2240" = Shanghai Terminal
     "start_hub": "NEW_283",
-    "end_hub": "FRA_3974",
-
+    "end_hub": "SHA_2240",
     # Sendungsgewicht in Tonnen
     "shipment_weight_tons": 2.0,
-
     # ------------------------------------------------------------
     # DEINE INDIVIDUELLE PRAEFERENZ
     # ------------------------------------------------------------
@@ -61,29 +57,23 @@ USER_INPUT = {
     "preference_cost": 0.50,
     "preference_time": 0.30,
     "preference_co2": 0.20,
-
     # Strafwert fuer Verkehrsmittelwechsel.
     # Hoeherer Wert = weniger Wechsel zwischen road, rail, air, ship.
     "preference_mode_change": 0.03,
-
     # Maximale Anzahl expandierter Zustaende.
     # Wenn keine Route gefunden wird, Wert erhoehen.
     "max_expansions": 200_000,
-
     # Optional: Verkehrsmittel erlauben.
     # Leere Liste bedeutet: alle Modi erlaubt.
     # Beispiel:
     # "allowed_modes": ["road", "rail", "ship"]
     "allowed_modes": [],
-
     # Optional: Verkehrsmittel verbieten.
     # Beispiel:
     # "forbidden_modes": ["air"]
     "forbidden_modes": [],
-
     # Soll eine Liste verfuegbarer Hubs ausgegeben werden?
     "show_available_hubs": False,
-
     # Suchbegriff fuer Hubs, z.B. "Hamburg", "Berlin", "Rotterdam".
     # Nur relevant, wenn show_available_hubs=True.
     "hub_search_term": "",
@@ -94,6 +84,7 @@ USER_INPUT = {
 # 2) ALGORITHMUS
 #    Darunter musst du normalerweise nichts mehr aendern.
 # ============================================================
+
 
 @dataclass(frozen=True)
 class Edge:
@@ -127,10 +118,14 @@ class RouteResult:
         return sum(1 for i in range(1, len(m)) if m[i] != m[i - 1])
 
 
-def normalize_preferences(cost: float, time: float, co2: float) -> Tuple[float, float, float]:
+def normalize_preferences(
+    cost: float, time: float, co2: float
+) -> Tuple[float, float, float]:
     total = cost + time + co2
     if total <= 0:
-        raise ValueError("Die Summe aus preference_cost, preference_time und preference_co2 muss groesser als 0 sein.")
+        raise ValueError(
+            "Die Summe aus preference_cost, preference_time und preference_co2 muss groesser als 0 sein."
+        )
     return cost / total, time / total, co2 / total
 
 
@@ -182,13 +177,16 @@ def build_four_weight_sets() -> List[Dict[str, float]]:
     ]
 
 
-def list_available_hubs(data: Dict[str, Any], search_term: str = "", limit: int = 80) -> None:
+def list_available_hubs(
+    data: Dict[str, Any], search_term: str = "", limit: int = 80
+) -> None:
     hubs = data.get("hubs", [])
     term = search_term.lower().strip()
 
     if term:
         hubs = [
-            h for h in hubs
+            h
+            for h in hubs
             if term in h.get("name", "").lower() or term in h.get("id", "").lower()
         ]
 
@@ -244,7 +242,11 @@ def load_network(
         duration = float(arc.get("duration_min", 0.0))
 
         cost = distance * float(factors[mode]["cost_per_ton_km"]) * shipment_weight_tons
-        emissions = distance * float(factors[mode]["emissions_kg_per_ton_km"]) * shipment_weight_tons
+        emissions = (
+            distance
+            * float(factors[mode]["emissions_kg_per_ton_km"])
+            * shipment_weight_tons
+        )
 
         edge = Edge(
             source=source,
@@ -296,7 +298,9 @@ def edge_score(
     scales: Dict[str, float],
     previous_mode: Optional[str],
 ) -> float:
-    mode_change_penalty = 1.0 if previous_mode is not None and previous_mode != edge.mode else 0.0
+    mode_change_penalty = (
+        1.0 if previous_mode is not None and previous_mode != edge.mode else 0.0
+    )
 
     return (
         weights["cost"] * normalize(edge.cost, scales["cost"])
@@ -314,14 +318,6 @@ def astar_multimodal(
     scales: Dict[str, float],
     max_expansions: int,
 ) -> Optional[RouteResult]:
-    """
-    A*-Suche mit Zustand (aktueller Hub, vorheriger Modus).
-
-    Da in der aktuellen JSON keine Koordinaten pro Hub enthalten sind,
-    ist die Heuristik h(n)=0. Damit verhaelt sich A* wie Dijkstra.
-    Sobald lat/lon in der JSON vorhanden sind, kann hier eine echte
-    Luftlinienheuristik ergaenzt werden.
-    """
 
     def heuristic(_: str) -> float:
         return 0.0
@@ -418,9 +414,10 @@ def improve_route_by_shortcuts(
                 i += 1
                 continue
 
-            old_score = (
-                edge_score(improved_edges[i], weights, scales, prev_mode)
-                + edge_score(improved_edges[i + 1], weights, scales, improved_edges[i].mode)
+            old_score = edge_score(
+                improved_edges[i], weights, scales, prev_mode
+            ) + edge_score(
+                improved_edges[i + 1], weights, scales, improved_edges[i].mode
             )
 
             best_direct = min(
@@ -430,12 +427,16 @@ def improve_route_by_shortcuts(
             new_score = edge_score(best_direct, weights, scales, prev_mode)
 
             if new_score < old_score:
-                improved_edges[i:i + 2] = [best_direct]
+                improved_edges[i : i + 2] = [best_direct]
                 changed = True
             else:
                 i += 1
 
-    path = [improved_edges[0].source] + [e.target for e in improved_edges] if improved_edges else route.path
+    path = (
+        [improved_edges[0].source] + [e.target for e in improved_edges]
+        if improved_edges
+        else route.path
+    )
 
     return RouteResult(
         route_type=route.route_type,
@@ -446,7 +447,9 @@ def improve_route_by_shortcuts(
         total_emissions=sum(e.emissions for e in improved_edges),
         total_distance_km=sum(e.distance_km for e in improved_edges),
         score=sum(
-            edge_score(e, weights, scales, improved_edges[i - 1].mode if i > 0 else None)
+            edge_score(
+                e, weights, scales, improved_edges[i - 1].mode if i > 0 else None
+            )
             for i, e in enumerate(improved_edges)
         ),
         weights=weights,
@@ -553,9 +556,13 @@ def main() -> None:
     parser.add_argument("--input", default=None, help="Pfad zur JSON-Datei")
     parser.add_argument("--start", default=None, help="Start-Hub-ID")
     parser.add_argument("--end", default=None, help="Ziel-Hub-ID")
-    parser.add_argument("--weight", type=float, default=None, help="Sendungsgewicht in Tonnen")
+    parser.add_argument(
+        "--weight", type=float, default=None, help="Sendungsgewicht in Tonnen"
+    )
     parser.add_argument("--max-expansions", type=int, default=None)
-    parser.add_argument("--list-hubs", action="store_true", help="Verfuegbare Hubs ausgeben")
+    parser.add_argument(
+        "--list-hubs", action="store_true", help="Verfuegbare Hubs ausgeben"
+    )
     parser.add_argument("--search-hub", default=None, help="Suchbegriff fuer Hubs")
 
     args = parser.parse_args()
@@ -563,8 +570,16 @@ def main() -> None:
     input_file = args.input or USER_INPUT["input_file"]
     start = args.start or USER_INPUT["start_hub"]
     end = args.end or USER_INPUT["end_hub"]
-    shipment_weight = args.weight if args.weight is not None else float(USER_INPUT["shipment_weight_tons"])
-    max_expansions = args.max_expansions if args.max_expansions is not None else int(USER_INPUT["max_expansions"])
+    shipment_weight = (
+        args.weight
+        if args.weight is not None
+        else float(USER_INPUT["shipment_weight_tons"])
+    )
+    max_expansions = (
+        args.max_expansions
+        if args.max_expansions is not None
+        else int(USER_INPUT["max_expansions"])
+    )
 
     data, graph = load_network(
         path=input_file,
@@ -574,12 +589,18 @@ def main() -> None:
     )
 
     if args.list_hubs or USER_INPUT["show_available_hubs"]:
-        search_term = args.search_hub if args.search_hub is not None else USER_INPUT["hub_search_term"]
+        search_term = (
+            args.search_hub
+            if args.search_hub is not None
+            else USER_INPUT["hub_search_term"]
+        )
         list_available_hubs(data, search_term=search_term)
         return
 
     if not start or not end:
-        raise ValueError("Bitte start_hub und end_hub im USER_INPUT setzen oder per --start und --end angeben.")
+        raise ValueError(
+            "Bitte start_hub und end_hub im USER_INPUT setzen oder per --start und --end angeben."
+        )
 
     if start not in graph:
         raise ValueError(f"Start-Hub {start} ist nicht im Graphen enthalten.")
@@ -594,7 +615,7 @@ def main() -> None:
         max_expansions=max_expansions,
     )
 
-    print("\nAdaptive Multi-Objective A*-Heuristik")
+    print("\nDijkstra Heuristik")
     print("=" * 70)
     print(f"Input-Datei:     {input_file}")
     print(f"Start:           {start}")
@@ -602,9 +623,11 @@ def main() -> None:
     print(f"Gewicht:         {shipment_weight} t")
     print(f"Erlaubte Modi:   {USER_INPUT['allowed_modes'] or 'alle'}")
     print(f"Verbotene Modi:  {USER_INPUT['forbidden_modes'] or 'keine'}")
-    print(f"Praeferenz:      Kosten={USER_INPUT['preference_cost']}, "
-          f"Zeit={USER_INPUT['preference_time']}, "
-          f"CO2={USER_INPUT['preference_co2']}")
+    print(
+        f"Praeferenz:      Kosten={USER_INPUT['preference_cost']}, "
+        f"Zeit={USER_INPUT['preference_time']}, "
+        f"CO2={USER_INPUT['preference_co2']}"
+    )
 
     if not routes:
         print("\nKeine Route gefunden.")
