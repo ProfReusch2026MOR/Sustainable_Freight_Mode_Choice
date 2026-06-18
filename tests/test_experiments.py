@@ -3,7 +3,9 @@ from __future__ import annotations
 import unittest
 
 from experiments.run_experiments import (
+    PROFILES,
     _clustered_point_annotations,
+    generate_shipments,
     lambda_to_weights,
     mode_share_percentages,
     result_to_row,
@@ -11,7 +13,13 @@ from experiments.run_experiments import (
 from freight_routing.data_models import (
     ArcType,
     NetworkNode,
+    NetworkData,
     RoutingResult,
+    FixedFactorDefaults,
+    Hub,
+    ModeFactor,
+    TransportArcTemplate,
+    VariableFactorDefaults,
     _TimedArc,
 )
 
@@ -115,6 +123,65 @@ class ExperimentSummaryTests(unittest.TestCase):
         self.assertIn("lambda = 5", text_lines[2])
         self.assertTrue(all('font-weight="normal"' in line for line in text_lines))
         self.assertEqual(len(set(text_lines)), 3)
+
+    def test_modal_shift_profile_uses_heavy_shipments(self):
+        spec = PROFILES["modal-shift"][0]
+
+        self.assertGreaterEqual(spec.shipment_weight_tons, 8.0)
+        self.assertEqual(spec.name, "modal_shift")
+
+    def test_generate_shipments_can_use_fixed_heavy_weight(self):
+        network = NetworkData(
+            hubs={
+                "A": Hub("A", "A", ("road", "rail")),
+                "B": Hub("B", "B", ("road", "rail")),
+            },
+            mode_factors={
+                "road": ModeFactor(1.2, 0.09),
+                "rail": ModeFactor(0.7, 0.025),
+            },
+            arc_templates=(
+                TransportArcTemplate(
+                    id="A_B_road",
+                    duration_min=60,
+                    departure_minutes=(0,),
+                    max_vehicles=None,
+                    fixed_cost=None,
+                    fixed_emissions=None,
+                    capacity=None,
+                    mode="road",
+                    distance=200.0,
+                    from_hub="A",
+                    to_hub="B",
+                ),
+            ),
+            capacities={"road": 10.0, "rail": 40.0, "waiting": 100.0, "transfer": 25.0},
+            default_fixed_costs=FixedFactorDefaults(
+                transport={"road": 150.0, "rail": 500.0},
+                waiting=0.0,
+                transfer=100.0,
+            ),
+            default_fixed_emissions=FixedFactorDefaults(
+                transport={"road": 30.0, "rail": 80.0},
+                waiting=0.0,
+                transfer=10.0,
+            ),
+            default_variable_factors=VariableFactorDefaults(
+                waiting_cost_per_hour=5.0,
+                waiting_emissions_per_hour=0.0,
+                transfer_cost_per_ton=50.0,
+                transfer_emissions_per_ton=5.0,
+            ),
+        )
+
+        shipments = generate_shipments(
+            "modal_shift",
+            network,
+            shipment_count=2,
+            shipment_weight_tons=8.0,
+        )
+
+        self.assertEqual([shipment.weight for shipment in shipments], [8.0, 8.0])
 
 
 if __name__ == "__main__":

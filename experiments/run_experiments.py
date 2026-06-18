@@ -38,6 +38,7 @@ class InstanceSpec:
     max_routes: int
     shipment_count: int
     time_limit_sec: float
+    shipment_weight_tons: float | None = None
 
 
 PROFILES = {
@@ -48,6 +49,15 @@ PROFILES = {
         InstanceSpec("small", max_routes=10, shipment_count=3, time_limit_sec=15),
         InstanceSpec("medium", max_routes=20, shipment_count=5, time_limit_sec=15),
         InstanceSpec("large", max_routes=30, shipment_count=8, time_limit_sec=20),
+    ),
+    "modal-shift": (
+        InstanceSpec(
+            "modal_shift",
+            max_routes=10,
+            shipment_count=3,
+            time_limit_sec=20,
+            shipment_weight_tons=8.0,
+        ),
     ),
 }
 
@@ -188,6 +198,7 @@ def generate_shipments(
     network_data: NetworkData,
     shipment_count: int,
     planning_days: int = DEFAULT_PLANNING_DAYS,
+    shipment_weight_tons: float | None = None,
 ) -> list[Shipment]:
     grouped_arcs: dict[tuple[str, str], list[TransportArcTemplate]] = defaultdict(list)
     for arc in network_data.arc_templates:
@@ -213,6 +224,11 @@ def generate_shipments(
     shipments = []
     for index in range(shipment_count):
         (start_hub, end_hub), _ = candidate_pairs[index % len(candidate_pairs)]
+        weight = (
+            shipment_weight_tons
+            if shipment_weight_tons is not None
+            else 0.5 + (index % 5) * 0.25
+        )
         shipments.append(
             Shipment(
                 id=f"{instance_name}_shipment_{index + 1}",
@@ -222,7 +238,7 @@ def generate_shipments(
                 deadline=deadline,
                 max_price=1_000_000.0,
                 max_emissions=1_000_000.0,
-                weight=0.5 + (index % 5) * 0.25,
+                weight=weight,
             )
         )
     return shipments
@@ -255,7 +271,12 @@ def run_computational_experiments(
             flush=True,
         )
         network = build_subnetwork(base_network, spec.max_routes)
-        shipments = generate_shipments(spec.name, network, spec.shipment_count)
+        shipments = generate_shipments(
+            spec.name,
+            network,
+            spec.shipment_count,
+            shipment_weight_tons=spec.shipment_weight_tons,
+        )
         shipment_weights = {shipment.id: shipment.weight for shipment in shipments}
         result, runtime_sec = solve_instance(
             spec.name,
@@ -287,7 +308,12 @@ def run_sensitivity_analysis(
     spec: InstanceSpec,
 ) -> list[dict[str, str]]:
     network = build_subnetwork(base_network, spec.max_routes)
-    shipments = generate_shipments(spec.name, network, spec.shipment_count)
+    shipments = generate_shipments(
+        spec.name,
+        network,
+        spec.shipment_count,
+        shipment_weight_tons=spec.shipment_weight_tons,
+    )
     shipment_weights = {shipment.id: shipment.weight for shipment in shipments}
     rows = []
     for lambda_value in LAMBDA_VALUES:
@@ -452,24 +478,29 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    output_dir = (
+        args.output_dir / "modal_shift"
+        if args.profile == "modal-shift"
+        else args.output_dir
+    )
     base_network = NetworkDataLoader.from_json(DATASET_PATH)
     specs = PROFILES[args.profile]
     computational_rows = run_computational_experiments(base_network, specs)
     sensitivity_spec = specs[0]
     sensitivity_rows = run_sensitivity_analysis(base_network, sensitivity_spec)
 
-    write_csv(args.output_dir / "computational_experiments.csv", computational_rows)
-    write_csv(args.output_dir / "sensitivity_analysis.csv", sensitivity_rows)
+    write_csv(output_dir / "computational_experiments.csv", computational_rows)
+    write_csv(output_dir / "sensitivity_analysis.csv", sensitivity_rows)
     write_cost_emissions_svg(
-        args.output_dir / "sensitivity_cost_emissions.svg", sensitivity_rows
+        output_dir / "sensitivity_cost_emissions.svg", sensitivity_rows
     )
     write_lambda_mode_share_svg(
-        args.output_dir / "sensitivity_lambda_mode_share.svg", sensitivity_rows
+        output_dir / "sensitivity_lambda_mode_share.svg", sensitivity_rows
     )
 
     print(f"Wrote {len(computational_rows)} computational rows.")
     print(f"Wrote {len(sensitivity_rows)} sensitivity rows.")
-    print(f"Output directory: {args.output_dir}")
+    print(f"Output directory: {output_dir}")
 
 
 if __name__ == "__main__":
