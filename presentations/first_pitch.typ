@@ -169,9 +169,9 @@
       inset: 7pt,
       align: center + horizon,
       [*Instance*], [*Routes*], [*Shipments*], [*Runtime*], [*Cost / CO2*],
-      [small], [10], [3], [1.903 s], [921.27 EUR / 125.35 kg],
-      [medium], [20], [5], [3.528 s], [1675.77 EUR / 219.43 kg],
-      [large], [30], [8], [8.090 s], [2644.14 EUR / 348.31 kg],
+      [small], [10], [3], [1.587 s], [921.27 EUR / 125.35 kg],
+      [medium], [20], [5], [7.913 s], [1675.77 EUR / 219.43 kg],
+      [large], [30], [8], [17.355 s], [2644.14 EUR / 348.31 kg],
     )
   ]
 
