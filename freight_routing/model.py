@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
 
+import math
 import pulp
 
 from .data_models import (
     ArcType,
     FixedFactorDefaults,
-    Hub,
     NetworkData,
     NetworkNode,
     ObjectiveWeights,
@@ -19,10 +18,6 @@ from .data_models import (
     VariableFactorDefaults,
     _TimedArc,
 )
-
-MAX_EST_COST = 5000.0
-MAX_EST_TIME = 2880.0
-MAX_EST_ECO = 1000.0
 
 
 ########################################
@@ -69,6 +64,142 @@ class TimeExpandedFreightRoutingModel:
             return self.default_fixed_emissions.transfer
         return self.default_fixed_emissions.waiting
 
+    def _estimate_normalization_bounds(
+        self, shipments: Iterable[Shipment]
+    ) -> dict[str, tuple[float, float]]:
+        total_weight = sum(s.weight for s in shipments)
+
+        # Aerial distance (geodetic start-to-end distance) is always needed for minimum bounds
+        max_aerial_dist = 0.0
+        for s in shipments:
+            start_hub = self.network_data.hubs.get(s.start_hub)
+            end_hub = self.network_data.hubs.get(s.end_hub)
+            if (
+                start_hub
+                and end_hub
+                and start_hub.latitude is not None
+                and start_hub.longitude is not None
+                and end_hub.latitude is not None
+                and end_hub.longitude is not None
+            ):
+                # Haversine formula to calculate aerial distance in km
+                lat1, lon1 = start_hub.latitude, start_hub.longitude
+                lat2, lon2 = end_hub.latitude, end_hub.longitude
+
+                phi1 = math.radians(lat1)
+                phi2 = math.radians(lat2)
+                delta_phi = math.radians(lat2 - lat1)
+                delta_lambda = math.radians(lon2 - lon1)
+
+                a = (
+                    math.sin(delta_phi / 2.0) ** 2
+                    + math.cos(phi1)
+                    * math.cos(phi2)
+                    * math.sin(delta_lambda / 2.0) ** 2
+                )
+                c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+                dist_km = 6371.0 * c
+
+                if dist_km > max_aerial_dist:
+                    max_aerial_dist = dist_km
+
+        # Global mode factors loop (needed for minimum and maximum bounds)
+        min_cost_per_ton_km = float("inf")
+        max_cost_per_ton_km = 0.0
+        min_emissions_kg_per_ton_km = float("inf")
+        max_emissions_kg_per_ton_km = 0.0
+
+        for factor in self.network_data.mode_factors.values():
+            if factor.cost_per_ton_km > max_cost_per_ton_km:
+                max_cost_per_ton_km = factor.cost_per_ton_km
+            if factor.cost_per_ton_km < min_cost_per_ton_km:
+                min_cost_per_ton_km = factor.cost_per_ton_km
+            if factor.emissions_kg_per_ton_km > max_emissions_kg_per_ton_km:
+                max_emissions_kg_per_ton_km = factor.emissions_kg_per_ton_km
+            if factor.emissions_kg_per_ton_km < min_emissions_kg_per_ton_km:
+                min_emissions_kg_per_ton_km = factor.emissions_kg_per_ton_km
+
+        if min_cost_per_ton_km == float("inf"):
+            min_cost_per_ton_km = 0.0
+        if min_emissions_kg_per_ton_km == float("inf"):
+            min_emissions_kg_per_ton_km = 0.0
+
+        # Calculate minimum bounds using max speed
+        max_speed = 0.0
+        for template in self.network_data.arc_templates:
+            if isinstance(template, TransportArcTemplate) and template.duration_min > 0:
+                speed = template.distance / template.duration_min
+                if speed > max_speed:
+                    max_speed = speed
+        if max_speed == 0.0:
+            max_speed = 1.0
+
+        min_time = max_aerial_dist / max_speed
+        min_cost = max_aerial_dist * min_cost_per_ton_km * total_weight
+        min_eco = max_aerial_dist * min_emissions_kg_per_ton_km * total_weight
+
+        max_time = float(self.max_time_min)
+
+        # Calculate maximum bounds using the analytical template estimation
+        min_duration = float("inf")
+        max_fixed_cost_single = 0.0
+        max_fixed_emissions_single = 0.0
+
+        for template in self.network_data.arc_templates:
+            if isinstance(template, TransportArcTemplate):
+                if template.duration_min > 0 and template.duration_min < min_duration:
+                    min_duration = template.duration_min
+
+            fc = template.fixed_cost
+            if fc is None:
+                if isinstance(template, TransportArcTemplate):
+                    fc = self.default_fixed_costs.transport.get(template.mode, 0.0)
+                elif isinstance(template, TransferArcTemplate):
+                    fc = self.default_fixed_costs.transfer
+            if fc is not None and fc > max_fixed_cost_single:
+                max_fixed_cost_single = fc
+
+            fe = template.fixed_emissions
+            if fe is None:
+                if isinstance(template, TransportArcTemplate):
+                    fe = self.default_fixed_emissions.transport.get(template.mode, 0.0)
+                elif isinstance(template, TransferArcTemplate):
+                    fe = self.default_fixed_emissions.transfer
+            if fe is not None and fe > max_fixed_emissions_single:
+                max_fixed_emissions_single = fe
+
+        if min_duration == float("inf") or min_duration <= 0:
+            min_duration = 30.0
+
+        max_segments = max(1.0, max_time / min_duration)
+        max_dist = max_speed * max_time
+
+        max_var_cost = max_dist * max_cost_per_ton_km * total_weight
+        max_fixed_cost_est = max_segments * max_fixed_cost_single + (
+            self.default_fixed_costs.waiting * len(self.event_times)
+        )
+        max_cost = max_var_cost + max_fixed_cost_est
+
+        max_var_eco = max_dist * max_emissions_kg_per_ton_km * total_weight
+        max_fixed_eco_est = max_segments * max_fixed_emissions_single + (
+            self.default_fixed_emissions.waiting * len(self.event_times)
+        )
+        max_eco = max_var_eco + max_fixed_eco_est
+
+        # Division by zero/negative range protection
+        if max_cost <= min_cost:
+            max_cost = min_cost + 1.0
+        if max_time <= min_time:
+            max_time = min_time + 1.0
+        if max_eco <= min_eco:
+            max_eco = min_eco + 1.0
+
+        return {
+            "cost": (min_cost, max_cost),
+            "time": (min_time, max_time),
+            "emissions": (min_eco, max_eco),
+        }
+
     def build(
         self, planning_days: int, shipments: Iterable[Shipment] | None = None
     ) -> None:
@@ -79,7 +210,7 @@ class TimeExpandedFreightRoutingModel:
         self.planning_days = planning_days
         self.max_time_min = planning_days * 24 * 60
 
-        # 1. Initialize event times for all (hub, mode) pairs
+        # Initialize event times for all (hub, mode) pairs
         self.event_times: dict[tuple[str, str], set[int]] = {}
         for hub in self.network_data.hubs.values():
             for mode in hub.supported_modes:
@@ -106,7 +237,9 @@ class TimeExpandedFreightRoutingModel:
                     for mode in end_hub.supported_modes:
                         add_event(shipment.end_hub, mode, shipment.deadline)
 
-        # 2. Generate Transport Arcs
+        ########################################
+        #       generate transport arcs        #
+        ########################################
         for template in self.network_data.arc_templates:
             if isinstance(template, TransportArcTemplate):
                 for day in range(planning_days):
@@ -162,6 +295,7 @@ class TimeExpandedFreightRoutingModel:
                                     cost=cost,
                                     emissions=emissions,
                                     capacity=transport_capacity,
+                                    distance=template.distance,
                                     max_vehicles=template.max_vehicles,
                                     fixed_cost=template.fixed_cost,
                                     fixed_emissions=template.fixed_emissions,
@@ -169,7 +303,9 @@ class TimeExpandedFreightRoutingModel:
                             )
 
             elif isinstance(template, TransferArcTemplate):
-                # 3. Generate Transfer Arcs
+                ########################################
+                #        generate transfer arcs        #
+                ########################################
                 for day in range(planning_days):
                     for dep_min in template.departure_minutes:
                         start_min = day * 24 * 60 + dep_min
@@ -215,7 +351,9 @@ class TimeExpandedFreightRoutingModel:
                                 )
                             )
 
-        # 4. Generate Waiting Arcs
+        ########################################
+        #        generate waiting arcs         #
+        ########################################
         self.waiting_arcs: list[_TimedArc] = []
         for (hub_id, mode), times in self.event_times.items():
             sorted_times = sorted(times)
@@ -262,8 +400,20 @@ class TimeExpandedFreightRoutingModel:
             self.nodes.add(arc.from_node)
             self.nodes.add(arc.to_node)
 
-    def solve(self, shipments: Iterable[Shipment]) -> RoutingResult:
+    def solve(
+        self,
+        shipments: Iterable[Shipment],
+        time_limit_sec: float | None = None,
+    ) -> RoutingResult:
         """Solve the routing problem for explicitly provided shipments."""
+        return self._solve(shipments, time_limit_sec=time_limit_sec)
+
+    def _solve(
+        self,
+        shipments: Iterable[Shipment],
+        time_limit_sec: float | None = None,
+    ) -> RoutingResult:
+        """Solve the routing problem with an optional solver time limit."""
         shipments = tuple(shipments)
         if not shipments:
             raise ValueError("shipments must not be empty.")
@@ -291,7 +441,9 @@ class TimeExpandedFreightRoutingModel:
         if rebuild_needed:
             self.build(planning_days, shipments)
 
-        # 1. Setup LP problem
+        ########################################
+        #           setup lp problem           #
+        ########################################
         self.prob = pulp.LpProblem(
             "Time_Expanded_Routing_Consolidation", pulp.LpMinimize
         )
@@ -299,14 +451,39 @@ class TimeExpandedFreightRoutingModel:
         arc_indices = list(range(len(self.all_arcs)))
         shipment_indices = list(range(len(shipments)))
 
-        # 2. Decision variables: use_arc[(i, k)] = 1 if shipment k uses arc i
+        # Decision variables: use_arc[(i, k)] = 1 if shipment k uses arc i
         self.use_arc = pulp.LpVariable.dicts(
             "UseArc",
             [(i, k) for i in arc_indices for k in shipment_indices],
             cat=pulp.LpBinary,
         )
 
-        # 3. Dynamic vehicle count variables
+        # Slack variables for soft constraints (infeasibility diagnostics)
+        self.slack_deadline = pulp.LpVariable.dicts(
+            "SlackDeadline",
+            shipment_indices,
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+        self.slack_price = pulp.LpVariable.dicts(
+            "SlackPrice",
+            shipment_indices,
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+        self.slack_emissions = pulp.LpVariable.dicts(
+            "SlackEmissions",
+            shipment_indices,
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+        self.slack_total_budget = pulp.LpVariable(
+            "SlackTotalBudget",
+            lowBound=0,
+            cat=pulp.LpContinuous,
+        )
+
+        # Dynamic vehicle count variables
         self.vehicle_count = {}
         for i, arc in enumerate(self.all_arcs):
             if arc.max_vehicles is not None:
@@ -326,7 +503,9 @@ class TimeExpandedFreightRoutingModel:
                 cat=cat,
             )
 
-        # 4. Formulate Objective Function
+        ########################################
+        #      formulate objective function    #
+        ########################################
         # Cost Component (Fixed + Variable)
         fixed_cost = pulp.lpSum(
             self._get_fixed_cost(self.all_arcs[i]) * self.vehicle_count[i]
@@ -358,16 +537,38 @@ class TimeExpandedFreightRoutingModel:
         )
         total_emissions = fixed_emissions + var_emissions
 
-        # Combined Weighted Objective Function
+        # Combined Weighted Objective Function (Min-Max scaled dynamically)
+        bounds = self._estimate_normalization_bounds(shipments)
+        c_min, c_max = bounds["cost"]
+        t_min, t_max = bounds["time"]
+        e_min, e_max = bounds["emissions"]
+
+        # Dynamic penalty factor Big-M for soft constraints
+        penalty_m = max(c_max, t_max, e_max, 1000.0) * 100.0
+
         self.prob += (
-            self.objective_weights.cost * (total_cost / MAX_EST_COST)
-            + self.objective_weights.time * (total_time / MAX_EST_TIME)
-            + self.objective_weights.emissions * (total_emissions / MAX_EST_ECO)
+            self.objective_weights.cost * ((total_cost - c_min) / (c_max - c_min))
+            + self.objective_weights.time * ((total_time - t_min) / (t_max - t_min))
+            + self.objective_weights.emissions
+            * ((total_emissions - e_min) / (e_max - e_min))
+            + penalty_m * pulp.lpSum(self.slack_deadline[k] for k in shipment_indices)
+            + penalty_m * pulp.lpSum(self.slack_price[k] for k in shipment_indices)
+            + penalty_m
+            * pulp.lpSum(
+                self.slack_emissions[k]
+                for k in shipment_indices
+                if shipments[k].max_emissions is not None
+            )
+            + penalty_m * self.slack_total_budget
         )
 
-        # 5. Formulate Constraints
+        ########################################
+        #        formulate constraints         #
+        ########################################
 
-        # 5.1 Flow Conservation Constraints
+        ########################################
+        #     flow conservation constraints    #
+        ########################################
         incoming_by_node: dict[NetworkNode, list[int]] = {}
         outgoing_by_node: dict[NetworkNode, list[int]] = {}
         for i, arc in enumerate(self.all_arcs):
@@ -403,13 +604,14 @@ class TimeExpandedFreightRoutingModel:
                 == 1
             )
 
-            # Deadline constraint
+            # Soft deadline constraint
             self.prob += (
                 pulp.lpSum(
                     node.time_min * self.use_arc[(i, k)]
                     for node in end_nodes
                     for i in incoming_by_node.get(node, [])
                 )
+                - self.slack_deadline[k]
                 <= shipment.deadline
             )
 
@@ -422,7 +624,9 @@ class TimeExpandedFreightRoutingModel:
                     self.use_arc[(i, k)] for i in outgoing_by_node.get(node, [])
                 )
 
-        # 5.2 Capacity & Activation Constraints
+        ########################################
+        #  capacity & activation constraints   #
+        ########################################
         for i, arc in enumerate(self.all_arcs):
             self.prob += (
                 pulp.lpSum(
@@ -443,36 +647,89 @@ class TimeExpandedFreightRoutingModel:
                     self.use_arc[(i, k)] for k in shipment_indices
                 )
 
-        # 5.3 Shipment Budget and Emissions Constraints
+        ########################################
+        #   budget and emission constraints    #
+        ########################################
         for k, shipment in enumerate(shipments):
+            # Soft price budget constraint
             self.prob += (
                 pulp.lpSum(
                     self.use_arc[(i, k)] * arc.cost * shipment.weight
                     for i, arc in enumerate(self.all_arcs)
                 )
+                - self.slack_price[k]
                 <= shipment.max_price
             )
 
             if shipment.max_emissions is not None:
+                # Soft emissions budget constraint
                 self.prob += (
                     pulp.lpSum(
                         self.use_arc[(i, k)] * arc.emissions * shipment.weight
                         for i, arc in enumerate(self.all_arcs)
                     )
+                    - self.slack_emissions[k]
                     <= shipment.max_emissions
                 )
 
-        # Total combined budget limit across all shipments (including fixed costs)
+        # Soft total combined budget limit across all shipments (including fixed costs)
         total_budget = sum(shipment.max_price for shipment in shipments)
-        self.prob += total_cost <= total_budget
+        self.prob += total_cost - self.slack_total_budget <= total_budget
 
-        # 6. Solver execution
-        # use highspy if available, otherwise highs CLI
-        highs_py = pulp.HiGHS(msg=False)
+        ########################################
+        #           solver execution           #
+        ########################################
+        highs_py = pulp.HiGHS(msg=False, timeLimit=time_limit_sec)
         status = self.prob.solve(highs_py)
 
         self.status = pulp.LpStatus[status]
+        self.objective_value = pulp.value(self.prob.objective)
+        diagnostics = []
+        is_optimal = self.status == "Optimal"
+
         if self.status == "Optimal":
+            # Check for soft constraint violations
+            for k, shipment in enumerate(shipments):
+                slack_dl = pulp.value(self.slack_deadline[k])
+                slack_pr = pulp.value(self.slack_price[k])
+                slack_em = (
+                    pulp.value(self.slack_emissions[k])
+                    if shipment.max_emissions is not None
+                    else 0.0
+                )
+
+                if slack_dl and slack_dl > 1e-3:
+                    diagnostics.append(
+                        f"Shipment '{shipment.id}': Deadline is too tight. "
+                        f"Requires an extra {slack_dl:.1f} minutes to route successfully."
+                    )
+                    is_optimal = False
+                if slack_pr and slack_pr > 1e-3:
+                    diagnostics.append(
+                        f"Shipment '{shipment.id}': Budget is too low. "
+                        f"Requires an extra {slack_pr:.2f} EUR to cover costs."
+                    )
+                    is_optimal = False
+                if slack_em and slack_em > 1e-3:
+                    diagnostics.append(
+                        f"Shipment '{shipment.id}': Emissions limit is too restrictive. "
+                        f"Requires an additional {slack_em:.1f} kg CO2 allowance."
+                    )
+                    is_optimal = False
+
+            slack_tot = pulp.value(self.slack_total_budget)
+            if slack_tot and slack_tot > 1e-3:
+                diagnostics.append(
+                    f"Global: Combined price budget is too low. "
+                    f"Requires an extra {slack_tot:.2f} EUR to cover overall costs."
+                )
+                is_optimal = False
+
+            if diagnostics:
+                print("--- INFEASIBILITY DIAGNOSTIC REPORT ---")
+                for msg in diagnostics:
+                    print(f"❌ {msg}")
+
             # filter decision variables using a > 0.5 threshold
             # to remain robust against small floating-point solver tolerances.
             self.total_fixed_cost = sum(
@@ -530,15 +787,17 @@ class TimeExpandedFreightRoutingModel:
 
         return RoutingResult(
             status=self.status,
-            is_optimal=(self.status == "Optimal"),
+            is_optimal=is_optimal,
             total_cost=self.total_cost,
             total_emissions=self.total_emissions,
             total_time=self.total_time,
             shipment_routes={k: tuple(v) for k, v in self.shipment_routes.items()},
+            objective_value=self.objective_value,
             total_fixed_cost=self.total_fixed_cost,
             total_variable_cost=self.total_variable_cost,
             total_fixed_emissions=self.total_fixed_emissions,
             total_variable_emissions=self.total_variable_emissions,
+            diagnostics=tuple(diagnostics),
         )
 
     def _validate_shipments(self, shipments: tuple[Shipment, ...]) -> None:

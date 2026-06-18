@@ -6,7 +6,7 @@
 
 ## Projektmitglieder: 
 
-- Benedikt (bennewehn)
+- Benedikt Wehner (bennewehn)
 - Phil Kahlert (phil-kl)
 - Laurens Rüther (LaurensRuether)
 - Luis Kruse (Ikruse301) 

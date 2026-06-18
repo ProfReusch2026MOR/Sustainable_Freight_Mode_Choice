@@ -12,7 +12,7 @@ Für größere Instanzen werden die Daten aus CSV-Dateien (`road_arcs.csv`, `air
 
 == Exakte Lösung mit Python PuLP
 Das in ch:problem-description formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Kantenvariablen $x_(a,k)$ sowie die Bündelungsvariablen $y_a$ und $z_a$ werden als `LpBinary` bzw. `LpInteger` deklariert.
-Als zugrundeliegender Solver wird der COIN-OR Branch-and-Cut Solver (*CBC*) verwendet. Der Solver durchsucht den Lösungsraum systematisch mittels Branch-and-Bound und Schnittebenenverfahren (Cutting Planes), um globale Optimalität nachzuweisen.
+Als zugrundeliegender Solver wird *HiGHS* über die PuLP-Schnittstelle verwendet. HiGHS löst das MILP mit Branch-and-Bound- und Presolve-Verfahren und unterstützt zusätzlich Zeitlimits für größere Instanzen. Dadurch können die Rechenexperimente reproduzierbar mit festen Instanzgrößen und Solver-Zeitgrenzen durchgeführt werden.
 
 = Heuristische Lösung
 

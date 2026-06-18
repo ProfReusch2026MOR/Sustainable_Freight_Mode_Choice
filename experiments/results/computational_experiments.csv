@@ -1,0 +1,4 @@
+air_share_pct,instance,is_optimal,method,objective_value,rail_share_pct,road_share_pct,route_count,runtime_sec,ship_share_pct,shipment_count,status,time_limit_sec,total_cost_eur,total_emissions_kg,total_time_min
+0.00,small,True,HiGHS MILP,0.009269,0.00,100.00,10,1.903,0.00,3,Optimal,15,921.27,125.35,346.00
+0.00,medium,True,HiGHS MILP,0.015088,0.00,100.00,20,3.528,0.00,5,Optimal,15,1675.77,219.43,531.00
+0.00,large,True,HiGHS MILP,0.025679,0.00,100.00,30,8.090,0.00,8,Optimal,20,2644.14,348.31,866.00
