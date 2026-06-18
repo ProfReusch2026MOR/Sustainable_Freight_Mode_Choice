@@ -1,5 +1,4 @@
 """
-Adaptive Multi-Objective A*-Heuristik fuer multimodale Transportnetzwerke.
 
 Diese Version gibt gezielt vier Routentypen aus:
 
@@ -41,7 +40,7 @@ USER_INPUT = {
     # "NEW_283" = New York City Terminal
     # "SHA_2240" = Shanghai Terminal
     "start_hub": "NEW_283",
-    "end_hub": "FRA_3974",
+    "end_hub": "SHA_2240",
 
     # Sendungsgewicht in Tonnen
     "shipment_weight_tons": 2.0,
@@ -314,14 +313,7 @@ def astar_multimodal(
     scales: Dict[str, float],
     max_expansions: int,
 ) -> Optional[RouteResult]:
-    """
-    A*-Suche mit Zustand (aktueller Hub, vorheriger Modus).
 
-    Da in der aktuellen JSON keine Koordinaten pro Hub enthalten sind,
-    ist die Heuristik h(n)=0. Damit verhaelt sich A* wie Dijkstra.
-    Sobald lat/lon in der JSON vorhanden sind, kann hier eine echte
-    Luftlinienheuristik ergaenzt werden.
-    """
 
     def heuristic(_: str) -> float:
         return 0.0
@@ -594,7 +586,7 @@ def main() -> None:
         max_expansions=max_expansions,
     )
 
-    print("\nAdaptive Multi-Objective A*-Heuristik")
+    print("\nDijkstra Heuristik")
     print("=" * 70)
     print(f"Input-Datei:     {input_file}")
     print(f"Start:           {start}")
