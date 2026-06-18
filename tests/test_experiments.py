@@ -113,6 +113,7 @@ class ExperimentSummaryTests(unittest.TestCase):
         self.assertIn("lambda = 0", text_lines[0])
         self.assertIn("lambda = 0.1", text_lines[1])
         self.assertIn("lambda = 5", text_lines[2])
+        self.assertTrue(all('font-weight="normal"' in line for line in text_lines))
         self.assertEqual(len(set(text_lines)), 3)
 
 

@@ -365,7 +365,8 @@ def _clustered_point_annotations(
             y_offset = -12 + index * 15
             annotations.append(
                 f'<text x="{x + 10:.1f}" y="{y + y_offset:.1f}" '
-                f'font-size="12" font-family="Arial">lambda = {label}</text>'
+                f'font-size="11" font-family="Arial" '
+                f'font-weight="normal">lambda = {label}</text>'
             )
     return "\n".join(annotations)
 
@@ -384,11 +385,11 @@ def write_cost_emissions_svg(path: Path, rows: list[dict[str, str]]) -> None:
     annotations = _clustered_point_annotations(xs, ys, labels)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
   <rect width="100%" height="100%" fill="white"/>
-  <text x="{width / 2}" y="28" text-anchor="middle" font-size="18" font-family="Arial">Cost-Emission Sensitivity</text>
+  <text x="{width / 2}" y="28" text-anchor="middle" font-size="18" font-family="Arial" font-weight="normal">Cost-Emission Sensitivity</text>
   <line x1="{margin}" y1="{height - margin}" x2="{width - margin}" y2="{height - margin}" stroke="#333"/>
   <line x1="{margin}" y1="{margin}" x2="{margin}" y2="{height - margin}" stroke="#333"/>
-  <text x="{width / 2}" y="{height - 16}" text-anchor="middle" font-size="13" font-family="Arial">Total cost (EUR)</text>
-  <text x="18" y="{height / 2}" text-anchor="middle" font-size="13" font-family="Arial" transform="rotate(-90 18 {height / 2})">Total emissions (kg CO2)</text>
+  <text x="{width / 2}" y="{height - 16}" text-anchor="middle" font-size="13" font-family="Arial" font-weight="normal">Total cost (EUR)</text>
+  <text x="18" y="{height / 2}" text-anchor="middle" font-size="13" font-family="Arial" font-weight="normal" transform="rotate(-90 18 {height / 2})">Total emissions (kg CO2)</text>
   <polyline points="{points}" fill="none" stroke="#1f77b4" stroke-width="2"/>
   {annotations}
 </svg>
@@ -410,20 +411,20 @@ def write_lambda_mode_share_svg(path: Path, rows: list[dict[str, str]]) -> None:
     road_points = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, road_ys))
     rail_points = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, rail_ys))
     labels = "\n".join(
-        f'<text x="{x:.1f}" y="{height - margin + 18}" text-anchor="middle" font-size="11">{label:g}</text>'
+        f'<text x="{x:.1f}" y="{height - margin + 18}" text-anchor="middle" font-size="11" font-weight="normal">{label:g}</text>'
         for x, label in zip(xs, lambdas)
     )
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
   <rect width="100%" height="100%" fill="white"/>
-  <text x="{width / 2}" y="28" text-anchor="middle" font-size="18" font-family="Arial">Lambda vs. Mode Share</text>
+  <text x="{width / 2}" y="28" text-anchor="middle" font-size="18" font-family="Arial" font-weight="normal">Lambda vs. Mode Share</text>
   <line x1="{margin}" y1="{height - margin}" x2="{width - margin}" y2="{height - margin}" stroke="#333"/>
   <line x1="{margin}" y1="{margin}" x2="{margin}" y2="{height - margin}" stroke="#333"/>
-  <text x="{width / 2}" y="{height - 16}" text-anchor="middle" font-size="13" font-family="Arial">Lambda</text>
-  <text x="18" y="{height / 2}" text-anchor="middle" font-size="13" font-family="Arial" transform="rotate(-90 18 {height / 2})">Mode share (%)</text>
+  <text x="{width / 2}" y="{height - 16}" text-anchor="middle" font-size="13" font-family="Arial" font-weight="normal">Lambda</text>
+  <text x="18" y="{height / 2}" text-anchor="middle" font-size="13" font-family="Arial" font-weight="normal" transform="rotate(-90 18 {height / 2})">Mode share (%)</text>
   <polyline points="{road_points}" fill="none" stroke="#2ca02c" stroke-width="2"/>
   <polyline points="{rail_points}" fill="none" stroke="#d62728" stroke-width="2"/>
-  <text x="{width - margin - 120}" y="{margin + 12}" font-size="13" fill="#2ca02c">Road share</text>
-  <text x="{width - margin - 120}" y="{margin + 32}" font-size="13" fill="#d62728">Rail share</text>
+  <text x="{width - margin - 120}" y="{margin + 12}" font-size="13" font-weight="normal" fill="#2ca02c">Road share</text>
+  <text x="{width - margin - 120}" y="{margin + 32}" font-size="13" font-weight="normal" fill="#d62728">Rail share</text>
   {labels}
 </svg>
 """
