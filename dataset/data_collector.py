@@ -1,7 +1,6 @@
 import os
 import io
 import json
-import math
 import requests
 import pandas as pd
 from geopy.distance import geodesic
@@ -688,7 +687,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(output_data, f, indent=4, ensure_ascii=False)
 
-    print(f"=== SUCCESS ===")
+    print("=== SUCCESS ===")
     print(f"Exported data to {OUTPUT_FILE}")
     print(f"Total Hubs: {len(json_hubs)}")
     print(
