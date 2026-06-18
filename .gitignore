@@ -1,5 +1,6 @@
 # Ignore generated PDF documentation
 documentation/main.pdf
+presentations/*.pdf
 
 # Ignore Python cache files
 __pycache__/

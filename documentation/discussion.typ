@@ -1,10 +1,10 @@
 = Diskussion & Limitationen <ch:discussion>
 
 == Interpretation der Ergebnisse und Entscheidungshilfe
-Die Optimierungsergebnisse zeigen deutliche Einsparpotenziale bei CO₂-Emissionen durch eine gezielte Verlagerung von Gütertransporten auf die Schiene. Intermodale Transporte (z. B. LKW-Bahn-LKW) lohnen sich vor allem auf Langstrecken, da die hohen Fixkosten und Zeitverluste beim Umschlag an den Hubs durch die niedrigen variablen Kosten und Emissionen der Bahn kompensiert werden.
+Die Optimierungsergebnisse zeigen, dass die Moduswahl stark von Sendungsgewicht, Distanz und fixen Aktivierungskosten abhängt. In der kleinen Präsentationsinstanz bleibt der Straßentransport trotz variierter Kosten-Emissions-Gewichtung dominant. Im zusätzlichen schweren Langstrecken-Szenario wird dagegen ein klarer Modal Shift zur Schiene sichtbar, sobald Emissionen stärker gewichtet werden.
 
 Für Logistikmanager bietet das Modell eine fundierte Entscheidungshilfe:
-- Es zeigt auf, ab welchen CO₂-Preisen sich ein Umstieg auf nachhaltigere Verkehrsträger wirtschaftlich rechnet.
+- Es zeigt auf, unter welchen Parametern sich ein Umstieg auf nachhaltigere Verkehrsträger wirtschaftlich oder ökologisch rechnet.
 - Es identifiziert Kapazitätsengpässe an Terminalhubs, die den Fluss blockieren.
 
 == Modell- und Datenlimitationen
