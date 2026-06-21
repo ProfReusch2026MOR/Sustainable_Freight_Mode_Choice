@@ -13,3 +13,4 @@ Das aktuelle Optimierungsmodell beruht auf mehreren vereinfachenden Annahmen:
 2. *Diskrete Zeitstruktur:* Die Modellierung in stündlichen Zeitschritten rundet Fahrzeiten auf. Für sehr kurze Strecken ist diese Granularität zu ungenau.
 3. *Lineare Emissionsmodelle:* CO₂-Emissionen hängen in der Realität nicht-linear von der Fahrzeugauslastung, dem Streckenprofil (Steigungen) und der Geschwindigkeit ab.
 4. *Begrenzte Rückwege:* Im aktuellen Datenmodell fehlen teilweise Rückrichtungen für Transportmittel, was die Umlaufplanung (Vehicle Scheduling) einschränkt.
+5. *Begrenzte experimentelle Abdeckung:* Die präsentierten Ergebnisse basieren auf deterministischen Teilnetzen mit drei bis acht Sendungen. Sie zeigen das Verhalten des Modells in reproduzierbaren Szenarien, erlauben aber keine allgemeine Aussage über die Wirksamkeit eines Modal Shifts in realen Gesamtnetzen.

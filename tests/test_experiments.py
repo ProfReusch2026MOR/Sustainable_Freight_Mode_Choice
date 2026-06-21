@@ -91,6 +91,28 @@ class ExperimentSummaryTests(unittest.TestCase):
         self.assertIn("modal-shift", text.lower())
         self.assertIn("100% Rail", text)
 
+    def test_presentation_documents_claim_limits_and_rebuild_command(self):
+        slides = Path("presentations/first_pitch.typ").read_text(encoding="utf-8")
+        checklist = Path("presentation_validation.md").read_text(encoding="utf-8")
+
+        self.assertIn('slide(title: "Limitations & Next Evaluation Steps")', slides)
+        self.assertIn("not a general policy conclusion", slides)
+        self.assertIn(
+            "typst compile presentations/first_pitch.typ "
+            "presentations/first_pitch.pdf --root .",
+            checklist,
+        )
+
+    def test_ci_validates_experiments_and_builds_presentation(self):
+        workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+        self.assertIn("python -m unittest tests.test_experiments", workflow)
+        self.assertIn(
+            "typst compile presentations/first_pitch.typ "
+            "presentations/first_pitch.pdf --root .",
+            workflow,
+        )
+
     def test_lambda_to_weights_keeps_time_zero_and_normalizes_cost_emissions(self):
         weights = lambda_to_weights(2.0)
 

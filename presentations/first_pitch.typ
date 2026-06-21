@@ -209,6 +209,19 @@
   - Higher emission weights produce a full rail solution in this scenario.
 ]
 
+#slide(title: "Limitations & Next Evaluation Steps")[
+  - These results are reproducible scenario evidence, not a general policy conclusion
+  - Current scope: deterministic subnetworks, 3--8 shipments, linear emission factors
+  - Solver status is reported; no optimality gap is claimed when HiGHS does not expose one
+  - Next evaluation:
+    - compare MILP, Dijkstra, and Tabu Search on identical instances
+    - test multiple demand and disruption scenarios
+    - report solution quality, timeout behavior, and variance
+
+  #framed(title: "Defensible takeaway")[
+    The experiments demonstrate model behavior and parameter sensitivity within the tested scenarios.
+  ]
+]
 #slide(title: "Reproducibility & Sam Contribution")[
   - Designed and implemented computational experiments
   - Added cost-emission sensitivity analysis with lambda sweep

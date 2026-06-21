@@ -32,11 +32,17 @@ Expected presentation outputs:
 - `experiments/results/modal_shift/sensitivity_analysis.csv`
 - `experiments/results/modal_shift/sensitivity_lambda_mode_share.svg`
 
-## Report Build
+## Report and Slide Build
 
 ```bash
 typst compile documentation/main.typ documentation/main.pdf --root .
+typst compile presentations/first_pitch.typ presentations/first_pitch.pdf --root .
 ```
+
+Expected PDFs:
+
+- `documentation/main.pdf`
+- `presentations/first_pitch.pdf`
 
 ## Speaking Notes
 
