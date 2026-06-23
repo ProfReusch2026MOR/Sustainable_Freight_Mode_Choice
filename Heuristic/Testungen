@@ -1,0 +1,107 @@
+luiskruse@Air-von-Luis Sustainable_Freight_Mode_Choice % /usr/local/bin/python3 "/Users/luiskruse/Documents/Operations Research/Sustainable_Freight_Mode_Ch
+oice/Heuristic/Dijkstra Heuristik neu.py"
+
+Dijkstra Heuristik
+======================================================================
+Input-Datei:     multimodal_network.json
+Start:           ALA_8996
+Ziel:            BEJ_193
+Gewicht:         2.0 t
+Erlaubte Modi:   alle
+Verbotene Modi:  keine
+Praeferenz:      Kosten=1, Zeit=0.0, CO2=0.0
+
+======================================================================
+ROUTE 1: Deine Praeferenz / Kostenminimum
+======================================================================
+Pfad:       ALA_8996 -> MUR_8990 -> BAB_189 -> ELA_195 -> BEJ_193
+Modi:       road -> ship -> road -> road
+Kosten:     1,392.80
+Zeit:       42.12 Stunden
+Emissionen: 88.01 kg CO2
+Distanz:    945.80 km
+Wechsel:    2
+Score:      0.2448
+
+Teilstrecken:
+01. ALA_8996 -> MUR_8990 | road | 82.2 km | 0.98 h | Kosten 197.28 | CO2 14.80 kg
+02. MUR_8990 -> BAB_189 | ship | 548.2 km | 36.92 h | Kosten 438.56 | CO2 16.45 kg
+03. BAB_189 -> ELA_195 | road | 175.3 km | 2.30 h | Kosten 420.72 | CO2 31.55 kg
+04. ELA_195 -> BEJ_193 | road | 140.1 km | 1.92 h | Kosten 336.24 | CO2 25.22 kg
+
+======================================================================
+ROUTE 2: Zeitminimum
+======================================================================
+Pfad:       ALA_8996 -> PAR_3672 -> BEJ_193
+Modi:       air -> air
+Kosten:     18,758.60
+Zeit:       9.33 Stunden
+Emissionen: 3,215.76 kg CO2
+Distanz:    2,679.80 km
+Wechsel:    0
+Score:      0.0247
+
+Teilstrecken:
+01. ALA_8996 -> PAR_3672 | air | 1,248.9 km | 4.55 h | Kosten 8,742.30 | CO2 1,498.68 kg
+02. PAR_3672 -> BEJ_193 | air | 1,430.9 km | 4.78 h | Kosten 10,016.30 | CO2 1,717.08 kg
+
+======================================================================
+ROUTE 3: CO2-Minimum
+======================================================================
+Pfad:       ALA_8996 -> MUR_8990 -> BEJ_193
+Modi:       rail -> ship
+Kosten:     731.24
+Zeit:       50.42 Stunden
+Emissionen: 27.21 kg CO2
+Distanz:    849.70 km
+Wechsel:    1
+Score:      0.0943
+
+Teilstrecken:
+01. ALA_8996 -> MUR_8990 | rail | 85.8 km | 3.70 h | Kosten 120.12 | CO2 4.29 kg
+02. MUR_8990 -> BEJ_193 | ship | 763.9 km | 46.72 h | Kosten 611.12 | CO2 22.92 kg
+luiskruse@Air-von-Luis Sustainable_Freight_Mode_Choice % /usr/local/bin/python3 "/Users/luiskruse/Documents/Operations Research/Sustainable_Freight_Mode_Ch
+oice/Heuristic/Tabu search Heuristik neu.py"
+
+Tabu-Search-Heuristik
+======================================================================
+Input-Datei:     multimodal_network.json
+Start:           ALA_8996
+Ziel:            BEJ_193
+Gewicht:         2.0 t
+Erlaubte Modi:   alle
+Verbotene Modi:  keine
+Praeferenz:      Kosten=1, Zeit=0.0, CO2=0.0
+
+======================================================================
+ROUTE 1: Deine Praeferenz + Tabu Search / Kostenminimum + Tabu Search / CO2-Minimum + Tabu Search
+======================================================================
+Pfad:       ALA_8996 -> MUR_8990 -> BEJ_193
+Modi:       rail -> ship
+Kosten:     731.24
+Zeit:       50.42 Stunden
+Emissionen: 27.21 kg CO2
+Distanz:    849.70 km
+Wechsel:    1
+Score:      0.1270
+
+Teilstrecken:
+01. ALA_8996 -> MUR_8990 | rail | 85.8 km | 3.70 h | Kosten 120.12 | CO2 4.29 kg
+02. MUR_8990 -> BEJ_193 | ship | 763.9 km | 46.72 h | Kosten 611.12 | CO2 22.92 kg
+
+======================================================================
+ROUTE 2: Zeitminimum + Tabu Search
+======================================================================
+Pfad:       ALA_8996 -> PAR_3672 -> BEJ_193
+Modi:       air -> air
+Kosten:     18,758.60
+Zeit:       9.33 Stunden
+Emissionen: 3,215.76 kg CO2
+Distanz:    2,679.80 km
+Wechsel:    0
+Score:      0.0247
+
+Teilstrecken:
+01. ALA_8996 -> PAR_3672 | air | 1,248.9 km | 4.55 h | Kosten 8,742.30 | CO2 1,498.68 kg
+02. PAR_3672 -> BEJ_193 | air | 1,430.9 km | 4.78 h | Kosten 10,016.30 | CO2 1,717.08 kg
+luiskruse@Air-von-Luis Sustainable_Freight_Mode_Choice % 
