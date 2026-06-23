@@ -14,93 +14,38 @@ Für größere Instanzen werden die Daten aus CSV-Dateien (`road_arcs.csv`, `air
 Das in ch:problem-description formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Kantenvariablen $x_(a,k)$ sowie die Bündelungsvariablen $y_a$ und $z_a$ werden als `LpBinary` bzw. `LpInteger` deklariert.
 Als zugrundeliegender Solver wird *HiGHS* über die PuLP-Schnittstelle verwendet. HiGHS löst das MILP mit Branch-and-Bound- und Presolve-Verfahren und unterstützt zusätzlich Zeitlimits für größere Instanzen. Dadurch können die Rechenexperimente reproduzierbar mit festen Instanzgrößen und Solver-Zeitgrenzen durchgeführt werden.
 
-= Heuristische Lösung
+= Heuristische Verfahren zur multimodalen Routenplanung
 
-Für das multimodale Transportproblem wurden neben dem exakten MILP-Modell zwei heuristische Lösungsansätze entwickelt. Beide Verfahren verfolgen das Ziel, in großen Transportnetzwerken schnell zulässige und qualitativ hochwertige Routen zu bestimmen. Während das exakte Optimierungsmodell eine mathematisch optimale Lösung anstrebt, stehen bei den Heuristiken kurze Laufzeiten, praktische Anwendbarkeit und eine flexible Berücksichtigung mehrerer Zielgrößen im Vordergrund.
+In diesem Kapitel werden zwei heuristische Lösungsverfahren vorgestellt, die zur
+Bestimmung kostengünstiger, schneller bzw. emissionsarmer Transportrouten in
+einem multimodalen Netzwerk eingesetzt werden. Beide Verfahren wurden in Python
+implementiert und nutzen dieselbe Netzwerkrepräsentation (Hubs und Kanten in
+Form von Verkehrsmitteln, Distanzen, Kosten, Zeiten und Emissionen), sodass die
+Ergebnisse direkt miteinander verglichen werden können. Zunächst wird die
+Dijkstra-basierte Heuristik erläutert, anschließend die Tabu-Search-Heuristik,
+bevor beide Verfahren abschließend gegenübergestellt werden.
 
-Die erste Heuristik basiert auf einem erweiterten Dijkstra-Algorithmus. Sie konstruiert direkt eine Route vom Start- zum Zielknoten. Die zweite Heuristik erweitert diesen Ansatz durch eine Tabu Search. Dabei wird zunächst ebenfalls eine Startlösung mit dem Dijkstra-Verfahren erzeugt. Anschließend wird diese Route iterativ verändert und verbessert. Somit ist die Tabu Search in diesem Projekt keine vollständig unabhängige Routensuche, sondern eine Metaheuristik zur Verbesserung der zuvor berechneten Dijkstra-Lösung.
+== Grundlagen der Zielfunktion
 
-== Multimodale Dijkstra-Heuristik
-
-Die Dijkstra-Heuristik bildet die Grundlage des heuristischen Lösungsansatzes. Das Transportnetzwerk wird als gerichteter Graph dargestellt. Die Knoten beschreiben Standorte wie Lager, Häfen, Flughäfen oder Bahnterminals. Die Kanten beschreiben mögliche Transportverbindungen zwischen diesen Standorten.
-
-$
-G = (V, E)
-$
-
-Dabei steht $V$ für die Menge der Knoten und $E$ für die Menge der gerichteten Kanten. Eine einzelne Kante verbindet einen Startknoten mit einem Zielknoten:
-
-$
-e = (i, j)
-$
-
-Jede Kante besitzt mehrere Attribute. Dazu gehören der Verkehrsträger, die Distanz, die Transportzeit, die Kosten und die CO₂-Emissionen. Im Code werden diese Informationen in der Klasse `Edge` gespeichert:
-
-```python
-@dataclass(frozen=True)
-class Edge:
-    source: str
-    target: str
-    mode: str
-    distance_km: float
-    duration_min: float
-    cost: float
-    emissions: float
-    arc_id: str
-```
-
-Die Besonderheit des Ansatzes besteht darin, dass nicht nur eine einzelne Größe wie die Distanz minimiert wird. Stattdessen werden mehrere Zielgrößen gemeinsam betrachtet. Für jede Kante werden zunächst die Transportkosten und Emissionen berechnet. Die Kosten einer Kante ergeben sich aus Distanz, Kostensatz des Verkehrsträgers und Sendungsgewicht:
-
-$
-c_e = d_e dot k_e dot w
-$
-
-Die Emissionen einer Kante ergeben sich entsprechend aus Distanz, Emissionsfaktor und Sendungsgewicht:
-
-$
-q_e = d_e dot epsilon_e dot w
-$
-
-Dabei bezeichnet $c_e$ die Kosten der Kante, $q_e$ die Emissionen, $d_e$ die Distanz, $k_e$ den Kostensatz, $epsilon_e$ den Emissionsfaktor und $w$ das Sendungsgewicht. Im Programm erfolgt diese Berechnung beim Einlesen des Netzwerks:
+Da im Netzwerk drei konkurrierende Zielgrößen – Kosten, Zeit und CO₂-Emissionen
+– gleichzeitig betrachtet werden, wird in beiden Skripten eine gewichtete
+Summenbewertung pro Kante verwendet. Die Einzelgrößen werden zunächst anhand
+ihrer Durchschnittswerte im Netzwerk normiert, um Größenordnungsunterschiede
+(z. B. Kosten in Geldeinheiten vs. Zeit in Minuten) auszugleichen. Zusätzlich
+wird ein Strafterm für einen Wechsel des Verkehrsmittels berücksichtigt, da
+ein Moduswechsel in der Realität zusätzliche Umschlagkosten und -zeiten
+verursacht:
 
 ```python
-cost = distance * float(
-    factors[mode]["cost_per_ton_km"]
-) * shipment_weight_tons
-
-emissions = distance * float(
-    factors[mode]["emissions_kg_per_ton_km"]
-) * shipment_weight_tons
-```
-
-Da Kosten, Zeit und Emissionen unterschiedliche Einheiten und Größenordnungen besitzen, werden sie vor der Bewertung normalisiert. Ohne Normalisierung könnte eine Zielgröße allein deshalb dominieren, weil ihre Zahlenwerte größer sind. Daher werden durchschnittliche Skalenwerte für Kosten, Zeit und Emissionen bestimmt. Anschließend wird jede Zielgröße durch den jeweiligen Skalenwert geteilt:
-
-$
-c_e^* = c_e / s_c
-$
-
-$
-t_e^* = t_e / s_t
-$
-
-$
-q_e^* = q_e / s_q
-$
-
-Die Größen $s_c$, $s_t$ und $s_q$ stehen für die verwendeten Skalenwerte der Kosten, Zeit und Emissionen. Auf dieser Grundlage wird für jede Kante ein gewichteter Bewertungswert berechnet:
-
-$
-S(e) = alpha dot c_e^* + beta dot t_e^* + gamma dot q_e^* + delta dot M_e
-$
-
-Die Parameter $alpha$, $beta$ und $gamma$ beschreiben die Gewichtung von Kosten, Zeit und Emissionen. Der Parameter $delta$ gewichtet die Bestrafung eines Verkehrsträgerwechsels. Der Wert $M_e$ ist gleich 1, wenn sich der Verkehrsträger im Vergleich zur vorherigen Kante ändert, und sonst 0. Dadurch kann der Algorithmus nicht nur günstige, schnelle oder emissionsarme Routen bevorzugen, sondern auch unnötige Wechsel zwischen Verkehrsträgern vermeiden.
-
-Die Bewertungsfunktion wird im Code in der Funktion `edge_score()` umgesetzt:
-
-```python
-def edge_score(edge, weights, scales, previous_mode):
-    mode_change_penalty = 1.0 if previous_mode is not None \
-        and previous_mode != edge.mode else 0.0
+def edge_score(
+    edge: Edge,
+    weights: Dict[str, float],
+    scales: Dict[str, float],
+    previous_mode: Optional[str],
+) -> float:
+    mode_change_penalty = (
+        1.0 if previous_mode is not None and previous_mode != edge.mode else 0.0
+    )
 
     return (
         weights["cost"] * normalize(edge.cost, scales["cost"])
@@ -110,264 +55,251 @@ def edge_score(edge, weights, scales, previous_mode):
     )
 ```
 
-Der eigentliche Lösungsalgorithmus arbeitet mit einer Prioritätswarteschlange. Zu Beginn wird der Startknoten mit Kosten 0 eingefügt. Danach wird immer der aktuell beste Zustand aus der Warteschlange entnommen. Von diesem Zustand aus werden alle ausgehenden Kanten geprüft. Für jede mögliche Fortsetzung wird der neue Bewertungswert berechnet. Wenn dieser neue Wert besser ist als ein bisher bekannter Wert, wird der entsprechende Zustand aktualisiert und erneut in die Warteschlange eingefügt.
+Diese Bewertungsfunktion (`edge_score`) bildet die gemeinsame Grundlage beider
+im Folgenden beschriebenen Heuristiken.
 
-Ein wichtiger Unterschied zum klassischen Dijkstra-Algorithmus liegt im Zustand des Verfahrens. Der Zustand besteht nicht nur aus dem aktuellen Knoten, sondern zusätzlich aus dem zuletzt verwendeten Verkehrsträger:
+== Dijkstra-Heuristik
 
-$
-s = (v, m)
-$
+=== Idee und Funktionsweise
 
-Dabei steht $v$ für den aktuellen Standort und $m$ für den zuletzt genutzten Modus. Diese Erweiterung ist notwendig, weil der Strafwert für Verkehrsträgerwechsel nur berechnet werden kann, wenn der vorherige Modus bekannt ist. Im Code wird dieser Zustand wie folgt aufgebaut:
-
-```python
-start_state = (start, None)
-new_state = (edge.target, edge.mode)
-```
-
-Die Implementierung ist formal als A\*-Suche aufgebaut. Die allgemeine Bewertungsfunktion lautet:
-
-$
-f(n) = g(n) + h(n)
-$
-
-Dabei beschreibt $g(n)$ die bisher aufgelaufenen Kosten und $h(n)$ eine Schätzung der verbleibenden Kosten bis zum Ziel. Da im verwendeten Netzwerk keine vollständige geographische Heuristik eingesetzt wird, wird $h(n)$ auf 0 gesetzt:
-
-$
-h(n) = 0
-$
-
-Damit ergibt sich:
-
-$
-f(n) = g(n)
-$
-
-Die A\*-Struktur verhält sich in diesem Fall wie ein gewichteter Dijkstra-Algorithmus. Im Code ist dies an der Heuristikfunktion erkennbar:
+Das erste Verfahren basiert auf dem klassischen Algorithmus von Dijkstra zur
+Bestimmung kürzester Wege in einem Graphen mit nichtnegativen Kantengewichten
+#footnote[Vgl. Dijkstra, E. W. (1959): A note on two problems in connexion with
+graphs, in: Numerische Mathematik, 1, S. 269–271.]. Im vorliegenden Code wird
+der Dijkstra-Algorithmus technisch als A\*-Suche mit einer Heuristikfunktion
+von konstant null umgesetzt:
 
 ```python
 def heuristic(_: str) -> float:
     return 0.0
 ```
 
-Nach der Routensuche wird eine einfache lokale Verbesserung durchgeführt. Dabei wird geprüft, ob zwei aufeinanderfolgende Kanten durch eine direkte Verbindung ersetzt werden können. Aus einer Teilroute
+Da die geschätzten Restkosten zum Ziel in diesem Fall stets null betragen,
+verhält sich die A*-Suche exakt wie ein Dijkstra-Algorithmus: Es werden
+ausschließlich die bereits akkumulierten tatsächlichen Kosten (`g`-Werte)
+zur Priorisierung der Knoten in der Prioritätswarteschlange verwendet. Der
+Zustandsraum besteht dabei nicht nur aus den Knoten (Hubs) selbst, sondern aus
+Tupeln *(Knoten, zuletzt genutztes Verkehrsmittel)\*, damit der oben genannte
+Moduswechsel-Strafterm korrekt entlang des Pfades berücksichtigt werden kann.
 
-$
-A arrow.r B arrow.r C
-$
-
-kann somit eine kürzere oder günstigere Verbindung
-
-$
-A arrow.r C
-$
-
-werden. Diese Verbesserung wird nur übernommen, wenn die direkte Verbindung nach der Zielfunktion einen niedrigeren Wert besitzt. Die Prüfung wird im Code durch die Funktion `improve_route_by_shortcuts()` umgesetzt:
-
-```python
-direct_edges = [
-    e for e in graph.get(a, [])
-    if e.target == c
-]
-```
-
-Zusätzlich berechnet das Verfahren vier unterschiedliche Routentypen. Neben der nutzerdefinierten Präferenzroute werden jeweils eine Kosten-, Zeit- und CO₂-minimale Route bestimmt. Dadurch können verschiedene Entscheidungsziele verglichen werden, ohne das Grundmodell verändern zu müssen:
+Der eigentliche Heuristik-Charakter des Verfahrens ergibt sich aus einer
+gezielten Einschränkung des Suchraums: Pro Knoten werden nicht alle
+ausgehenden Kanten betrachtet, sondern nur eine begrenzte Anzahl
+(`max_neighbors_per_node`), die lokal anhand des Scores vorsortiert wurde. Dies
+beschleunigt die Suche erheblich, kann aber dazu führen, dass global günstigere
+Pfade übersehen werden, da das Verfahren dadurch seine Optimalitätsgarantie
+verliert:
 
 ```python
-{
-    "name": "Kostenminimum",
-    "cost": 1.0,
-    "time": 0.0,
-    "emissions": 0.0,
-    "mode_change": mode_change,
-}
+out_edges = graph.get(node, [])
+if max_neighbors_per_node is not None and len(out_edges) > max_neighbors_per_node:
+    # Nur die lokal guenstigsten Kanten betrachten: macht die Suche
+    # schnell, kann aber global guenstigere Pfade uebersehen.
+    out_edges = sorted(
+        out_edges, key=lambda e: edge_score(e, weights, scales, prev_mode)
+    )[:max_neighbors_per_node]
+
+for edge in out_edges:
+    step = edge_score(edge, weights, scales, prev_mode)
+    new_state = (edge.target, edge.mode)
+    new_g = current_g + step
+
+    if new_g < dist.get(new_state, math.inf):
+        dist[new_state] = new_g
+        parent[new_state] = (state, edge)
+        f = new_g + heuristic(edge.target)
+        heapq.heappush(pq, (f, new_g, edge.target, edge.mode))
 ```
 
-Die Dijkstra-Heuristik ist damit eine konstruktive Heuristik. Sie erzeugt direkt eine vollständige Route vom Start zum Ziel. Ihre Stärke liegt vor allem in der geringen Laufzeit und der klar nachvollziehbaren Vorgehensweise. Gleichzeitig ist der Suchprozess stark durch die Bewertungsfunktion geprägt. Alternative Routen, die zunächst schlechter erscheinen, später aber zu besseren Gesamtlösungen führen könnten, werden nur eingeschränkt betrachtet. Genau an diesem Punkt setzt die zweite Heuristik an.
+Nach Terminierung der Suche – entweder durch Erreichen des Zielknotens oder
+durch Überschreiten der maximalen Anzahl an Knotenexpansionen
+(`max_expansions`) – wird der gefundene Pfad rekonstruiert. Anschließend
+durchläuft die Lösung eine lokale Nachbearbeitung (`improve_route_by_shortcuts`),
+bei der geprüft wird, ob zwei aufeinanderfolgende Kanten $A -> B -> C$ durch
+eine direkte Kante $A -> C$ mit besserem Score ersetzt werden können. Diese
+2-Opt-ähnliche Glättung kompensiert teilweise die durch die
+Nachbarschaftsbegrenzung verursachte Suboptimalität.
+
+=== Mehrfachausführung für unterschiedliche Präferenzen
+
+Um sowohl eine individuelle Nutzerpräferenz als auch jeweils ein reines
+Kosten-, Zeit- und CO₂-Minimum auszugeben, wird die Dijkstra-Heuristik viermal
+mit unterschiedlichen Gewichtungsvektoren ausgeführt:
+
+```python
+def build_four_weight_sets() -> List[Dict[str, float]]:
+    return [
+        {"name": "Deine Praeferenz", "cost": pc, "time": pt,
+         "emissions": pe, "mode_change": mode_change},
+        {"name": "Kostenminimum", "cost": 1.0, "time": 0.0,
+         "emissions": 0.0, "mode_change": mode_change},
+        {"name": "Zeitminimum", "cost": 0.0, "time": 1.0,
+         "emissions": 0.0, "mode_change": mode_change},
+        {"name": "CO2-Minimum", "cost": 0.0, "time": 0.0,
+         "emissions": 1.0, "mode_change": mode_change},
+    ]
+```
+
+Dadurch entstehen bis zu vier unterschiedliche Routenvorschläge, die dem
+Anwender einen direkten Trade-off zwischen Kosten, Zeit und Emissionen
+aufzeigen.
 
 == Tabu-Search-Heuristik
 
-Die Tabu-Search-Heuristik erweitert die Dijkstra-Heuristik um eine iterative Verbesserung. Zunächst wird eine Startlösung mit der beschriebenen Dijkstra-Suche erzeugt. Diese Startlösung wird anschließend systematisch verändert, indem einzelne Kanten der aktuellen Route temporär gesperrt werden. Dadurch wird der Algorithmus gezwungen, alternative Wege im Netzwerk zu suchen.
+=== Idee und Funktionsweise
 
-Die Startlösung kann formal als $x_0$ beschrieben werden:
-
-$
-x_0 = H_D
-$
-
-Dabei steht $H_D$ für die Dijkstra-Heuristik. Im Code wird die Startlösung in der Funktion `tabu_search_route()` erzeugt:
+Das zweite Verfahren ist eine Metaheuristik der lokalen Suche und basiert auf
+dem von Glover entwickelten Tabu-Search-Konzept
+#footnote[Vgl. Glover, F. (1986): Future paths for integer programming and
+links to artificial intelligence, in: Computers & Operations Research, 13(5),
+S. 533–549.]. Im Gegensatz zur Dijkstra-Heuristik wird hier nicht versucht,
+in einem einzigen Suchlauf eine gute Lösung zu konstruieren. Stattdessen wird
+zunächst eine zulässige, aber bewusst suboptimale *Startlösung* erzeugt – mit
+demselben begrenzten Verzweigungsgrad wie im Dijkstra-Skript – und diese im
+Anschluss iterativ durch eine *Nachbarschaftssuche* verbessert:
 
 ```python
 current = astar_multimodal(
-    graph=graph,
-    start=start,
-    goal=goal,
-    weights=weights,
-    scales=scales,
+    graph=graph, start=start, goal=goal,
+    weights=weights, scales=scales,
     max_expansions=max_expansions,
+    max_neighbors_per_node=initial_max_neighbors_per_node,
 )
+current = improve_route_by_shortcuts(current, graph, weights, scales)
+best = current
+
+tabu_list: Dict[str, int] = {}
+iterations_without_improvement = 0
 ```
 
-Nach der Berechnung der Startlösung wird diese zunächst ebenfalls lokal verbessert:
+=== Generierung der Nachbarschaft
+
+Eine Nachbarlösung wird erzeugt, indem jeweils eine Kante der aktuellen Route
+gesperrt ("tabu" verboten) und für das Teilproblem erneut ein A\*-Lauf ohne
+Verzweigungsbegrenzung durchgeführt wird. Es werden bevorzugt die Kanten mit
+dem schlechtesten Einzel-Score gesperrt, da hier das größte
+Verbesserungspotenzial vermutet wird:
 
 ```python
-current = improve_route_by_shortcuts(
-    current,
-    graph,
-    weights,
-    scales,
+candidate_edges = sorted(
+    current_route.edges,
+    key=lambda e: edge_score(e, weights, scales, None),
+    reverse=True,
 )
-```
 
-Eine vollständige Route besteht aus einer Folge von Kanten:
-
-$
-R = (e_1, e_2, dots, e_n)
-$
-
-Die Bewertung der gesamten Route ergibt sich aus der Summe der Kantenbewertungen:
-
-$
-F(R) = sum_(i=1)^n S(e_i)
-$
-
-Diese Bewertungsfunktion stellt sicher, dass Dijkstra-Startlösung und Tabu-Search-Nachbarn nach demselben Zielsystem beurteilt werden. Im Code wird dies über `route_score_from_edges()` umgesetzt:
-
-```python
-def route_score_from_edges(edges, weights, scales):
-    return sum(
-        edge_score(
-            edge,
-            weights,
-            scales,
-            edges[i - 1].mode if i > 0 else None
-        )
-        for i, edge in enumerate(edges)
+for edge in candidate_edges[:max_neighbors]:
+    move = edge.arc_id
+    candidate = astar_multimodal_with_forbidden_arcs(
+        graph=graph, start=start, goal=goal,
+        weights=weights, scales=scales,
+        max_expansions=max_expansions,
+        forbidden_arc_ids={move},
     )
+    ...
+    neighbors.append((move, candidate))
 ```
 
-Der zentrale Schritt der Tabu Search ist die Erzeugung von Nachbarschaftslösungen. Eine Nachbarlösung entsteht, indem eine Kante der aktuellen Route temporär verboten wird. Angenommen, die aktuelle Route enthält die Kante $B arrow.r C$. Wenn diese Kante gesperrt wird, muss die Routensuche einen alternativen Pfad finden. Dadurch können neue Routen entstehen, die mit der ursprünglichen Dijkstra-Suche nicht ausgewählt wurden.
+Jede so erzeugte Nachbarroute entspricht damit einer alternativen Route, die
+eine bestimmte "schlechte" Kante umgeht.
 
-Die Nachbarschaft der aktuellen Lösung wird als $N(x)$ bezeichnet. Sie enthält alle Lösungen, die durch die Sperrung einzelner Kanten der aktuellen Route erzeugt werden. Im Code geschieht dies in der Funktion `generate_tabu_neighbors()`:
+=== Tabu-Liste, Aspirationskriterium und Abbruch
 
-```python
-candidate = astar_multimodal_with_forbidden_arcs(
-    graph=graph,
-    start=start,
-    goal=goal,
-    weights=weights,
-    scales=scales,
-    max_expansions=max_expansions,
-    forbidden_arc_ids={move},
-)
-```
-
-Die Funktion `astar_multimodal_with_forbidden_arcs()` entspricht grundsätzlich der Dijkstra-Suche, überspringt jedoch bestimmte Kanten:
+Damit die Suche nicht in einen Zyklus gerät, in dem wiederholt dieselbe Kante
+gesperrt und wieder freigegeben wird, merkt sich der Algorithmus die zuletzt
+verbotenen Kanten ("Moves") für eine festgelegte Anzahl von Iterationen
+(`tabu_tenure`) in der Tabu-Liste. Ein als tabu markierter Move darf jedoch
+trotzdem ausgeführt werden, wenn er zu einer insgesamt besseren Lösung führt
+als die bisher beste gefundene Lösung (*Aspirationskriterium*):
 
 ```python
-for edge in graph.get(node, []):
-    if edge.arc_id in forbidden_arc_ids:
-        continue
-```
+admissible: List[Tuple[str, RouteResult]] = []
+for move, candidate in neighbors:
+    is_tabu = move in tabu_list and tabu_list[move] > iteration
+    aspiration = candidate.score < best.score
 
-Damit wird gezielt verhindert, dass die aktuell gesperrte Verbindung erneut genutzt wird. Die Sperrung führt dazu, dass der Algorithmus andere Bereiche des Netzwerks untersucht. So kann die Suche aus einem lokalen Optimum ausbrechen.
+    if not is_tabu or aspiration:
+        admissible.append((move, candidate))
 
-Damit die Suche nicht ständig zwischen denselben Routen hin- und herwechselt, wird eine Tabuliste verwendet. Die Tabuliste speichert kürzlich verwendete Bewegungen für eine bestimmte Anzahl an Iterationen. In diesem Projekt entspricht eine Bewegung der Sperrung einer bestimmten Kante. Die Tabuliste kann vereinfacht dargestellt werden als:
+selected_move, selected_route = min(admissible, key=lambda item: item[1].score)
+current = selected_route
 
-$
-T = (m_1, m_2, dots, m_k)
-$
-
-Dabei beschreibt $m_i$ eine gespeicherte Bewegung. Eine Bewegung bleibt so lange tabu, bis ihre Sperrdauer abgelaufen ist. Im Code wird dies über `tabu_tenure` gesteuert:
-
-```python
 tabu_list[selected_move] = iteration + tabu_tenure
 ```
 
-In jeder Iteration werden mehrere Nachbarn erzeugt. Anschließend werden diejenigen Nachbarn entfernt, deren Bewegung tabu ist. Eine Ausnahme bildet das Aspirationskriterium. Ein eigentlich tabuierter Nachbar darf trotzdem gewählt werden, wenn er eine neue beste Gesamtlösung liefert. Formal gilt:
-
-$
-F(x') < F(x^*)
-$
-
-Dabei ist $x'$ die betrachtete Nachbarlösung und $x^*$ die bisher beste gefundene Lösung. Im Code wird diese Bedingung so umgesetzt:
-
-```python
-is_tabu = move in tabu_list and tabu_list[move] > iteration
-aspiration = candidate.score < best.score
-
-if not is_tabu or aspiration:
-    admissible.append((move, candidate))
-```
-
-Aus allen zulässigen Nachbarn wird anschließend der beste ausgewählt:
-
-$
-x_(k+1) = arg min_(x in N(x_k)) F(x)
-$
-
-Die ausgewählte Lösung wird zur neuen aktuellen Lösung. Falls sie besser ist als die bisher beste Route, wird auch die globale Bestlösung aktualisiert:
-
-```python
-selected_move, selected_route = min(
-    admissible,
-    key=lambda item: item[1].score,
-)
-
-current = selected_route
-```
-
-Die Tabu Search endet, wenn eine maximale Anzahl an Iterationen erreicht wurde, keine zulässigen Nachbarn mehr vorhanden sind oder über mehrere Iterationen keine Verbesserung erzielt wurde:
-
-```python
-if iterations_without_improvement >= no_improvement_limit:
-    break
-```
-
-Die Tabu-Search-Heuristik ist somit eine verbessernde Heuristik. Sie konstruiert die Lösung nicht vollständig neu, sondern startet mit einer vorhandenen Route und untersucht gezielt Alternativen. Dadurch kann sie bessere Lösungen finden als die reine Dijkstra-Heuristik, benötigt aber auch mehr Rechenzeit.
+Die Suche terminiert entweder nach Erreichen der maximalen Iterationszahl
+(`max_iterations`), wenn keine zulässigen Nachbarn mehr erzeugt werden können,
+oder wenn über eine definierte Anzahl an Iterationen
+(`no_improvement_limit`) keine Verbesserung der besten bekannten Lösung mehr
+erzielt wurde. Auch hier wird – wie bei der Dijkstra-Heuristik – die finale
+Lösung für jede der vier Gewichtungen separat ermittelt (`calculate_four_tabu_routes`).
 
 == Vergleich der beiden Heuristiken
 
-Die beiden Heuristiken unterscheiden sich vor allem in ihrer Suchstrategie. Die Dijkstra-Heuristik ist ein direktes Konstruktionsverfahren. Sie beginnt beim Startknoten und erweitert schrittweise den aktuell besten Zustand, bis der Zielknoten erreicht wird. Dadurch ist sie schnell, deterministisch und gut nachvollziehbar. Die Tabu Search ist dagegen ein iteratives Verbesserungsverfahren. Sie nutzt die Dijkstra-Lösung als Ausgangspunkt und sucht anschließend nach besseren Alternativen.
+Beide Verfahren lösen dasselbe zugrunde liegende Optimierungsproblem – die
+Suche nach einer multikriteriellen, kostenminimalen Route in einem
+multimodalen Netzwerk – verfolgen dabei jedoch grundlegend unterschiedliche
+Suchstrategien, was in @tab-vergleich gegenübergestellt wird.
 
-Der betrachtete Lösungsraum ist bei der Tabu Search größer. Die Dijkstra-Heuristik sucht vor allem entlang der nach der Bewertungsfunktion besten Zustände. Die Tabu Search sperrt dagegen gezielt einzelne Kanten und erzwingt dadurch alternative Routen. Vereinfacht kann daher angenommen werden:
+#figure(
+  table(
+    columns: (auto, 1fr, 1fr),
+    align: (left, left, left),
+    stroke: 0.5pt,
+    [*Kriterium*], [*Dijkstra-Heuristik*], [*Tabu-Search-Heuristik*],
+    [Suchprinzip],
+    [Konstruktive Einzelsuche (A\*\ mit Nullheuristik = Dijkstra)],
+    [Konstruktive Startlösung + iterative\ lokale Nachbarschaftssuche],
+    [Quelle der Heuristik],
+    [Begrenzung der betrachteten\ Nachbarn pro Knoten],
+    [Begrenzte Startlösung +\ gezieltes Verbieten einzelner Kanten],
+    [Optimalitätsgarantie],
+    [Keine (durch Nachbarbegrenzung\ verloren), aber pro Lauf deterministisch],
+    [Keine, jedoch potenziell bessere\ Annäherung durch Verbesserungsschritte],
+    [Rechenaufwand],
+    [Gering: ein Suchlauf pro\ Gewichtung],
+    [Höher: ein Suchlauf zur Initialisierung\ plus mehrere Suchläufe pro Iteration],
+    [Vermeidung von Zyklen],
+    [Nicht erforderlich (Single-Pass)],
+    [Explizit über Tabu-Liste\ und Tenure-Parameter],
+    [Verbesserungsmechanismus],
+    [Lokale 2-Opt-ähnliche\ Kantenglättung (Shortcuts)],
+    [Shortcuts zusätzlich zur\ systematischen Nachbarschaftssuche],
+    [Lösungsqualität],
+    [Schnell, aber tendenziell\ suboptimal bei engem Limit],
+    [In der Regel gleich gut oder\ besser als die Startlösung],
+  ),
+  caption: [Gegenüberstellung von Dijkstra-Heuristik und Tabu-Search-Heuristik],
+) <tab-vergleich>
 
-$
-X_D subset X_T
-$
+Die Dijkstra-Heuristik liefert durch die Begrenzung der pro Knoten betrachteten
+Kanten (`max_neighbors_per_node`) sehr schnell eine zulässige Lösung, da pro
+Gewichtungs-Szenario nur ein einziger Suchlauf nötig ist. Dieser
+Geschwindigkeitsvorteil wird jedoch mit einem Verlust an Lösungsqualität
+erkauft: Da nur ein eingeschränkter Teil des Suchraums betrachtet wird, kann
+das Verfahren global bessere Routen übersehen, was im Code explizit als
+bewusster Trade-off dokumentiert ist.
 
-Dabei steht $X_D$ für den durch die Dijkstra-Heuristik betrachteten Lösungsbereich und $X_T$ für den durch die Tabu Search zusätzlich untersuchten Bereich.
+Die Tabu-Search-Heuristik nutzt exakt dieselbe eingeschränkte A\*-Suche, um
+eine Startlösung zu erzeugen – sie ist also in dieser Phase der
+Dijkstra-Heuristik äquivalent. Der entscheidende Unterschied liegt in der
+sich anschließenden Verbesserungsphase: Durch wiederholtes, gezieltes
+Verbieten einzelner, schlecht bewerteter Kanten und erneute uneingeschränkte
+Suche kann sich die Lösung über mehrere Iterationen hinweg der ursprünglich
+übersehenen, besseren Route annähern. Das Aspirationskriterium stellt dabei
+sicher, dass die Tabu-Restriktion nicht zu einer Verschlechterung gegenüber
+der bisher besten Lösung führt. Im Ergebnis liefert die Tabu-Search-Heuristik
+tendenziell mindestens so gute, häufig aber bessere Routen als die reine
+Dijkstra-Heuristik, benötigt dafür allerdings deutlich mehr Rechenzeit, da in
+jeder Iteration mehrere zusätzliche Suchläufe (`astar_multimodal_with_forbidden_arcs`)
+durchgeführt werden.
 
-Auch beim Rechenaufwand unterscheiden sich die Verfahren deutlich. Die Dijkstra-Heuristik benötigt im Wesentlichen eine einzelne Suche im Graphen. Vereinfacht lässt sich der Aufwand mit folgender Ordnung beschreiben:
-
-$
-O(E dot log(V))
-$
-
-Die Tabu Search führt dagegen mehrere Suchläufe aus. Wenn $I$ Iterationen durchgeführt werden, ergibt sich vereinfacht:
-
-$
-O(I dot E dot log(V))
-$
-
-Daraus folgt, dass die Tabu Search im Allgemeinen rechenintensiver ist. Dieser zusätzliche Aufwand kann jedoch gerechtfertigt sein, wenn dadurch bessere Routen gefunden werden.
-
-In Bezug auf die Lösungsqualität ist theoretisch zu erwarten, dass die Tabu Search mindestens gleich gute und häufig bessere Lösungen liefern kann. Der Grund dafür ist, dass sie mit der Dijkstra-Lösung startet und anschließend zusätzliche Alternativen prüft. Eine Garantie für eine globale optimale Lösung besteht jedoch nicht. Auch die Tabu Search bleibt ein heuristisches Verfahren. Sie kann bessere Lösungen finden, muss dies aber nicht in jedem Einzelfall tun.
-
-Die Dijkstra-Heuristik eignet sich besonders dann, wenn schnell eine plausible Route benötigt wird. Dies ist beispielsweise für interaktive Anwendungen, erste Szenarioanalysen oder große Netzwerke mit begrenzter Rechenzeit relevant. Die Tabu Search eignet sich eher für Situationen, in denen zusätzliche Rechenzeit verfügbar ist und eine Verbesserung der Routenauswahl angestrebt wird.
-
-#table(
-  columns: 3,
-  inset: 6pt,
-  align: left,
-  [Kriterium], [Dijkstra-Heuristik], [Tabu-Search-Heuristik],
-  [Art des Verfahrens], [Konstruktive Heuristik], [Verbessernde Metaheuristik],
-  [Startpunkt], [Startknoten im Graphen], [Dijkstra-Route],
-  [Suchstrategie], [Erweitert den besten Zustand], [Erzeugt alternative Nachbarn],
-  [Rechenzeit], [Gering], [Höher],
-  [Lösungsraum], [Eher begrenzt], [Größer durch Alternativrouten],
-  [Stärke], [Schnelle zulässige Lösung], [Potenzielle Verbesserung der Lösung],
-  [Schwäche], [Kann Alternativen übersehen], [Höherer Rechenaufwand],
-)
-
-Zusammenfassend ergänzen sich beide Verfahren sinnvoll. Die Dijkstra-Heuristik liefert eine schnelle und stabile Basislösung für das multimodale Transportproblem. Die Tabu Search erweitert diesen Ansatz, indem sie die gefundene Lösung gezielt verändert und dadurch zusätzliche Bereiche des Lösungsraums untersucht. Für das Projekt entsteht damit ein zweistufiger heuristischer Lösungsansatz: Zunächst wird mit Dijkstra effizient eine Route konstruiert, anschließend wird diese Route durch Tabu Search verbessert. Der tatsächliche Nutzen der Tabu Search kann im Ergebnisteil anhand von Laufzeit, Kosten, Transportdauer und CO₂-Emissionen empirisch bewertet werden.
+Zusammenfassend lässt sich der Unterschied zwischen beiden Verfahren auf das
+klassische Spannungsfeld zwischen *Konstruktionsheuristik* und
+*Verbesserungsheuristik (Metaheuristik)* zurückführen: Während die
+Dijkstra-Heuristik eine Lösung in einem Schritt konstruiert und dabei
+bewusst Suchraum beschneidet, nutzt die Tabu-Search-Heuristik eben diese
+Konstruktionslösung lediglich als Ausgangspunkt einer systematischen,
+gedächtnisbasierten Verbesserung. Für die vorliegende Anwendung empfiehlt sich
+die Dijkstra-Heuristik daher insbesondere bei Echtzeitanforderungen oder sehr
+großen Netzwerken, während die Tabu-Search-Heuristik dann vorzuziehen ist,
+wenn eine höhere Lösungsqualität wichtiger ist als die Rechenzeit.
