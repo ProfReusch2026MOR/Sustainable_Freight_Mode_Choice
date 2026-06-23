@@ -1,18 +1,3 @@
-"""
-
-Diese Version gibt gezielt vier Routentypen aus:
-
-1. Route nach deiner Praeferenz
-2. Kostenminimum
-3. Zeitminimum
-4. CO2-Minimum
-
-Du musst nur den Bereich USER_INPUT anpassen.
-Danach ausfuehren mit:
-
-    python adaptive_multiobjective_astar_4routes.py
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -22,68 +7,29 @@ import math
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Any
 
-
-# ============================================================
-# 1) USER_INPUT: HIER AENDERST DU ROUTE UND PRAEFERENZEN
-# ============================================================
-
 USER_INPUT = {
-    # Pfad zu deiner JSON-Datei
     "input_file": "multimodal_network.json",
-    # Start- und Ziel-Hub
-    # Beispiele:
-    # "BER_3970" = Berlin Terminal
-    # "HAM_3971" = Hamburg Terminal
-    # "ROT_3146" = Rotterdam Terminal
-    # "FRA_3974" = Frankfurt am Main Terminal
-    # "NEW_283" = New York City Terminal
-    # "SHA_2240" = Shanghai Terminal
-    "start_hub": "NEW_283",
-    "end_hub": "SHA_2240",
-    # Sendungsgewicht in Tonnen
+    "start_hub": "ALA_8996",
+    "end_hub": "BEJ_193",
+  
     "shipment_weight_tons": 2.0,
-    # ------------------------------------------------------------
-    # DEINE INDIVIDUELLE PRAEFERENZ
-    # ------------------------------------------------------------
-    # Hier bestimmst du, was dir bei der ersten Route wichtig ist.
-    #
-    # Beispiel:
-    # Kosten = 0.20
-    # Zeit   = 0.20
-    # CO2    = 0.80
-    #
-    # Die Summe muss nicht genau 1.0 sein.
-    # Der Code normalisiert die Werte automatisch.
-    "preference_cost": 0.50,
-    "preference_time": 0.30,
-    "preference_co2": 0.20,
-    # Strafwert fuer Verkehrsmittelwechsel.
-    # Hoeherer Wert = weniger Wechsel zwischen road, rail, air, ship.
+
+    "preference_cost": 1,
+    "preference_time": 0,
+    "preference_co2": 0,
+
     "preference_mode_change": 0.03,
-    # Maximale Anzahl expandierter Zustaende.
-    # Wenn keine Route gefunden wird, Wert erhoehen.
+
     "max_expansions": 200_000,
-    # Optional: Verkehrsmittel erlauben.
-    # Leere Liste bedeutet: alle Modi erlaubt.
-    # Beispiel:
-    # "allowed_modes": ["road", "rail", "ship"]
+
     "allowed_modes": [],
-    # Optional: Verkehrsmittel verbieten.
-    # Beispiel:
-    # "forbidden_modes": ["air"]
+ 
     "forbidden_modes": [],
-    # Soll eine Liste verfuegbarer Hubs ausgegeben werden?
+
     "show_available_hubs": False,
-    # Suchbegriff fuer Hubs, z.B. "Hamburg", "Berlin", "Rotterdam".
-    # Nur relevant, wenn show_available_hubs=True.
+    
     "hub_search_term": "",
-}
-
-
-# ============================================================
-# 2) ALGORITHMUS
-#    Darunter musst du normalerweise nichts mehr aendern.
-# ============================================================
+    }
 
 
 @dataclass(frozen=True)
@@ -634,10 +580,8 @@ def main() -> None:
         print("Pruefe Start/Ziel, Modi-Filter und max_expansions.")
         return
 
-    # Duplikate zusammenfassen, falls mehrere Ziele dieselbe Route ergeben.
     routes = remove_duplicate_routes_keep_type(routes)
 
-    print_comparison_table(routes)
 
     for i, route in enumerate(routes, start=1):
         print_route(route, i)

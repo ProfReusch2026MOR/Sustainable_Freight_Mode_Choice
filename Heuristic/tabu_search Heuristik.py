@@ -1,19 +1,3 @@
-"""
-Adaptive Multi-Objective A* + Tabu-Search-Heuristik fuer multimodale Transportnetzwerke.
-
-Diese Version gibt gezielt vier Routentypen aus:
-
-1. Route nach deiner Praeferenz
-2. Kostenminimum
-3. Zeitminimum
-4. CO2-Minimum
-
-Du musst nur den Bereich USER_INPUT anpassen.
-Danach ausfuehren mit:
-
-    python adaptive_multiobjective_astar_4routes.py
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -23,79 +7,36 @@ import math
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Any, Set
 
-
-# ============================================================
-# 1) USER_INPUT: HIER AENDERST DU ROUTE UND PRAEFERENZEN
-# ============================================================
-
 USER_INPUT = {
-    # Pfad zu deiner JSON-Datei
+   
     "input_file": "multimodal_network.json",
-    # Start- und Ziel-Hub
-    # Beispiele:
-    # "BER_3970" = Berlin Terminal
-    # "HAM_3971" = Hamburg Terminal
-    # "ROT_3146" = Rotterdam Terminal
-    # "FRA_3974" = Frankfurt am Main Terminal
-    # "NEW_283" = New York City Terminal
-    # "SHA_2240" = Shanghai Terminal
-    "start_hub": "NEW_283",
-    "end_hub": "SHA_2240",
-    # Sendungsgewicht in Tonnen
+    
+    "start_hub": "BRU_1113",
+    "end_hub": "NEW_283",
+   
     "shipment_weight_tons": 2.0,
-    # ------------------------------------------------------------
-    # DEINE INDIVIDUELLE PRAEFERENZ
-    # ------------------------------------------------------------
-    # Hier bestimmst du, was dir bei der ersten Route wichtig ist.
-    #
-    # Beispiel:
-    # Kosten = 0.20
-    # Zeit   = 0.20
-    # CO2    = 0.80
-    #
-    # Die Summe muss nicht genau 1.0 sein.
-    # Der Code normalisiert die Werte automatisch.
+  
     "preference_cost": 0.50,
-    "preference_time": 0.30,
-    "preference_co2": 0.20,
-    # Strafwert fuer Verkehrsmittelwechsel.
-    # Hoeherer Wert = weniger Wechsel zwischen road, rail, air, ship.
+    "preference_time": 0.10,
+    "preference_co2": 0.30,
+ 
     "preference_mode_change": 0.03,
-    # Maximale Anzahl expandierter Zustaende.
-    # Wenn keine Route gefunden wird, Wert erhoehen.
+  
     "max_expansions": 200_000,
-    # Optional: Verkehrsmittel erlauben.
-    # Leere Liste bedeutet: alle Modi erlaubt.
-    # Beispiel:
-    # "allowed_modes": ["road", "rail", "ship"]
+
     "allowed_modes": [],
-    # Optional: Verkehrsmittel verbieten.
-    # Beispiel:
-    # "forbidden_modes": ["air"]
+  
     "forbidden_modes": [],
-    # Soll eine Liste verfuegbarer Hubs ausgegeben werden?
+  
     "show_available_hubs": False,
-    # ------------------------------------------------------------
-    # TABU SEARCH PARAMETER
-    # ------------------------------------------------------------
-    # Tabu Search startet mit einer A*-Route und sucht anschließend
-    # bessere Alternativrouten, indem einzelne Kanten temporaer
-    # ausgeschlossen und durch alternative Teilrouten ersetzt werden.
+  
     "tabu_max_iterations": 80,
     "tabu_tenure": 10,
     "tabu_neighbors_per_iteration": 25,
     "tabu_no_improvement_limit": 20,
-    # Suchbegriff fuer Hubs, z.B. "Hamburg", "Berlin", "Rotterdam".
-    # Nur relevant, wenn show_available_hubs=True.
+
     "hub_search_term": "",
 }
-
-
-# ============================================================
-# 2) ALGORITHMUS
-#    Darunter musst du normalerweise nichts mehr aendern.
-# ============================================================
-
 
 @dataclass(frozen=True)
 class Edge:
@@ -227,7 +168,7 @@ def load_network(
     factors = data.get("mode_factors", {})
     graph: Dict[str, List[Edge]] = {}
 
-    # Alle Hubs aufnehmen, auch wenn sie keine ausgehenden Kanten haben.
+    
     for hub in data.get("hubs", []):
         hub_id = hub.get("id")
         if hub_id:
@@ -277,10 +218,7 @@ def load_network(
 
 
 def estimate_scales(graph: Dict[str, List[Edge]]) -> Dict[str, float]:
-    """
-    Skalen dienen dazu, Kosten, Zeit und CO2 vergleichbar zu machen.
-    Ohne Normalisierung wuerde z.B. Kosten wegen groesserer Zahlenwerte dominieren.
-    """
+    
     edges = [edge for edge_list in graph.values() for edge in edge_list]
 
     if not edges:
@@ -329,14 +267,6 @@ def astar_multimodal(
     scales: Dict[str, float],
     max_expansions: int,
 ) -> Optional[RouteResult]:
-    """
-    A*-Suche mit Zustand (aktueller Hub, vorheriger Modus).
-
-    Da in der aktuellen JSON keine Koordinaten pro Hub enthalten sind,
-    ist die Heuristik h(n)=0. Damit verhaelt sich A* wie Dijkstra.
-    Sobald lat/lon in der JSON vorhanden sind, kann hier eine echte
-    Luftlinienheuristik ergaenzt werden.
-    """
 
     def heuristic(_: str) -> float:
         return 0.0
@@ -410,11 +340,7 @@ def improve_route_by_shortcuts(
     weights: Dict[str, float],
     scales: Dict[str, float],
 ) -> RouteResult:
-    """
-    Lokale Verbesserung:
-    Wenn zwei aufeinanderfolgende Kanten A -> B -> C durch eine direkte
-    Kante A -> C mit besserem Score ersetzt werden koennen, wird gekuerzt.
-    """
+
     improved_edges = route.edges[:]
     changed = True
 
@@ -480,11 +406,7 @@ def route_score_from_edges(
     weights: Dict[str, float],
     scales: Dict[str, float],
 ) -> float:
-    """
-    Berechnet den normalisierten Zielfunktionswert einer kompletten Route.
-    Dadurch koennen A*-Startloesung und Tabu-Search-Nachbarn einheitlich
-    bewertet werden.
-    """
+    
     return sum(
         edge_score(edge, weights, scales, edges[i - 1].mode if i > 0 else None)
         for i, edge in enumerate(edges)
@@ -497,7 +419,7 @@ def build_route_result(
     weights: Dict[str, float],
     scales: Dict[str, float],
 ) -> Optional[RouteResult]:
-    """Erzeugt ein RouteResult-Objekt aus einer Kantenliste."""
+    
     if not edges:
         return None
 
@@ -525,11 +447,7 @@ def astar_multimodal_with_forbidden_arcs(
     max_expansions: int,
     forbidden_arc_ids: Optional[Set[str]] = None,
 ) -> Optional[RouteResult]:
-    """
-    Variante der A*-Suche, bei der bestimmte Kanten ausgeschlossen werden.
-    Diese Funktion wird von Tabu Search verwendet, um gezielt Alternativrouten
-    zu erzwingen.
-    """
+   
     forbidden_arc_ids = forbidden_arc_ids or set()
 
     def heuristic(_: str) -> float:
@@ -597,11 +515,7 @@ def generate_tabu_neighbors(
     max_expansions: int,
     max_neighbors: int,
 ) -> List[Tuple[str, RouteResult]]:
-    """
-    Erzeugt Nachbarloesungen durch das temporaere Sperren einzelner Kanten
-    der aktuellen Route. Jede Sperrung zwingt A*, eine alternative Verbindung
-    zu suchen. Der Move wird durch die gesperrte Kanten-ID beschrieben.
-    """
+   
     neighbors: List[Tuple[str, RouteResult]] = []
     seen_paths: Set[Tuple[str, ...]] = set()
 
@@ -650,17 +564,7 @@ def tabu_search_route(
     neighbors_per_iteration: int,
     no_improvement_limit: int,
 ) -> Optional[RouteResult]:
-    """
-    Tabu Search fuer das multimodale Routing-Problem.
-
-    Ablauf:
-    1. Erzeuge eine Startloesung mit A*.
-    2. Erzeuge Nachbarn, indem einzelne Kanten der aktuellen Route gesperrt werden.
-    3. Waehle den besten erlaubten Nachbarn.
-    4. Speichere den zugehoerigen Move temporaer in der Tabu-Liste.
-    5. Erlaube Tabu-Moves trotzdem, wenn sie eine neue globale Bestloesung liefern
-       (Aspirationskriterium).
-    """
+    
     current = astar_multimodal(
         graph=graph,
         start=start,
@@ -831,11 +735,7 @@ def print_comparison_table(routes: List[RouteResult]) -> None:
 
 
 def remove_duplicate_routes_keep_type(routes: List[RouteResult]) -> List[RouteResult]:
-    """
-    Wenn z.B. Kostenminimum und CO2-Minimum dieselbe Route ergeben,
-    werden beide trotzdem nicht komplett geloescht.
-    Stattdessen bleibt nur eine Ausgabe mit kombiniertem Namen.
-    """
+   
     grouped: Dict[Tuple[str, ...], RouteResult] = {}
 
     for route in routes:
@@ -898,7 +798,7 @@ def main() -> None:
 
     if not start or not end:
         raise ValueError(
-            "Bitte start_hub und end_hub im USER_INPUT setzen oder per --start und --end angeben."
+             
         )
 
     if start not in graph:
@@ -914,7 +814,7 @@ def main() -> None:
         max_expansions=max_expansions,
     )
 
-    print("\nAdaptive Multi-Objective A* + Tabu-Search-Heuristik")
+    print("\nTabu-Search-Heuristik")
     print("=" * 70)
     print(f"Input-Datei:     {input_file}")
     print(f"Start:           {start}")
@@ -933,10 +833,7 @@ def main() -> None:
         print("Pruefe Start/Ziel, Modi-Filter und max_expansions.")
         return
 
-    # Duplikate zusammenfassen, falls mehrere Ziele dieselbe Route ergeben.
     routes = remove_duplicate_routes_keep_type(routes)
-
-    print_comparison_table(routes)
 
     for i, route in enumerate(routes, start=1):
         print_route(route, i)
