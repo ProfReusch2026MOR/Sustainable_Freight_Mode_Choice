@@ -1,0 +1,137 @@
+{
+  "hubs": [
+    {
+      "id": "BER",
+      "name": "Berlin Hub",
+      "supported_modes": ["road", "rail"],
+      "latitude": 52.5200,
+      "longitude": 13.4050,
+      "waiting_cost_per_hour": 2.0,
+      "waiting_emissions_per_hour": 0.05
+    },
+    {
+      "id": "HAM",
+      "name": "Hamburg Hub",
+      "supported_modes": ["road", "rail"],
+      "latitude": 53.5511,
+      "longitude": 9.9937,
+      "waiting_cost_per_hour": 2.5,
+      "waiting_emissions_per_hour": 0.05
+    },
+    {
+      "id": "MUC",
+      "name": "Munich Hub",
+      "supported_modes": ["road", "rail"],
+      "latitude": 48.1351,
+      "longitude": 11.5820,
+      "waiting_cost_per_hour": 3.0,
+      "waiting_emissions_per_hour": 0.05
+    }
+  ],
+  "mode_factors": {
+    "road": {
+      "cost_per_ton_km": 0.15,
+      "emissions_kg_per_ton_km": 0.08
+    },
+    "rail": {
+      "cost_per_ton_km": 0.05,
+      "emissions_kg_per_ton_km": 0.02
+    }
+  },
+  "capacities": {
+    "road": 10.0,
+    "rail": 40.0,
+    "waiting": 100.0,
+    "transfer": 20.0
+  },
+  "default_fixed_costs": {
+    "transport": {
+      "road": 100.0,
+      "rail": 400.0
+    },
+    "waiting": 0.0,
+    "transfer": 25.0
+  },
+  "default_fixed_emissions": {
+    "transport": {
+      "road": 10.0,
+      "rail": 50.0
+    },
+    "waiting": 0.0,
+    "transfer": 2.0
+  },
+  "default_variable_factors": {
+    "waiting_cost_per_hour": 2.0,
+    "waiting_emissions_per_hour": 0.05,
+    "transfer_cost_per_ton": 15.0,
+    "transfer_emissions_per_ton": 1.0
+  },
+  "arc_templates": [
+    {
+      "id": "T_BER_HAM_ROAD",
+      "arc_type": "transport",
+      "from": "BER",
+      "to": "HAM",
+      "mode": "road",
+      "dist": 290.0,
+      "duration_min": 240,
+      "departure_minutes": [360, 720, 1080],
+      "capacity": 10.0
+    },
+    {
+      "id": "T_BER_HAM_RAIL",
+      "arc_type": "transport",
+      "from": "BER",
+      "to": "HAM",
+      "mode": "rail",
+      "dist": 285.0,
+      "duration_min": 210,
+      "departure_minutes": [480, 960],
+      "capacity": 40.0
+    },
+    {
+      "id": "T_HAM_MUC_ROAD",
+      "arc_type": "transport",
+      "from": "HAM",
+      "to": "MUC",
+      "mode": "road",
+      "dist": 610.0,
+      "duration_min": 540,
+      "departure_minutes": [360, 720, 1080],
+      "capacity": 10.0
+    },
+    {
+      "id": "T_HAM_MUC_RAIL",
+      "arc_type": "transport",
+      "from": "HAM",
+      "to": "MUC",
+      "mode": "rail",
+      "dist": 600.0,
+      "duration_min": 480,
+      "departure_minutes": [540, 1020],
+      "capacity": 40.0
+    },
+    {
+      "id": "X_HAM_ROAD_RAIL",
+      "arc_type": "transfer",
+      "from": "HAM",
+      "to": "HAM",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "duration_min": 120,
+      "departure_minutes": [0, 240, 480, 720, 960, 1200],
+      "capacity": 20.0
+    },
+    {
+      "id": "X_HAM_RAIL_ROAD",
+      "arc_type": "transfer",
+      "from": "HAM",
+      "to": "HAM",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "duration_min": 120,
+      "departure_minutes": [0, 240, 480, 720, 960, 1200],
+      "capacity": 20.0
+    }
+  ]
+}
