@@ -33,7 +33,7 @@ from freight_routing.data_models import (  # noqa: E402
 )
 from freight_routing.model import TimeExpandedFreightRoutingModel  # noqa: E402
 
-HEURISTIC_PATH = ROOT / "Heuristic" / "Tabu search Heuristik.py"
+HEURISTIC_PATH = ROOT / "heuristics" / "Tabu search Heuristik.py"
 COMPARISON_COLUMNS = (
     "variant",
     "method",
