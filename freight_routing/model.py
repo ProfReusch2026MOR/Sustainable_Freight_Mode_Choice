@@ -64,7 +64,7 @@ class TimeExpandedFreightRoutingModel:
             return self.default_fixed_emissions.transfer
         return self.default_fixed_emissions.waiting
 
-    def _estimate_normalization_bounds(
+    def estimate_normalization_bounds(
         self, shipments: Iterable[Shipment]
     ) -> dict[str, tuple[float, float]]:
         total_weight = sum(s.weight for s in shipments)
@@ -538,7 +538,7 @@ class TimeExpandedFreightRoutingModel:
         total_emissions = fixed_emissions + var_emissions
 
         # Combined Weighted Objective Function (Min-Max scaled dynamically)
-        bounds = self._estimate_normalization_bounds(shipments)
+        bounds = self.estimate_normalization_bounds(shipments)
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
