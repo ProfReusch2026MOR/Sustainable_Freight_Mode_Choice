@@ -79,6 +79,45 @@ MODE_FACTORS = {
     },
 }
 
+CAPACITIES = {
+    "road": 40.0,
+    "rail": 1000.0,
+    "air": 50.0,
+    "ship": 8000.0,
+    "waiting": 100.0,
+    "transfer": 25.0
+}
+
+DEFAULT_FIXED_COSTS = {
+    "transport": {
+        "road": 150.0,
+        "rail": 500.0,
+        "air": 1200.0,
+        "ship": 800.0
+    },
+    "waiting": 0.0,
+    "transfer": 100.0
+}
+
+DEFAULT_FIXED_EMISSIONS = {
+    "transport": {
+        "road": 30.0,
+        "rail": 80.0,
+        "air": 250.0,
+        "ship": 120.0
+    },
+    "waiting": 0.0,
+    "transfer": 10.0
+}
+
+DEFAULT_VARIABLE_FACTORS = {
+    "waiting_cost_per_hour": 5.0,
+    "waiting_emissions_per_hour": 0.0,
+    "transfer_cost_per_ton": 50.0,
+    "transfer_emissions_per_ton": 5.0
+}
+
+
 # Country to continent mapping for landmass filtering
 COUNTRY_TO_CONTINENT = {
     # Europe
@@ -730,6 +769,10 @@ def main():
     output_data = {
         "hubs": json_hubs,
         "mode_factors": MODE_FACTORS,
+        "capacities": CAPACITIES,
+        "default_fixed_costs": DEFAULT_FIXED_COSTS,
+        "default_fixed_emissions": DEFAULT_FIXED_EMISSIONS,
+        "default_variable_factors": DEFAULT_VARIABLE_FACTORS,
         "arc_templates": all_arcs,
         "shipments": shipments,
     }
