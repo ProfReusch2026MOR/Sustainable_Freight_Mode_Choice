@@ -169,9 +169,9 @@
       inset: 7pt,
       align: center + horizon,
       [*Instance*], [*Routes*], [*Shipments*], [*Runtime*], [*Cost / CO2*],
-      [small], [10], [3], [1.903 s], [921.27 EUR / 125.35 kg],
-      [medium], [20], [5], [3.528 s], [1675.77 EUR / 219.43 kg],
-      [large], [30], [8], [8.090 s], [2644.14 EUR / 348.31 kg],
+      [small], [10], [3], [1.587 s], [921.27 EUR / 125.35 kg],
+      [medium], [20], [5], [7.913 s], [1675.77 EUR / 219.43 kg],
+      [large], [30], [8], [17.355 s], [2644.14 EUR / 348.31 kg],
     )
   ]
 
@@ -209,6 +209,19 @@
   - Higher emission weights produce a full rail solution in this scenario.
 ]
 
+#slide(title: "Limitations & Next Evaluation Steps")[
+  - These results are reproducible scenario evidence, not a general policy conclusion
+  - Current scope: deterministic subnetworks, 3--8 shipments, linear emission factors
+  - Solver status is reported; no optimality gap is claimed when HiGHS does not expose one
+  - Next evaluation:
+    - compare MILP, Dijkstra, and Tabu Search on identical instances
+    - test multiple demand and disruption scenarios
+    - report solution quality, timeout behavior, and variance
+
+  #framed(title: "Defensible takeaway")[
+    The experiments demonstrate model behavior and parameter sensitivity within the tested scenarios.
+  ]
+]
 #slide(title: "Reproducibility & Sam Contribution")[
   - Designed and implemented computational experiments
   - Added cost-emission sensitivity analysis with lambda sweep

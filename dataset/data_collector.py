@@ -1,5 +1,6 @@
 import os
 import io
+import sys
 import json
 import requests
 import pandas as pd
@@ -19,12 +20,48 @@ SEAROUTES_API_KEY = os.getenv("SEAROUTES_API_KEY")
 # Output path
 OUTPUT_FILE = "dataset/multimodal_network.json"
 
-# Configuration parameters
-MAX_HUBS = 1000  # Target number of hubs
+# Dataset size configuration: "S" (small), "M" (medium), "L" (large/default)
+DATASET_SIZE = "L"
+
+# Map dataset sizes to specific parameter settings
+SIZE_CONFIGS = {
+    "S": {
+        "max_hubs": 100,
+        "max_cities_per_country": 3,
+        "nearest_road_k": 2,
+        "nearest_rail_k": 1,
+    },
+    "M": {
+        "max_hubs": 300,
+        "max_cities_per_country": 6,
+        "nearest_road_k": 3,
+        "nearest_rail_k": 2,
+    },
+    "L": {
+        "max_hubs": 1000,
+        "max_cities_per_country": 15,
+        "nearest_road_k": 3,
+        "nearest_rail_k": 2,
+    },
+}
+
+# Resolve active configuration (using the global DATASET_SIZE, or checking environment)
+_selected_size = os.getenv("DATASET_SIZE", DATASET_SIZE).upper()
+if _selected_size not in SIZE_CONFIGS:
+    _selected_size = "L"
+
+active_config = SIZE_CONFIGS[_selected_size]
+
+MAX_HUBS = active_config["max_hubs"]  # Target number of hubs
 ROAD_MAX_DIST_KM = 800  # Max distance for road connections
 RAIL_MAX_DIST_KM = 1500  # Max distance for rail connections
-NEAREST_ROAD_K = 3  # Connect each hub to its k-nearest road neighbors
-NEAREST_RAIL_K = 2  # Connect each rail hub to its k-nearest rail neighbors
+NEAREST_ROAD_K = active_config[
+    "nearest_road_k"
+]  # Connect each hub to its k-nearest road neighbors
+NEAREST_RAIL_K = active_config[
+    "nearest_rail_k"
+]  # Connect each rail hub to its k-nearest rail neighbors
+MAX_CITIES_PER_COUNTRY = active_config["max_cities_per_country"]
 
 # Mode factors as specified by the user
 MODE_FACTORS = {
@@ -45,6 +82,35 @@ MODE_FACTORS = {
         "emissions_kg_per_ton_km": 0.015,
     },
 }
+
+CAPACITIES = {
+    "road": 40.0,
+    "rail": 1000.0,
+    "air": 50.0,
+    "ship": 8000.0,
+    "waiting": 100.0,
+    "transfer": 25.0,
+}
+
+DEFAULT_FIXED_COSTS = {
+    "transport": {"road": 150.0, "rail": 500.0, "air": 1200.0, "ship": 800.0},
+    "waiting": 0.0,
+    "transfer": 100.0,
+}
+
+DEFAULT_FIXED_EMISSIONS = {
+    "transport": {"road": 30.0, "rail": 80.0, "air": 250.0, "ship": 120.0},
+    "waiting": 0.0,
+    "transfer": 10.0,
+}
+
+DEFAULT_VARIABLE_FACTORS = {
+    "waiting_cost_per_hour": 5.0,
+    "waiting_emissions_per_hour": 0.0,
+    "transfer_cost_per_ton": 50.0,
+    "transfer_emissions_per_ton": 5.0,
+}
+
 
 # Country to continent mapping for landmass filtering
 COUNTRY_TO_CONTINENT = {
@@ -196,7 +262,7 @@ def select_hubs(cities_df, airports_df, ports_df):
 
     # Group by country to get a uniform global distribution
     # We take a max number of cities per country to ensure global coverage
-    max_cities_per_country = 15
+    max_cities_per_country = MAX_CITIES_PER_COUNTRY
     selected_cities = []
 
     # Sort countries by number of cities to give major nations slightly more weight
@@ -639,7 +705,26 @@ def generate_sample_shipments(hubs):
 
 
 def main():
-    print("=== MULTI-MODAL DATA COLLECTION SCRIPT ===")
+    global MAX_HUBS, NEAREST_ROAD_K, NEAREST_RAIL_K, MAX_CITIES_PER_COUNTRY
+
+    # Check for size argument in command line or environment variable
+    selected_size = os.getenv("DATASET_SIZE", DATASET_SIZE).upper()
+    for idx, arg in enumerate(sys.argv):
+        if arg in ("--size", "-s") and idx + 1 < len(sys.argv):
+            selected_size = sys.argv[idx + 1].upper()
+            break
+
+    if selected_size in SIZE_CONFIGS:
+        cfg = SIZE_CONFIGS[selected_size]
+        MAX_HUBS = cfg["max_hubs"]
+        NEAREST_ROAD_K = cfg["nearest_road_k"]
+        NEAREST_RAIL_K = cfg["nearest_rail_k"]
+        MAX_CITIES_PER_COUNTRY = cfg["max_cities_per_country"]
+        actual_size = selected_size
+    else:
+        actual_size = "L"
+
+    print(f"=== MULTI-MODAL DATA COLLECTION SCRIPT (Size: {actual_size}) ===")
 
     # Step 1: Download
     cities_df, airports_df, ports_df = download_data()
@@ -678,6 +763,10 @@ def main():
     output_data = {
         "hubs": json_hubs,
         "mode_factors": MODE_FACTORS,
+        "capacities": CAPACITIES,
+        "default_fixed_costs": DEFAULT_FIXED_COSTS,
+        "default_fixed_emissions": DEFAULT_FIXED_EMISSIONS,
+        "default_variable_factors": DEFAULT_VARIABLE_FACTORS,
         "arc_templates": all_arcs,
         "shipments": shipments,
     }

@@ -30,6 +30,30 @@ DEFAULT_OUTPUT_DIR = ROOT / "experiments" / "results"
 DEFAULT_PLANNING_DAYS = 7
 MODES = ("road", "rail", "air", "ship")
 LAMBDA_VALUES = (0.0, 0.1, 0.5, 1.0, 2.0, 5.0)
+COMPUTATIONAL_COLUMNS = (
+    "instance",
+    "method",
+    "shipment_count",
+    "route_count",
+    "time_limit_sec",
+    "status",
+    "is_optimal",
+    "runtime_sec",
+    "objective_value",
+    "total_cost_eur",
+    "total_emissions_kg",
+    "total_time_min",
+    "road_share_pct",
+    "rail_share_pct",
+    "air_share_pct",
+    "ship_share_pct",
+)
+SENSITIVITY_COLUMNS = COMPUTATIONAL_COLUMNS + (
+    "lambda",
+    "cost_weight",
+    "emissions_weight",
+    "time_weight",
+)
 
 
 @dataclass(frozen=True)
@@ -60,6 +84,23 @@ PROFILES = {
         ),
     ),
 }
+
+
+def profile_output_paths(
+    profile: str,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+) -> dict[str, Path]:
+    if profile not in PROFILES:
+        raise ValueError(f"Unknown experiment profile: {profile}")
+    resolved_output_dir = (
+        output_dir / "modal_shift" if profile == "modal-shift" else output_dir
+    )
+    return {
+        "computational_csv": resolved_output_dir / "computational_experiments.csv",
+        "sensitivity_csv": resolved_output_dir / "sensitivity_analysis.csv",
+        "sensitivity_svg": resolved_output_dir / "sensitivity_cost_emissions.svg",
+        "mode_share_svg": resolved_output_dir / "sensitivity_lambda_mode_share.svg",
+    }
 
 
 def lambda_to_weights(lambda_value: float) -> ObjectiveWeights:
@@ -352,9 +393,14 @@ def run_sensitivity_analysis(
     return rows
 
 
-def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
+def write_csv(
+    path: Path,
+    rows: list[dict[str, str]],
+    fieldnames: tuple[str, ...] | None = None,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = sorted({field for row in rows for field in row})
+    if fieldnames is None:
+        fieldnames = tuple(sorted({field for row in rows for field in row}))
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
@@ -478,29 +524,25 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    output_dir = (
-        args.output_dir / "modal_shift"
-        if args.profile == "modal-shift"
-        else args.output_dir
-    )
+    output_paths = profile_output_paths(args.profile, args.output_dir)
     base_network = NetworkDataLoader.from_json(DATASET_PATH)
     specs = PROFILES[args.profile]
     computational_rows = run_computational_experiments(base_network, specs)
     sensitivity_spec = specs[0]
     sensitivity_rows = run_sensitivity_analysis(base_network, sensitivity_spec)
 
-    write_csv(output_dir / "computational_experiments.csv", computational_rows)
-    write_csv(output_dir / "sensitivity_analysis.csv", sensitivity_rows)
-    write_cost_emissions_svg(
-        output_dir / "sensitivity_cost_emissions.svg", sensitivity_rows
+    write_csv(
+        output_paths["computational_csv"],
+        computational_rows,
+        COMPUTATIONAL_COLUMNS,
     )
-    write_lambda_mode_share_svg(
-        output_dir / "sensitivity_lambda_mode_share.svg", sensitivity_rows
-    )
+    write_csv(output_paths["sensitivity_csv"], sensitivity_rows, SENSITIVITY_COLUMNS)
+    write_cost_emissions_svg(output_paths["sensitivity_svg"], sensitivity_rows)
+    write_lambda_mode_share_svg(output_paths["mode_share_svg"], sensitivity_rows)
 
     print(f"Wrote {len(computational_rows)} computational rows.")
     print(f"Wrote {len(sensitivity_rows)} sensitivity rows.")
-    print(f"Output directory: {output_dir}")
+    print(f"Output directory: {output_paths['computational_csv'].parent}")
 
 
 if __name__ == "__main__":

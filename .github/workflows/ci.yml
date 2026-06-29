@@ -25,11 +25,23 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Ruff
-        run: pip install ruff
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt ruff
+
+      - name: Compile Python modules
+        run: python -m compileall freight_routing experiments
+
+      - name: Run experiment tests
+        run: python -m unittest tests.test_experiments
+
+      - name: Run smoke experiment
+        run: python experiments/run_experiments.py --profile smoke
 
       - name: Run Ruff format check
         run: ruff format --check .
+
+      - name: Run Ruff lint
+        run: ruff check experiments tests freight_routing
 
   build-documentation:
     runs-on: ubuntu-latest
@@ -43,11 +55,16 @@ jobs:
       - name: Compile PDF documentation
         run: typst compile documentation/main.typ documentation/main.pdf --root .
 
+      - name: Compile presentation PDF
+        run: typst compile presentations/first_pitch.typ presentations/first_pitch.pdf --root .
+
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
         with:
-          name: project-documentation
-          path: documentation/main.pdf
+          name: project-pdfs
+          path: |
+            documentation/main.pdf
+            presentations/first_pitch.pdf
 
       - name: Release Latest Build (Prerelease)
         uses: softprops/action-gh-release@v2
@@ -56,7 +73,9 @@ jobs:
           tag_name: latest
           name: Latest Documentation Build
           body: Automatic PDF compilation of the project documentation from the main branch.
-          files: documentation/main.pdf
+          files: |
+            documentation/main.pdf
+            presentations/first_pitch.pdf
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -65,6 +84,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: documentation/main.pdf
+          files: |
+            documentation/main.pdf
+            presentations/first_pitch.pdf
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

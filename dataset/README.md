@@ -77,10 +77,10 @@ Defines default capacities (in metric tons) for different transport modes and in
 
 ```json
 "capacities": {
-  "road": 10.0,
-  "rail": 40.0,
-  "air": 5.0,
-  "ship": 80.0,
+  "road": 40.0,
+  "rail": 1000.0,
+  "air": 50.0,
+  "ship": 8000.0,
   "waiting": 100.0,
   "transfer": 25.0
 }

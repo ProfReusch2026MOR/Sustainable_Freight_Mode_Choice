@@ -11,25 +11,18 @@ USER_INPUT = {
     "input_file": "multimodal_network.json",
     "start_hub": "ALA_8996",
     "end_hub": "BEJ_193",
-  
     "shipment_weight_tons": 2.0,
-
     "preference_cost": 1,
-    "preference_time": 0,
-    "preference_co2": 0,
-
+    "preference_time": 0.00,
+    "preference_co2": 0.00,
     "preference_mode_change": 0.03,
-
     "max_expansions": 200_000,
-
+    "max_neighbors_per_node": 3,
     "allowed_modes": [],
- 
     "forbidden_modes": [],
-
     "show_available_hubs": False,
-    
     "hub_search_term": "",
-    }
+}
 
 
 @dataclass(frozen=True)
@@ -263,6 +256,7 @@ def astar_multimodal(
     weights: Dict[str, float],
     scales: Dict[str, float],
     max_expansions: int,
+    max_neighbors_per_node: Optional[int] = None,
 ) -> Optional[RouteResult]:
 
     def heuristic(_: str) -> float:
@@ -292,7 +286,18 @@ def astar_multimodal(
 
         expansions += 1
 
-        for edge in graph.get(node, []):
+        out_edges = graph.get(node, [])
+        if (
+            max_neighbors_per_node is not None
+            and len(out_edges) > max_neighbors_per_node
+        ):
+            # Nur die lokal guenstigsten Kanten betrachten: macht die Suche
+            # schnell, kann aber global guenstigere Pfade uebersehen.
+            out_edges = sorted(
+                out_edges, key=lambda e: edge_score(e, weights, scales, prev_mode)
+            )[:max_neighbors_per_node]
+
+        for edge in out_edges:
             step = edge_score(edge, weights, scales, prev_mode)
             new_state = (edge.target, edge.mode)
             new_g = current_g + step
@@ -421,7 +426,22 @@ def calculate_four_routes(
             weights=weights,
             scales=scales,
             max_expansions=max_expansions,
+            max_neighbors_per_node=int(USER_INPUT["max_neighbors_per_node"]),
         )
+
+        if result is None:
+            # Fallback: das Limit war zu eng und hat in eine Sackgasse gefuehrt.
+            # Damit ueberhaupt eine Route gefunden wird, hier einmal ohne
+            # Verzweigungslimit erneut suchen.
+            result = astar_multimodal(
+                graph=graph,
+                start=start,
+                goal=goal,
+                weights=weights,
+                scales=scales,
+                max_expansions=max_expansions,
+                max_neighbors_per_node=None,
+            )
 
         if result is not None:
             improved = improve_route_by_shortcuts(result, graph, weights, scales)
@@ -581,7 +601,6 @@ def main() -> None:
         return
 
     routes = remove_duplicate_routes_keep_type(routes)
-
 
     for i, route in enumerate(routes, start=1):
         print_route(route, i)

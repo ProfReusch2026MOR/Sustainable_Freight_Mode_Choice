@@ -1,0 +1,13 @@
+variant,method,status,is_optimal,runtime_sec,objective_value,full_evaluated_cost_eur,full_evaluated_emissions_kg,route_only_cost_eur,route_only_emissions_kg,total_time_min,transport_time_min,total_distance_km,mode_sequence,path,mode_changes,note
+balanced,HiGHS MILP,Optimal,true,0.709,0.002161,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,"time-expanded exact solver with capacities, waiting, transfers, fixed and variable costs"
+balanced,A*/Dijkstra baseline,feasible,N/A,0.000,N/A,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,static weighted route search used as heuristic start solution
+balanced,Tabu Search,feasible,N/A,0.000,N/A,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,static metaheuristic based on A*/Dijkstra route plus tabu neighborhood search
+cost_min,HiGHS MILP,Optimal,true,0.726,0.001863,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,"time-expanded exact solver with capacities, waiting, transfers, fixed and variable costs"
+cost_min,A*/Dijkstra baseline,feasible,N/A,0.000,N/A,760.54,89.31,260.54,9.30,343.00,343.00,186.10,rail,BER_3970 -> LEI_3981,0,static weighted route search used as heuristic start solution
+cost_min,Tabu Search,feasible,N/A,0.000,N/A,760.54,89.31,260.54,9.30,343.00,343.00,186.10,rail,BER_3970 -> LEI_3981,0,static metaheuristic based on A*/Dijkstra route plus tabu neighborhood search
+time_min,HiGHS MILP,Optimal,true,0.723,0.003309,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,"time-expanded exact solver with capacities, waiting, transfers, fixed and variable costs"
+time_min,A*/Dijkstra baseline,feasible,N/A,0.000,N/A,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,static weighted route search used as heuristic start solution
+time_min,Tabu Search,feasible,N/A,0.000,N/A,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,static metaheuristic based on A*/Dijkstra route plus tabu neighborhood search
+emissions_min,HiGHS MILP,Optimal,true,0.688,0.001186,604.08,64.06,454.08,34.06,129.00,129.00,189.20,road,BER_3970 -> LEI_3981,0,"time-expanded exact solver with capacities, waiting, transfers, fixed and variable costs"
+emissions_min,A*/Dijkstra baseline,feasible,N/A,0.000,N/A,760.54,89.31,260.54,9.30,343.00,343.00,186.10,rail,BER_3970 -> LEI_3981,0,static weighted route search used as heuristic start solution
+emissions_min,Tabu Search,feasible,N/A,0.000,N/A,760.54,89.31,260.54,9.30,343.00,343.00,186.10,rail,BER_3970 -> LEI_3981,0,static metaheuristic based on A*/Dijkstra route plus tabu neighborhood search

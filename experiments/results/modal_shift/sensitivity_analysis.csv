@@ -1,7 +1,7 @@
-air_share_pct,cost_weight,emissions_weight,instance,is_optimal,lambda,method,objective_value,rail_share_pct,road_share_pct,route_count,runtime_sec,ship_share_pct,shipment_count,status,time_limit_sec,time_weight,total_cost_eur,total_emissions_kg,total_time_min
-0.00,1.000000,0.000000,modal_shift,True,0,HiGHS MILP,0.002350,75.74,24.26,10,1.837,0.00,3,Optimal,20,0.000000,4899.36,352.28,1494.00
-0.00,0.909091,0.090909,modal_shift,True,0.1,HiGHS MILP,0.002242,75.74,24.26,10,1.955,0.00,3,Optimal,20,0.000000,4899.36,352.28,1494.00
-0.00,0.666667,0.333333,modal_shift,True,0.5,HiGHS MILP,0.001953,75.74,24.26,10,1.817,0.00,3,Optimal,20,0.000000,4899.36,352.28,1494.00
-0.00,0.500000,0.500000,modal_shift,True,1,HiGHS MILP,0.001755,75.74,24.26,10,1.842,0.00,3,Optimal,20,0.000000,4899.36,352.28,1494.00
-0.00,0.333333,0.666667,modal_shift,True,2,HiGHS MILP,0.001545,100.00,0.00,10,1.949,0.00,3,Optimal,20,0.000000,4998.72,339.24,2034.00
-0.00,0.166667,0.833333,modal_shift,True,5,HiGHS MILP,0.001327,100.00,0.00,10,1.857,0.00,3,Optimal,20,0.000000,4998.72,339.24,2034.00
+instance,method,shipment_count,route_count,time_limit_sec,status,is_optimal,runtime_sec,objective_value,total_cost_eur,total_emissions_kg,total_time_min,road_share_pct,rail_share_pct,air_share_pct,ship_share_pct,lambda,cost_weight,emissions_weight,time_weight
+modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.477,0.002350,4899.36,352.28,1494.00,24.26,75.74,0.00,0.00,0,1.000000,0.000000,0.000000
+modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.897,0.002242,4899.36,352.28,1494.00,24.26,75.74,0.00,0.00,0.1,0.909091,0.090909,0.000000
+modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.697,0.001953,4899.36,352.28,1494.00,24.26,75.74,0.00,0.00,0.5,0.666667,0.333333,0.000000
+modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.805,0.001755,4899.36,352.28,1494.00,24.26,75.74,0.00,0.00,1,0.500000,0.500000,0.000000
+modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.796,0.001545,4998.72,339.24,2034.00,0.00,100.00,0.00,0.00,2,0.333333,0.666667,0.000000
+modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.666,0.001327,4998.72,339.24,2034.00,0.00,100.00,0.00,0.00,5,0.166667,0.833333,0.000000

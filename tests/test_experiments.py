@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from experiments.run_experiments import (
+    COMPUTATIONAL_COLUMNS,
+    SENSITIVITY_COLUMNS,
     PROFILES,
     _clustered_point_annotations,
     generate_shipments,
     lambda_to_weights,
     mode_share_percentages,
+    profile_output_paths,
     result_to_row,
 )
 from freight_routing.data_models import (
@@ -25,6 +29,90 @@ from freight_routing.data_models import (
 
 
 class ExperimentSummaryTests(unittest.TestCase):
+    def test_computational_output_schema_contains_presentation_metrics(self):
+        required_columns = {
+            "instance",
+            "status",
+            "runtime_sec",
+            "objective_value",
+            "total_cost_eur",
+            "total_emissions_kg",
+            "total_time_min",
+            "road_share_pct",
+            "rail_share_pct",
+            "air_share_pct",
+            "ship_share_pct",
+        }
+
+        self.assertTrue(required_columns.issubset(COMPUTATIONAL_COLUMNS))
+
+    def test_sensitivity_output_schema_documents_lambda_sweep(self):
+        self.assertTrue(set(COMPUTATIONAL_COLUMNS).issubset(SENSITIVITY_COLUMNS))
+        self.assertIn("lambda", SENSITIVITY_COLUMNS)
+        self.assertIn("cost_weight", SENSITIVITY_COLUMNS)
+        self.assertIn("emissions_weight", SENSITIVITY_COLUMNS)
+        self.assertIn("time_weight", SENSITIVITY_COLUMNS)
+
+    def test_profile_output_paths_include_csv_and_svg_artifacts(self):
+        output_paths = profile_output_paths("modal-shift", Path("out"))
+
+        self.assertEqual(
+            output_paths["computational_csv"],
+            Path("out/modal_shift/computational_experiments.csv"),
+        )
+        self.assertEqual(
+            output_paths["sensitivity_svg"],
+            Path("out/modal_shift/sensitivity_cost_emissions.svg"),
+        )
+        self.assertEqual(
+            output_paths["mode_share_svg"],
+            Path("out/modal_shift/sensitivity_lambda_mode_share.svg"),
+        )
+
+    def test_experiment_readme_documents_reproducibility_commands(self):
+        readme = Path("experiments/README.md")
+
+        self.assertTrue(readme.exists())
+        text = readme.read_text(encoding="utf-8")
+        self.assertIn("python experiments/run_experiments.py --profile smoke", text)
+        self.assertIn(
+            "python experiments/run_experiments.py --profile presentation", text
+        )
+        self.assertIn(
+            "python experiments/run_experiments.py --profile modal-shift", text
+        )
+
+    def test_results_summary_documents_baseline_and_modal_shift_findings(self):
+        summary = Path("experiments/results/summary.md")
+
+        self.assertTrue(summary.exists())
+        text = summary.read_text(encoding="utf-8")
+        self.assertIn("road dominance", text.lower())
+        self.assertIn("modal-shift", text.lower())
+        self.assertIn("100% Rail", text)
+
+    def test_presentation_documents_claim_limits_and_rebuild_command(self):
+        slides = Path("presentations/first_pitch.typ").read_text(encoding="utf-8")
+        checklist = Path("presentation_validation.md").read_text(encoding="utf-8")
+
+        self.assertIn('slide(title: "Limitations & Next Evaluation Steps")', slides)
+        self.assertIn("not a general policy conclusion", slides)
+        self.assertIn(
+            "typst compile presentations/first_pitch.typ "
+            "presentations/first_pitch.pdf --root .",
+            checklist,
+        )
+
+    def test_ci_validates_experiments_and_builds_presentation(self):
+        workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+        self.assertIn("python -m unittest tests.test_experiments", workflow)
+        self.assertIn(
+            "typst compile presentations/first_pitch.typ "
+            "presentations/first_pitch.pdf --root .",
+            workflow,
+        )
+
     def test_lambda_to_weights_keeps_time_zero_and_normalizes_cost_emissions(self):
         weights = lambda_to_weights(2.0)
 
