@@ -55,8 +55,12 @@ active_config = SIZE_CONFIGS[_selected_size]
 MAX_HUBS = active_config["max_hubs"]  # Target number of hubs
 ROAD_MAX_DIST_KM = 800  # Max distance for road connections
 RAIL_MAX_DIST_KM = 1500  # Max distance for rail connections
-NEAREST_ROAD_K = active_config["nearest_road_k"]  # Connect each hub to its k-nearest road neighbors
-NEAREST_RAIL_K = active_config["nearest_rail_k"]  # Connect each rail hub to its k-nearest rail neighbors
+NEAREST_ROAD_K = active_config[
+    "nearest_road_k"
+]  # Connect each hub to its k-nearest road neighbors
+NEAREST_RAIL_K = active_config[
+    "nearest_rail_k"
+]  # Connect each rail hub to its k-nearest rail neighbors
 MAX_CITIES_PER_COUNTRY = active_config["max_cities_per_country"]
 
 # Mode factors as specified by the user
@@ -85,36 +89,26 @@ CAPACITIES = {
     "air": 50.0,
     "ship": 8000.0,
     "waiting": 100.0,
-    "transfer": 25.0
+    "transfer": 25.0,
 }
 
 DEFAULT_FIXED_COSTS = {
-    "transport": {
-        "road": 150.0,
-        "rail": 500.0,
-        "air": 1200.0,
-        "ship": 800.0
-    },
+    "transport": {"road": 150.0, "rail": 500.0, "air": 1200.0, "ship": 800.0},
     "waiting": 0.0,
-    "transfer": 100.0
+    "transfer": 100.0,
 }
 
 DEFAULT_FIXED_EMISSIONS = {
-    "transport": {
-        "road": 30.0,
-        "rail": 80.0,
-        "air": 250.0,
-        "ship": 120.0
-    },
+    "transport": {"road": 30.0, "rail": 80.0, "air": 250.0, "ship": 120.0},
     "waiting": 0.0,
-    "transfer": 10.0
+    "transfer": 10.0,
 }
 
 DEFAULT_VARIABLE_FACTORS = {
     "waiting_cost_per_hour": 5.0,
     "waiting_emissions_per_hour": 0.0,
     "transfer_cost_per_ton": 50.0,
-    "transfer_emissions_per_ton": 5.0
+    "transfer_emissions_per_ton": 5.0,
 }
 
 

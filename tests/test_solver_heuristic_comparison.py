@@ -9,6 +9,7 @@ from experiments.compare_solver_heuristic import (
     COMPARISON_COLUMNS,
     VARIANTS,
     ComparisonRow,
+    RouteAccounting,
     build_tabu_search_kwargs,
     build_short_evaluation,
     load_heuristic_module,
@@ -41,8 +42,10 @@ class SolverHeuristicComparisonTests(unittest.TestCase):
                 is_optimal="true",
                 runtime_sec="0.100",
                 objective_value="0.420000",
-                total_cost_eur="100.00",
-                total_emissions_kg="50.00",
+                full_evaluated_cost_eur="100.00",
+                full_evaluated_emissions_kg="50.00",
+                route_only_cost_eur="80.00",
+                route_only_emissions_kg="30.00",
                 total_time_min="120.00",
                 transport_time_min="100.00",
                 total_distance_km="200.00",
@@ -58,8 +61,10 @@ class SolverHeuristicComparisonTests(unittest.TestCase):
                 is_optimal="N/A",
                 runtime_sec="0.010",
                 objective_value="N/A",
-                total_cost_eur="105.00",
-                total_emissions_kg="49.00",
+                full_evaluated_cost_eur="155.00",
+                full_evaluated_emissions_kg="69.00",
+                route_only_cost_eur="105.00",
+                route_only_emissions_kg="49.00",
                 total_time_min="130.00",
                 transport_time_min="130.00",
                 total_distance_km="210.00",
@@ -93,6 +98,9 @@ class SolverHeuristicComparisonTests(unittest.TestCase):
             self.assertIn("Unterschiede zwischen den Loesungen", markdown)
             self.assertIn("Kurze Evaluation", markdown)
             self.assertIn("nicht direkt vergleichbar", markdown)
+            self.assertIn("Full evaluated cost", markdown)
+            self.assertIn("Route-only cost", markdown)
+            self.assertIn("fixed activation cost", markdown)
             self.assertIn("Minglu Li", markdown)
 
     def test_load_heuristic_module_supports_dataclasses_in_spaced_filename(self):
@@ -124,8 +132,10 @@ class SolverHeuristicComparisonTests(unittest.TestCase):
                 is_optimal="true",
                 runtime_sec="0.100",
                 objective_value="0.420000",
-                total_cost_eur="604.08",
-                total_emissions_kg="64.06",
+                full_evaluated_cost_eur="604.08",
+                full_evaluated_emissions_kg="64.06",
+                route_only_cost_eur="454.08",
+                route_only_emissions_kg="34.06",
                 total_time_min="129.00",
                 transport_time_min="129.00",
                 total_distance_km="189.20",
@@ -141,8 +151,10 @@ class SolverHeuristicComparisonTests(unittest.TestCase):
                 is_optimal="N/A",
                 runtime_sec="0.010",
                 objective_value="N/A",
-                total_cost_eur="260.54",
-                total_emissions_kg="9.30",
+                full_evaluated_cost_eur="760.54",
+                full_evaluated_emissions_kg="89.30",
+                route_only_cost_eur="260.54",
+                route_only_emissions_kg="9.30",
                 total_time_min="343.00",
                 transport_time_min="343.00",
                 total_distance_km="186.10",
@@ -156,6 +168,22 @@ class SolverHeuristicComparisonTests(unittest.TestCase):
         evaluation = build_short_evaluation(rows)
 
         self.assertIn("abweichende Routen oder Modi", evaluation)
+        self.assertIn("fixed activation cost", evaluation)
+
+    def test_route_accounting_adds_fixed_transport_costs_and_emissions(self):
+        accounting = RouteAccounting(
+            fixed_cost_by_arc_id={"rail_arc": 500.0},
+            fixed_emissions_by_arc_id={"rail_arc": 80.0},
+        )
+
+        full_cost, full_emissions = accounting.evaluate(
+            route_cost=260.54,
+            route_emissions=9.305,
+            arc_ids=["rail_arc"],
+        )
+
+        self.assertAlmostEqual(full_cost, 760.54)
+        self.assertAlmostEqual(full_emissions, 89.305)
 
 
 if __name__ == "__main__":

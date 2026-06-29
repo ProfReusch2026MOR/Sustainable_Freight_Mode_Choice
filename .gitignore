@@ -9,3 +9,9 @@ freight_routing/__pycache__/
 
 # Ignore generated interactive HTML maps
 notebooks/*.html
+
+# Codex scratch / verification artifacts
+experiments/_scratch_verify_comparison/
+experiments/_verify_solver_heuristic/
+experiments/results_fixed/
+experiments/.idea/

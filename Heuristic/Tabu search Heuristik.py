@@ -8,42 +8,31 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional, Any, Set
 
 USER_INPUT = {
-   
     "input_file": "multimodal_network.json",
-    
     "start_hub": "ALA_8996",
     "end_hub": "BEJ_193",
-   
     "shipment_weight_tons": 2.0,
-  
     "preference_cost": 1,
     "preference_time": 0.0,
     "preference_co2": 0.0,
- 
     "preference_mode_change": 0.03,
-  
     "max_expansions": 200_000,
-
     # Begrenzt den initialen A*-Lauf (= Startloesung der Tabu Search) auf die
     # gleiche Anzahl betrachteter Kanten pro Knoten wie im Dijkstra-Skript.
     # Dadurch ist die Startloesung ebenfalls schnell, aber suboptimal. Die
     # anschliessende Tabu-Nachbarschaftssuche arbeitet danach ohne dieses
     # Limit und kann die Startloesung dadurch verbessern.
     "tabu_initial_max_neighbors_per_node": 3,
-
     "allowed_modes": [],
-  
     "forbidden_modes": [],
-  
     "show_available_hubs": False,
-  
     "tabu_max_iterations": 80,
     "tabu_tenure": 10,
     "tabu_neighbors_per_iteration": 25,
     "tabu_no_improvement_limit": 20,
-
     "hub_search_term": "",
 }
+
 
 @dataclass(frozen=True)
 class Edge:
@@ -175,7 +164,6 @@ def load_network(
     factors = data.get("mode_factors", {})
     graph: Dict[str, List[Edge]] = {}
 
-    
     for hub in data.get("hubs", []):
         hub_id = hub.get("id")
         if hub_id:
@@ -225,7 +213,7 @@ def load_network(
 
 
 def estimate_scales(graph: Dict[str, List[Edge]]) -> Dict[str, float]:
-    
+
     edges = [edge for edge_list in graph.values() for edge in edge_list]
 
     if not edges:
@@ -304,7 +292,10 @@ def astar_multimodal(
         expansions += 1
 
         out_edges = graph.get(node, [])
-        if max_neighbors_per_node is not None and len(out_edges) > max_neighbors_per_node:
+        if (
+            max_neighbors_per_node is not None
+            and len(out_edges) > max_neighbors_per_node
+        ):
             out_edges = sorted(
                 out_edges, key=lambda e: edge_score(e, weights, scales, prev_mode)
             )[:max_neighbors_per_node]
@@ -420,7 +411,7 @@ def route_score_from_edges(
     weights: Dict[str, float],
     scales: Dict[str, float],
 ) -> float:
-    
+
     return sum(
         edge_score(edge, weights, scales, edges[i - 1].mode if i > 0 else None)
         for i, edge in enumerate(edges)
@@ -433,7 +424,7 @@ def build_route_result(
     weights: Dict[str, float],
     scales: Dict[str, float],
 ) -> Optional[RouteResult]:
-    
+
     if not edges:
         return None
 
@@ -461,7 +452,7 @@ def astar_multimodal_with_forbidden_arcs(
     max_expansions: int,
     forbidden_arc_ids: Optional[Set[str]] = None,
 ) -> Optional[RouteResult]:
-   
+
     forbidden_arc_ids = forbidden_arc_ids or set()
 
     def heuristic(_: str) -> float:
@@ -529,7 +520,7 @@ def generate_tabu_neighbors(
     max_expansions: int,
     max_neighbors: int,
 ) -> List[Tuple[str, RouteResult]]:
-   
+
     neighbors: List[Tuple[str, RouteResult]] = []
     seen_paths: Set[Tuple[str, ...]] = set()
 
@@ -681,7 +672,9 @@ def calculate_four_tabu_routes(
             weights=weights,
             scales=scales,
             max_expansions=max_expansions,
-            initial_max_neighbors_per_node=int(USER_INPUT["tabu_initial_max_neighbors_per_node"]),
+            initial_max_neighbors_per_node=int(
+                USER_INPUT["tabu_initial_max_neighbors_per_node"]
+            ),
             max_iterations=int(USER_INPUT["tabu_max_iterations"]),
             tabu_tenure=int(USER_INPUT["tabu_tenure"]),
             neighbors_per_iteration=int(USER_INPUT["tabu_neighbors_per_iteration"]),
@@ -769,7 +762,7 @@ def print_comparison_table(routes: List[RouteResult]) -> None:
 
 
 def remove_duplicate_routes_keep_type(routes: List[RouteResult]) -> List[RouteResult]:
-   
+
     grouped: Dict[Tuple[str, ...], RouteResult] = {}
 
     for route in routes:
@@ -831,9 +824,7 @@ def main() -> None:
         return
 
     if not start or not end:
-        raise ValueError(
-             
-        )
+        raise ValueError()
 
     if start not in graph:
         raise ValueError(f"Start-Hub {start} ist nicht im Graphen enthalten.")

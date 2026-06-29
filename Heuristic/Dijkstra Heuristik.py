@@ -11,27 +11,18 @@ USER_INPUT = {
     "input_file": "multimodal_network.json",
     "start_hub": "ALA_8996",
     "end_hub": "BEJ_193",
-  
     "shipment_weight_tons": 2.0,
-
     "preference_cost": 1,
     "preference_time": 0.00,
     "preference_co2": 0.00,
-
     "preference_mode_change": 0.03,
-
     "max_expansions": 200_000,
-
     "max_neighbors_per_node": 3,
-
     "allowed_modes": [],
- 
     "forbidden_modes": [],
-
     "show_available_hubs": False,
-    
     "hub_search_term": "",
-    }
+}
 
 
 @dataclass(frozen=True)
@@ -296,7 +287,10 @@ def astar_multimodal(
         expansions += 1
 
         out_edges = graph.get(node, [])
-        if max_neighbors_per_node is not None and len(out_edges) > max_neighbors_per_node:
+        if (
+            max_neighbors_per_node is not None
+            and len(out_edges) > max_neighbors_per_node
+        ):
             # Nur die lokal guenstigsten Kanten betrachten: macht die Suche
             # schnell, kann aber global guenstigere Pfade uebersehen.
             out_edges = sorted(
@@ -607,7 +601,6 @@ def main() -> None:
         return
 
     routes = remove_duplicate_routes_keep_type(routes)
-
 
     for i, route in enumerate(routes, start=1):
         print_route(route, i)

@@ -11,7 +11,7 @@
 #let language = "de" // "de" or "en"
 #show: supercharged-dhbw.with(
   language: "de",
-  title: "Test-Titel",
+  title: "Nachhaltige multimodale Transportplanung: Optimierungsmodell und heuristische Lösungsverfahren",
   authors: (
     (
       name: "Benedikt Wehner",
@@ -49,14 +49,14 @@
   at-university: true, // if true the company name on the title page and the confidentiality statement are hidden
   bibliography: bibliography("../literature/sources.bib"),
   bib-style: "ieee",
-  date: datetime(day: 01, month: 01, year: 1970),
+  date: datetime(day: 29, month: 06, year: 2026),
   header: (
     show-left-logo: false,
     show-right-logo: false,
   ),
   logo-left: image("assets/Hsbi_logo.png", fit: "contain", width: 200pt),
   show-confidentiality-statement: false,
-  show-declaration-of-authorship: false,
+  show-declaration-of-authorship: true,
   supervisor: (university: "Prof. Dr. Pascal Reusch"),
   type-of-thesis: TITLEPAGE_TYPE_OF_THESIS_PROJECT.at(language), // check "template/locale.typ"
   university: "Hochschule Bielefeld, University of Applied Sciences and Arts", // unused, but break if removed xD

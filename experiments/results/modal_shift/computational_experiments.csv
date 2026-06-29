@@ -1,2 +1,2 @@
 instance,method,shipment_count,route_count,time_limit_sec,status,is_optimal,runtime_sec,objective_value,total_cost_eur,total_emissions_kg,total_time_min,road_share_pct,rail_share_pct,air_share_pct,ship_share_pct
-modal_shift,HiGHS MILP,3,10,20,Optimal,True,1.727,0.008998,5418.00,462.60,346.00,100.00,0.00,0.00,0.00
+modal_shift,HiGHS MILP,3,10,20,Optimal,True,2.299,0.008998,5418.00,462.60,346.00,100.00,0.00,0.00,0.00

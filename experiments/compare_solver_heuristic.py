@@ -28,6 +28,7 @@ from freight_routing.data_models import (  # noqa: E402
     ObjectiveWeights,
     RoutingResult,
     Shipment,
+    TransferArcTemplate,
     TransportArcTemplate,
 )
 from freight_routing.model import TimeExpandedFreightRoutingModel  # noqa: E402
@@ -40,8 +41,10 @@ COMPARISON_COLUMNS = (
     "is_optimal",
     "runtime_sec",
     "objective_value",
-    "total_cost_eur",
-    "total_emissions_kg",
+    "full_evaluated_cost_eur",
+    "full_evaluated_emissions_kg",
+    "route_only_cost_eur",
+    "route_only_emissions_kg",
     "total_time_min",
     "transport_time_min",
     "total_distance_km",
@@ -67,8 +70,10 @@ class ComparisonRow:
     is_optimal: str
     runtime_sec: str
     objective_value: str
-    total_cost_eur: str
-    total_emissions_kg: str
+    full_evaluated_cost_eur: str
+    full_evaluated_emissions_kg: str
+    route_only_cost_eur: str
+    route_only_emissions_kg: str
     total_time_min: str
     transport_time_min: str
     total_distance_km: str
@@ -126,6 +131,26 @@ VARIANTS = (
 )
 
 
+@dataclass(frozen=True)
+class RouteAccounting:
+    fixed_cost_by_arc_id: dict[str, float]
+    fixed_emissions_by_arc_id: dict[str, float]
+
+    def evaluate(
+        self,
+        route_cost: float,
+        route_emissions: float,
+        arc_ids: list[str],
+    ) -> tuple[float, float]:
+        fixed_cost = sum(
+            self.fixed_cost_by_arc_id.get(arc_id, 0.0) for arc_id in arc_ids
+        )
+        fixed_emissions = sum(
+            self.fixed_emissions_by_arc_id.get(arc_id, 0.0) for arc_id in arc_ids
+        )
+        return route_cost + fixed_cost, route_emissions + fixed_emissions
+
+
 def load_heuristic_module() -> Any:
     module_name = "tabu_search_heuristic"
     spec = importlib.util.spec_from_file_location(module_name, HEURISTIC_PATH)
@@ -135,6 +160,38 @@ def load_heuristic_module() -> Any:
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def build_route_accounting(network_data: NetworkData) -> RouteAccounting:
+    fixed_cost_by_arc_id: dict[str, float] = {}
+    fixed_emissions_by_arc_id: dict[str, float] = {}
+    for template in network_data.arc_templates:
+        if isinstance(template, TransportArcTemplate):
+            fixed_cost = template.fixed_cost
+            if fixed_cost is None:
+                fixed_cost = network_data.default_fixed_costs.transport.get(
+                    template.mode, 0.0
+                )
+            fixed_emissions = template.fixed_emissions
+            if fixed_emissions is None:
+                fixed_emissions = network_data.default_fixed_emissions.transport.get(
+                    template.mode, 0.0
+                )
+        elif isinstance(template, TransferArcTemplate):
+            fixed_cost = template.fixed_cost
+            if fixed_cost is None:
+                fixed_cost = network_data.default_fixed_costs.transfer
+            fixed_emissions = template.fixed_emissions
+            if fixed_emissions is None:
+                fixed_emissions = network_data.default_fixed_emissions.transfer
+        else:
+            continue
+        fixed_cost_by_arc_id[template.id] = float(fixed_cost)
+        fixed_emissions_by_arc_id[template.id] = float(fixed_emissions)
+    return RouteAccounting(
+        fixed_cost_by_arc_id=fixed_cost_by_arc_id,
+        fixed_emissions_by_arc_id=fixed_emissions_by_arc_id,
+    )
 
 
 def build_heuristic_graph(
@@ -189,16 +246,16 @@ def run_solver(
     started = time.perf_counter()
     result = model.solve([shipment], time_limit_sec=time_limit_sec)
     runtime_sec = time.perf_counter() - started
-    return solver_result_to_row(variant, result, shipment.id, runtime_sec)
+    return solver_result_to_row(variant, result, shipment, runtime_sec)
 
 
 def solver_result_to_row(
     variant: VariantSpec,
     result: RoutingResult,
-    shipment_id: str,
+    shipment: Shipment,
     runtime_sec: float,
 ) -> ComparisonRow:
-    arcs = result.shipment_routes.get(shipment_id, ())
+    arcs = result.shipment_routes.get(shipment.id, ())
     transport_arcs = [arc for arc in arcs if arc.arc_type == ArcType.TRANSPORT]
     modes = [arc.mode for arc in transport_arcs]
     hubs = [transport_arcs[0].from_node.hub_id] if transport_arcs else []
@@ -215,8 +272,14 @@ def solver_result_to_row(
             if result.objective_value is not None
             else "N/A"
         ),
-        total_cost_eur=f"{result.total_cost:.2f}",
-        total_emissions_kg=f"{result.total_emissions:.2f}",
+        full_evaluated_cost_eur=f"{result.total_cost:.2f}",
+        full_evaluated_emissions_kg=f"{result.total_emissions:.2f}",
+        route_only_cost_eur=(
+            f"{sum(arc.cost * shipment.weight for arc in transport_arcs):.2f}"
+        ),
+        route_only_emissions_kg=(
+            f"{sum(arc.emissions * shipment.weight for arc in transport_arcs):.2f}"
+        ),
         total_time_min=f"{result.total_time:.2f}",
         transport_time_min=f"{sum(arc.duration_min for arc in transport_arcs):.2f}",
         total_distance_km=f"{sum(arc.distance for arc in transport_arcs):.2f}",
@@ -235,6 +298,7 @@ def run_astar_baseline(
     shipment: Shipment,
     variant: VariantSpec,
     heuristic_module: Any,
+    accounting: RouteAccounting,
     max_expansions: int,
 ) -> ComparisonRow:
     scales = heuristic_module.estimate_scales(graph)
@@ -257,6 +321,7 @@ def run_astar_baseline(
         method="A*/Dijkstra baseline",
         route=route,
         runtime_sec=runtime_sec,
+        accounting=accounting,
         note="static weighted route search used as heuristic start solution",
     )
 
@@ -266,6 +331,7 @@ def run_tabu_search(
     shipment: Shipment,
     variant: VariantSpec,
     heuristic_module: Any,
+    accounting: RouteAccounting,
     max_expansions: int,
     tabu_iterations: int,
 ) -> ComparisonRow:
@@ -289,6 +355,7 @@ def run_tabu_search(
         method="Tabu Search",
         route=route,
         runtime_sec=runtime_sec,
+        accounting=accounting,
         note=(
             "static metaheuristic based on A*/Dijkstra route plus tabu "
             "neighborhood search"
@@ -319,6 +386,7 @@ def heuristic_result_to_row(
     method: str,
     route: Any | None,
     runtime_sec: float,
+    accounting: RouteAccounting,
     note: str,
 ) -> ComparisonRow:
     if route is None:
@@ -329,8 +397,10 @@ def heuristic_result_to_row(
             is_optimal="N/A",
             runtime_sec=f"{runtime_sec:.3f}",
             objective_value="N/A",
-            total_cost_eur="N/A",
-            total_emissions_kg="N/A",
+            full_evaluated_cost_eur="N/A",
+            full_evaluated_emissions_kg="N/A",
+            route_only_cost_eur="N/A",
+            route_only_emissions_kg="N/A",
             total_time_min="N/A",
             transport_time_min="N/A",
             total_distance_km="N/A",
@@ -341,6 +411,11 @@ def heuristic_result_to_row(
         )
 
     modes = route.modes()
+    full_cost, full_emissions = accounting.evaluate(
+        route_cost=route.total_cost,
+        route_emissions=route.total_emissions,
+        arc_ids=[edge.arc_id for edge in route.edges],
+    )
     return ComparisonRow(
         variant=variant.name,
         method=method,
@@ -348,8 +423,10 @@ def heuristic_result_to_row(
         is_optimal="N/A",
         runtime_sec=f"{runtime_sec:.3f}",
         objective_value="N/A",
-        total_cost_eur=f"{route.total_cost:.2f}",
-        total_emissions_kg=f"{route.total_emissions:.2f}",
+        full_evaluated_cost_eur=f"{full_cost:.2f}",
+        full_evaluated_emissions_kg=f"{full_emissions:.2f}",
+        route_only_cost_eur=f"{route.total_cost:.2f}",
+        route_only_emissions_kg=f"{route.total_emissions:.2f}",
         total_time_min=f"{route.total_time_min:.2f}",
         transport_time_min=f"{route.total_time_min:.2f}",
         total_distance_km=f"{route.total_distance_km:.2f}",
@@ -379,13 +456,19 @@ def run_comparison(
     )[0]
     heuristic_module = load_heuristic_module()
     graph = build_heuristic_graph(network, shipment.weight, heuristic_module)
+    accounting = build_route_accounting(network)
 
     rows: list[ComparisonRow] = []
     for variant in VARIANTS:
         rows.append(run_solver(network, shipment, variant, time_limit_sec))
         rows.append(
             run_astar_baseline(
-                graph, shipment, variant, heuristic_module, max_expansions
+                graph,
+                shipment,
+                variant,
+                heuristic_module,
+                accounting,
+                max_expansions,
             )
         )
         rows.append(
@@ -394,6 +477,7 @@ def run_comparison(
                 shipment,
                 variant,
                 heuristic_module,
+                accounting,
                 max_expansions,
                 tabu_iterations,
             )
@@ -446,15 +530,16 @@ def build_markdown_evaluation(
         "",
         "## Ergebnisuebersicht",
         "",
-        "| Variante | Methode | Status | Runtime (s) | Kosten (EUR) | CO2 (kg) | Zeit (min) | Modi | Pfad |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |",
+        "| Variante | Methode | Status | Runtime (s) | Full evaluated cost | Full evaluated CO2 | Route-only cost | Route-only CO2 | Zeit (min) | Modi | Pfad |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |",
     ]
 
     for row in rows:
         lines.append(
             "| "
             f"{row.variant} | {row.method} | {row.status} | {row.runtime_sec} | "
-            f"{row.total_cost_eur} | {row.total_emissions_kg} | "
+            f"{row.full_evaluated_cost_eur} | {row.full_evaluated_emissions_kg} | "
+            f"{row.route_only_cost_eur} | {row.route_only_emissions_kg} | "
             f"{row.total_time_min} | {row.mode_sequence} | {row.path} |"
         )
 
@@ -466,7 +551,10 @@ def build_markdown_evaluation(
             "- Der HiGHS MILP Solver nutzt ein zeitexpandiertes Modell mit Kapazitaeten, Wartezeiten, Transfers sowie fixen und variablen Kosten.",
             "- Die A*/Dijkstra-Heuristik betrachtet eine statische gewichtete Route und liefert eine schnelle Startloesung ohne Optimalitaetsnachweis.",
             "- Die Tabu Search startet von dieser Route und sucht alternative Pfade durch gesperrte Kanten; sie kann bessere Varianten finden, kostet aber mehr Laufzeit.",
-            "- Die Objective Values sind zwischen Solver und Heuristik nicht direkt vergleichbar; belastbar vergleichbar sind Kosten, CO2, Zeit, Pfad, Modi und Runtime.",
+            "- Full evaluated cost/CO2 bewertet auch Heuristik-Routen mit denselben fixen Transportkosten und fixen Emissionen aus dem Dataset.",
+            "- `Optimal` bedeutet optimal im vollstaendigen MILP-Modell und ist deshalb mit Full evaluated cost/CO2 konsistent.",
+            "- Rail hat in dieser Instanz niedrigere Route-only Kosten, aber hoehere fixed activation cost; deshalb ist Road im vollstaendigen Kostenmodell guenstiger.",
+            "- Objective Values und MILP-Optimalitaet sind zwischen Solver und Heuristik weiterhin nicht direkt vergleichbar.",
             "",
             "## Kurze Evaluation",
             "",
@@ -523,8 +611,10 @@ def build_short_evaluation(rows: list[ComparisonRow]) -> str:
 
     return (
         f"{path_sentence} Insgesamt ist die Heuristik als schnelle "
-        "Naeherungsloesung geeignet, waehrend der Solver die strengere Referenz "
-        "mit Optimalitaetsstatus liefert."
+        "Naeherungsloesung geeignet. Die Rail-Heuristik hat niedrigere "
+        "Route-only Kosten, wird aber nach fixed activation cost hoeher bewertet; "
+        "damit bleibt Road im vollstaendigen Kostenmodell die konsistente "
+        "MILP-Referenz."
     )
 
 

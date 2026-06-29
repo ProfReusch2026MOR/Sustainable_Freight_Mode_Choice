@@ -4,6 +4,8 @@ exclude = [
     ".git",
     ".venv",
     "OperationsResearchLecture2026",
+    "notebooks",
+    "Heuristic",
 ]
 
 # Formatting standards (matching Black defaults)
