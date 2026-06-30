@@ -58,87 +58,54 @@ def edge_score(
 Diese Bewertungsfunktion (`edge_score`) bildet die gemeinsame Grundlage beider
 im Folgenden beschriebenen Heuristiken.
 
-== Dijkstra-Heuristik
+== Zeitexpandierter Dijkstra-Router
 
 === Idee und Funktionsweise
 
-Das erste Verfahren basiert auf dem klassischen Algorithmus von Dijkstra zur
-Bestimmung kürzester Wege in einem Graphen mit nichtnegativen Kantengewichten
-#footnote[Vgl. Dijkstra, E. W. (1959): A note on two problems in connexion with
-graphs, in: Numerische Mathematik, 1, S. 269–271.]. Im vorliegenden Code wird
-der Dijkstra-Algorithmus technisch als A\*-Suche mit einer Heuristikfunktion
-von konstant null umgesetzt:
+Das refaktorisierte Verfahren basiert auf dem klassischen Dijkstra-Algorithmus zur Bestimmung kürzester Wege in einem zeitexpandierten Graphen. Im Gegensatz zur vorherigen statischen Heuristik operiert der `DijkstraRouter` direkt auf dem zeitexpandierten Netzwerk-Graphen, der durch die Modellklasse `TimeExpandedFreightRoutingModel` konstruiert wird. Dadurch wird eine 100%-ige mathematische Konsistenz und Äquivalenz zum MILP-Solver für einzelne Sendungen garantiert.
+
+Der Router führt folgende Schritte aus:
+
+1. *Graphaufbau & Normalisierung*: Zunächst wird der zeitexpandierte Graph für die gegebene Sendung und den Planungshorizont aufgebaut. Die Normalisierungsgrenzen für Kosten, Zeit und Emissionen werden mithilfe der Methode `estimate_normalization_bounds()` berechnet:
 
 ```python
-def heuristic(_: str) -> float:
-    return 0.0
+bounds = model.estimate_normalization_bounds([shipment])
+c_min, c_max = bounds["cost"]
+t_min, t_max = bounds["time"]
+e_min, e_max = bounds["emissions"]
 ```
 
-Da die geschätzten Restkosten zum Ziel in diesem Fall stets null betragen,
-verhält sich die A*-Suche exakt wie ein Dijkstra-Algorithmus: Es werden
-ausschließlich die bereits akkumulierten tatsächlichen Kosten (`g`-Werte)
-zur Priorisierung der Knoten in der Prioritätswarteschlange verwendet. Der
-Zustandsraum besteht dabei nicht nur aus den Knoten (Hubs) selbst, sondern aus
-Tupeln *(Knoten, zuletzt genutztes Verkehrsmittel)\*, damit der oben genannte
-Moduswechsel-Strafterm korrekt entlang des Pfades berücksichtigt werden kann.
-
-Der eigentliche Heuristik-Charakter des Verfahrens ergibt sich aus einer
-gezielten Einschränkung des Suchraums: Pro Knoten werden nicht alle
-ausgehenden Kanten betrachtet, sondern nur eine begrenzte Anzahl
-(`max_neighbors_per_node`), die lokal anhand des Scores vorsortiert wurde. Dies
-beschleunigt die Suche erheblich, kann aber dazu führen, dass global günstigere
-Pfade übersehen werden, da das Verfahren dadurch seine Optimalitätsgarantie
-verliert:
+2. *Kantengewichtung (Arc Scoring)*: Jede Kante (Arc) im zeitexpandierten Graphen erhält ein skalares Gewicht (Score), das auf den normalisierten Zielkomponenten basiert. Um negative Kantengewichte durch den Abzug der Mindestpfadkosten ($c_"min"$, $t_"min"$, $e_"min"$) zu verhindern, werden die konstanten Offsets bei der Bewertung der einzelnen Kanten weggelassen (was die mathematische Optimalität des kürzesten Pfades nicht verändert):
 
 ```python
-out_edges = graph.get(node, [])
-if max_neighbors_per_node is not None and len(out_edges) > max_neighbors_per_node:
-    # Nur die lokal guenstigsten Kanten betrachten: macht die Suche
-    # schnell, kann aber global guenstigere Pfade uebersehen.
-    out_edges = sorted(
-        out_edges, key=lambda e: edge_score(e, weights, scales, prev_mode)
-    )[:max_neighbors_per_node]
+def get_arc_score(arc) -> float:
+    # Kosten
+    c_fixed = model._get_fixed_cost(arc)
+    c_var = arc.cost * shipment.weight
+    c_total = c_fixed + c_var
+    cost_scaled = c_total / c_diff
 
-for edge in out_edges:
-    step = edge_score(edge, weights, scales, prev_mode)
-    new_state = (edge.target, edge.mode)
-    new_g = current_g + step
+    # Zeit
+    t_total = arc.duration_min
+    time_scaled = t_total / t_diff
 
-    if new_g < dist.get(new_state, math.inf):
-        dist[new_state] = new_g
-        parent[new_state] = (state, edge)
-        f = new_g + heuristic(edge.target)
-        heapq.heappush(pq, (f, new_g, edge.target, edge.mode))
+    # Emissionen
+    e_fixed = model._get_fixed_emissions(arc)
+    e_var = arc.emissions * shipment.weight
+    e_total = e_fixed + e_var
+    emissions_scaled = e_total / e_diff
+
+    return (
+        objective_weights.cost * cost_scaled
+        + objective_weights.time * time_scaled
+        + objective_weights.emissions * emissions_scaled
+    )
 ```
 
-Nach Terminierung der Suche – entweder durch Erreichen des Zielknotens oder
-durch Überschreiten der maximalen Anzahl an Knotenexpansionen
-(`max_expansions`) – wird der gefundene Pfad rekonstruiert. Anschließend
-durchläuft die Lösung eine lokale Nachbearbeitung (`improve_route_by_shortcuts`),
-bei der geprüft wird, ob zwei aufeinanderfolgende Kanten $A -> B -> C$ durch
-eine direkte Kante $A -> C$ mit besserem Score ersetzt werden können. Diese
-2-Opt-ähnliche Glättung kompensiert teilweise die durch die
-Nachbarschaftsbegrenzung verursachte Suboptimalität.
+3. *Kürzeste-Weg-Suche*: Unter Verwendung einer Prioritätswarteschlange (`heapq`) sucht der Algorithmus den optimalen Pfad von einem virtuellen Startknoten (`SOURCE`) zu den zeitlich zulässigen Zielknoten (`SINK`). Ein fortlaufender Zähler dient in der Queue als Tie-Breaker, um Typkonflikte bei nicht-vergleichbaren Knotenelementen zu vermeiden.
 
-=== Mehrfachausführung für unterschiedliche Präferenzen
+Da keine künstliche Begrenzung des Suchraums (wie z.B. maximale Nachbaranzahl oder Pruning) vorgenommen wird, findet dieser Router garantiert die global optimale Lösung für eine Einzelsendung im zeitexpandierten Graphen.
 
-Um sowohl eine individuelle Nutzerpräferenz als auch jeweils ein reines
-Kosten-, Zeit- und CO₂-Minimum auszugeben, wird die Dijkstra-Heuristik viermal
-mit unterschiedlichen Gewichtungsvektoren ausgeführt:
-
-```python
-def build_four_weight_sets() -> List[Dict[str, float]]:
-    return [
-        {"name": "Deine Praeferenz", "cost": pc, "time": pt,
-         "emissions": pe, "mode_change": mode_change},
-        {"name": "Kostenminimum", "cost": 1.0, "time": 0.0,
-         "emissions": 0.0, "mode_change": mode_change},
-        {"name": "Zeitminimum", "cost": 0.0, "time": 1.0,
-         "emissions": 0.0, "mode_change": mode_change},
-        {"name": "CO2-Minimum", "cost": 0.0, "time": 0.0,
-         "emissions": 1.0, "mode_change": mode_change},
-    ]
-```
 
 Dadurch entstehen bis zu vier unterschiedliche Routenvorschläge, die dem
 Anwender einen direkten Trade-off zwischen Kosten, Zeit und Emissionen
@@ -152,7 +119,7 @@ Das zweite Verfahren ist eine Metaheuristik der lokalen Suche und basiert auf
 dem von Glover entwickelten Tabu-Search-Konzept
 #footnote[Vgl. Glover, F. (1986): Future paths for integer programming and
 links to artificial intelligence, in: Computers & Operations Research, 13(5),
-S. 533–549.]. Im Gegensatz zur Dijkstra-Heuristik wird hier nicht versucht,
+S. 533–549.]. Im Gegensatz zum zeitexpandierten Dijkstra-Router wird hier nicht versucht,
 in einem einzigen Suchlauf eine gute Lösung zu konstruieren. Stattdessen wird
 zunächst eine zulässige, aber bewusst suboptimale *Startlösung* erzeugt – mit
 demselben begrenzten Verzweigungsgrad wie im Dijkstra-Skript – und diese im
@@ -230,76 +197,48 @@ Die Suche terminiert entweder nach Erreichen der maximalen Iterationszahl
 (`max_iterations`), wenn keine zulässigen Nachbarn mehr erzeugt werden können,
 oder wenn über eine definierte Anzahl an Iterationen
 (`no_improvement_limit`) keine Verbesserung der besten bekannten Lösung mehr
-erzielt wurde. Auch hier wird – wie bei der Dijkstra-Heuristik – die finale
-Lösung für jede der vier Gewichtungen separat ermittelt (`calculate_four_tabu_routes`).
+erzielt wurde.
 
-== Vergleich der beiden Heuristiken
+== Vergleich des Dijkstra-Routers und der Tabu-Search-Heuristik
 
-Beide Verfahren lösen dasselbe zugrunde liegende Optimierungsproblem – die
-Suche nach einer multikriteriellen, kostenminimalen Route in einem
-multimodalen Netzwerk – verfolgen dabei jedoch grundlegend unterschiedliche
-Suchstrategien, was in @tab-vergleich gegenübergestellt wird.
+Beide Verfahren lösen das zugrunde liegende Optimierungsproblem – die Suche nach einer multikriteriellen, kostenminimalen Route in einem multimodalen Netzwerk –, verfolgen dabei jedoch grundlegend unterschiedliche Ansätze hinsichtlich der Zeitabbildung und Suchstrategie, was in @tab-vergleich gegenübergestellt wird.
 
 #figure(
   table(
     columns: (auto, 1fr, 1fr),
     align: (left, left, left),
     stroke: 0.5pt,
-    [*Kriterium*], [*Dijkstra-Heuristik*], [*Tabu-Search-Heuristik*],
+    [*Kriterium*], [*Dijkstra-Router*], [*Tabu-Search-Heuristik*],
     [Suchprinzip],
-    [Konstruktive Einzelsuche (A\*\ mit Nullheuristik = Dijkstra)],
-    [Konstruktive Startlösung + iterative\ lokale Nachbarschaftssuche],
-    [Quelle der Heuristik],
-    [Begrenzung der betrachteten\ Nachbarn pro Knoten],
+    [Exakte Kürzeste-Weg-Suche auf dem zeitexpandierten Graphen],
+    [Konstruktive Startlösung + iterative\ lokale Nachbarschaftssuche (statisch)],
+    [Quelle der Heuristik / Vereinfachung],
+    [Keine (vollständige Suche auf dem zeitexpandierten Graphen)],
     [Begrenzte Startlösung +\ gezieltes Verbieten einzelner Kanten],
     [Optimalitätsgarantie],
-    [Keine (durch Nachbarbegrenzung\ verloren), aber pro Lauf deterministisch],
-    [Keine, jedoch potenziell bessere\ Annäherung durch Verbesserungsschritte],
+    [Ja (garantiert mathematisch optimal für Einzelsendungen)],
+    [Keine (heuristische Meta-Suche auf statischem Graphen)],
     [Rechenaufwand],
-    [Gering: ein Suchlauf pro\ Gewichtung],
+    [Sehr gering: ein Suchlauf auf dem zeitexpandierten Graphen],
     [Höher: ein Suchlauf zur Initialisierung\ plus mehrere Suchläufe pro Iteration],
     [Vermeidung von Zyklen],
-    [Nicht erforderlich (Single-Pass)],
+    [Inhärent gegeben (kreisfreier zeitexpandierter Graph)],
     [Explizit über Tabu-Liste\ und Tenure-Parameter],
     [Verbesserungsmechanismus],
-    [Lokale 2-Opt-ähnliche\ Kantenglättung (Shortcuts)],
+    [Keiner erforderlich (da bereits global optimal)],
     [Shortcuts zusätzlich zur\ systematischen Nachbarschaftssuche],
     [Lösungsqualität],
-    [Schnell, aber tendenziell\ suboptimal bei engem Limit],
-    [In der Regel gleich gut oder\ besser als die Startlösung],
+    [Global optimal (identisch zum MILP-Solver)],
+    [Heuristisch, kann durch statische Vereinfachung suboptimal sein],
   ),
-  caption: [Gegenüberstellung von Dijkstra-Heuristik und Tabu-Search-Heuristik],
+  caption: [Gegenüberstellung von zeitexpandiertem Dijkstra-Router und Tabu-Search-Heuristik],
 ) <tab-vergleich>
 
-Die Dijkstra-Heuristik liefert durch die Begrenzung der pro Knoten betrachteten
-Kanten (`max_neighbors_per_node`) sehr schnell eine zulässige Lösung, da pro
-Gewichtungs-Szenario nur ein einziger Suchlauf nötig ist. Dieser
-Geschwindigkeitsvorteil wird jedoch mit einem Verlust an Lösungsqualität
-erkauft: Da nur ein eingeschränkter Teil des Suchraums betrachtet wird, kann
-das Verfahren global bessere Routen übersehen, was im Code explizit als
-bewusster Trade-off dokumentiert ist.
+Der Dijkstra-Router liefert durch die Suche auf dem vollständigen zeitexpandierten Graphen in wenigen Millisekunden eine garantiert optimale Lösung für eine Einzelsendung. Da er die exakten zeitlichen Abfahrtspläne, Umladezeiten und Wartezeiten vollumfänglich abbildet, ist das Ergebnis mathematisch identisch zu dem des zeitexpandierten MILP-Solvers. Der Rechenaufwand bleibt dabei minimal, da das Problem für eine Einzelsendung als klassischer shortest path gelöst werden kann.
 
-Die Tabu-Search-Heuristik nutzt exakt dieselbe eingeschränkte A\*-Suche, um
-eine Startlösung zu erzeugen – sie ist also in dieser Phase der
-Dijkstra-Heuristik äquivalent. Der entscheidende Unterschied liegt in der
-sich anschließenden Verbesserungsphase: Durch wiederholtes, gezieltes
-Verbieten einzelner, schlecht bewerteter Kanten und erneute uneingeschränkte
-Suche kann sich die Lösung über mehrere Iterationen hinweg der ursprünglich
-übersehenen, besseren Route annähern. Das Aspirationskriterium stellt dabei
-sicher, dass die Tabu-Restriktion nicht zu einer Verschlechterung gegenüber
-der bisher besten Lösung führt. Im Ergebnis liefert die Tabu-Search-Heuristik
-tendenziell mindestens so gute, häufig aber bessere Routen als die reine
-Dijkstra-Heuristik, benötigt dafür allerdings deutlich mehr Rechenzeit, da in
-jeder Iteration mehrere zusätzliche Suchläufe (`astar_multimodal_with_forbidden_arcs`)
-durchgeführt werden.
+Die Tabu-Search-Heuristik hingegen operiert auf einem statischen Graphen und nutzt eine iterative Verbesserungsphase auf Basis einer Tabu-Liste. Da sie die zeitlichen Dimensionen und Fahrpläne nur vereinfacht oder statisch abbildet, kann sie für komplexe zeitabhängige Restriktionen suboptimale Routen liefern und besitzt keine Optimalitätsgarantie. Ihr Vorteil liegt primär darin, dass sie auch auf statischen Netzwerken ohne den Overhead einer Zeitexpansion arbeiten kann.
 
-Zusammenfassend lässt sich der Unterschied zwischen beiden Verfahren auf das
-klassische Spannungsfeld zwischen *Konstruktionsheuristik* und
-*Verbesserungsheuristik (Metaheuristik)* zurückführen: Während die
-Dijkstra-Heuristik eine Lösung in einem Schritt konstruiert und dabei
-bewusst Suchraum beschneidet, nutzt die Tabu-Search-Heuristik eben diese
-Konstruktionslösung lediglich als Ausgangspunkt einer systematischen,
-gedächtnisbasierten Verbesserung. Für die vorliegende Anwendung empfiehlt sich
-die Dijkstra-Heuristik daher insbesondere bei Echtzeitanforderungen oder sehr
+Zusammenfassend lässt sich sagen, dass der zeitexpandierte Dijkstra-Router für Einzelsendungen dem MILP-Solver qualitativ ebenbürtig ist und diesen in puncto Laufzeit weit übertrifft. Die Tabu-Search-Heuristik bleibt als statische Alternative für Szenarien relevant, in denen kein zeitexpandiertes Netz aufgebaut werden kann oder soll.
+derungen oder sehr
 großen Netzwerken, während die Tabu-Search-Heuristik dann vorzuziehen ist,
 wenn eine höhere Lösungsqualität wichtiger ist als die Rechenzeit.
