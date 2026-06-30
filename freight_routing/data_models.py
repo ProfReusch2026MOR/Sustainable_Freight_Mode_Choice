@@ -389,4 +389,14 @@ class RoutingResult:
     total_variable_cost: float = 0.0
     total_fixed_emissions: float = 0.0
     total_variable_emissions: float = 0.0
+    is_consolidated: bool = False
     diagnostics: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        transport_arc_counts = {}
+        for s_id, route in self.shipment_routes.items():
+            for arc in route:
+                if arc.arc_type == ArcType.TRANSPORT:
+                    transport_arc_counts[arc] = transport_arc_counts.get(arc, 0) + 1
+        is_cons = any(count >= 2 for count in transport_arc_counts.values())
+        object.__setattr__(self, "is_consolidated", is_cons)
