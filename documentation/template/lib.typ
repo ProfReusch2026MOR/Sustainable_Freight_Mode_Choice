@@ -4,7 +4,6 @@
 #import "locale.typ": APPENDIX, CODE_SNIPPETS, LIST_OF_FIGURES, LIST_OF_TABLES, REFERENCES, TABLE_OF_CONTENTS
 #import "titlepage.typ": *
 #import "confidentiality-statement.typ": *
-#import "declaration-of-authorship.typ": *
 #import "check-attributes.typ": *
 #import "non-disclosure-equality-notice.typ": *
 #import "panel.typ": *
@@ -339,23 +338,7 @@
 
   if (not at-university and show-confidentiality-statement) {
     pagebreak()
-  }
-
-  if (show-declaration-of-authorship) {
-    pagebreak()
-    declaration-of-authorship(
-      authors,
-      title,
-      declaration-of-authorship-content,
-      date,
-      language,
-      many-authors,
-      at-university,
-      city,
-      date-format,
-    )
-  }
-
+  } 
 
   show outline.entry.where(level: 1): it => {
     v(18pt, weak: true)

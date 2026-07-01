@@ -1,7 +1,0 @@
-"Kategorie","Item","Fixkosten in EUR","EUR pro kg","Basiswert","Einheit","Anwendung","Hinweise"
-"Handling","road ↔ rail","90","0.04","90","EUR","Fix + kg","Globaler Standard, eher günstig"
-"Handling","road ↔ ship","130","0.06","130","EUR","Fix + kg","Höher wegen Hafen-THC und lokaler Gebühren"
-"Handling","rail ↔ ship","120","0.05","120","EUR","Fix + kg","Intermodaler Terminalumschlag"
-"Handling","road ↔ air","160","0.10","160","EUR","Fix + kg","Luftfracht deutlich teurer"
-"Handling","rail ↔ air","170","0.10","170","EUR","Fix + kg","Luftfracht deutlich teurer"
-"Handling","ship ↔ air","190","0.12","190","EUR","Fix + kg","Komplexester und teuerster Wechsel"
