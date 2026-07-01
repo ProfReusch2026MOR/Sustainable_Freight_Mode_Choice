@@ -1,6 +1,0 @@
-"Kategorie","Stufe","Faktor","Einheit","Anwendung","Hinweise"
-"Transportfaktor","low","0.80","Multiplikator","Region/Land","Südasien, Teile Südostasien, günstige Regionen"
-"Transportfaktor","medium-low","0.90","Multiplikator","Region/Land","Osteuropa, einige Länder Lateinamerikas"
-"Transportfaktor","medium","1.00","Multiplikator","Region/Land","China, Türkei, gemischte Mittelregionen"
-"Transportfaktor","high","1.15","Multiplikator","Region/Land","Westeuropa, Nordamerika, Australien/Neuseeland"
-"Transportfaktor","very_high","1.30","Multiplikator","Region/Land","Japan, Schweiz, Norwegen, Premium-Hubs"

@@ -71,7 +71,6 @@
 // ////////////////////////////////////////////////////////////////////////
 
 #include "introduction.typ"
-#include "literature.typ"
 #include "problem_description.typ"
 #include "implementation.typ"
 #include "results.typ"
