@@ -271,11 +271,13 @@ class DijkstraRouter:
     def solve_multiple(
         self,
         network: TimeExpandedNetwork,
+        show_progress: bool = False,
     ) -> RoutingResult:
         """Solves the routing problem for multiple shipments sequentially.
 
         Args:
             network: The pre-built TimeExpandedNetwork instance.
+            show_progress: Optionally show a progress bar.
 
         Returns:
             A RoutingResult containing the consolidated routes and objective metrics.
@@ -309,7 +311,13 @@ class DijkstraRouter:
         diagnostics = []
 
         # Route each shipment sequentially
-        for shipment in sorted_shipments:
+        shipment_iterable = sorted_shipments
+        if show_progress:
+            from tqdm import tqdm
+
+            shipment_iterable = tqdm(sorted_shipments, desc="Routing shipments")
+
+        for shipment in shipment_iterable:
             route_arcs = self._find_shortest_path(
                 network=network,
                 shipment=shipment,
@@ -364,6 +372,7 @@ class DijkstraRouter:
         iterations: int = 20,
         ruin_fraction: float = 0.2,
         seed: int | None = None,
+        show_progress: bool = False,
     ) -> RoutingResult:
         """Optimizes an initial RoutingResult for multiple shipments using Ruin-and-Recreate (LNS).
 
@@ -373,6 +382,7 @@ class DijkstraRouter:
             iterations: Number of LNS iterations.
             ruin_fraction: Fraction of shipments to remove and reroute in each iteration.
             seed: Optional random seed for reproducibility.
+            show_progress: Optionally show a progress bar.
 
         Returns:
             An optimized RoutingResult.
@@ -414,7 +424,13 @@ class DijkstraRouter:
         shipment_by_id = {s.id: s for s in shipments}
         num_to_ruin = max(1, int(len(shipments) * ruin_fraction))
 
-        for _ in range(iterations):
+        iterator = range(iterations)
+        if show_progress:
+            from tqdm import tqdm
+
+            iterator = tqdm(iterator, desc="Optimizing routes (LNS)")
+
+        for _ in iterator:
             # Choose shipments to ruin (remove)
             ruined_ids = random.sample(
                 list(best_routes.keys()), min(num_to_ruin, len(best_routes))
