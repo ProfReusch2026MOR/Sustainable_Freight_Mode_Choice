@@ -461,14 +461,26 @@ class TimeExpandedFreightRoutingModel:
         self,
         network: TimeExpandedNetwork,
         time_limit_sec: float | None = None,
+        show_progress: bool = False,
     ) -> RoutingResult:
-        """Solve the routing problem for the shipments built into the network."""
-        return self._solve(network, time_limit_sec=time_limit_sec)
+        """Solve the routing problem for the shipments built into the network.
+
+        Args:
+            network: The pre-built time-expanded network.
+            time_limit_sec: Optional solver time limit in seconds.
+            show_progress: Whether to display the HiGHS solver log.
+        """
+        return self._solve(
+            network,
+            time_limit_sec=time_limit_sec,
+            show_progress=show_progress,
+        )
 
     def _solve(
         self,
         network: TimeExpandedNetwork,
         time_limit_sec: float | None = None,
+        show_progress: bool = False,
     ) -> RoutingResult:
         """Solve the routing problem with an optional solver time limit."""
         shipments = tuple(network.shipments)
@@ -727,7 +739,7 @@ class TimeExpandedFreightRoutingModel:
         ########################################
         #           solver execution           #
         ########################################
-        highs_py = pulp.HiGHS(msg=False, timeLimit=time_limit_sec)
+        highs_py = pulp.HiGHS(msg=show_progress, timeLimit=time_limit_sec)
         status = self.prob.solve(highs_py)
 
         self.status = pulp.LpStatus[status]
