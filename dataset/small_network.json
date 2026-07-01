@@ -1,0 +1,2744 @@
+{
+  "hubs": [
+    {
+      "id": "ALG_185",
+      "name": "Algiers Terminal",
+      "supported_modes": [
+        "road",
+        "air",
+        "ship"
+      ],
+      "latitude": 36.7630556,
+      "longitude": 3.0505557
+    },
+    {
+      "id": "ORA_186",
+      "name": "Oran Terminal",
+      "supported_modes": [
+        "road",
+        "air",
+        "ship"
+      ],
+      "latitude": 35.6911111,
+      "longitude": -0.6416667
+    },
+    {
+      "id": "CON_187",
+      "name": "Constantine Terminal",
+      "supported_modes": [
+        "road",
+        "air"
+      ],
+      "latitude": 36.365,
+      "longitude": 6.6147223
+    },
+    {
+      "id": "BRU_1108",
+      "name": "Brussels Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air",
+        "ship"
+      ],
+      "latitude": 50.8465975,
+      "longitude": 4.3527746
+    },
+    {
+      "id": "ANT_1109",
+      "name": "Antwerp Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air",
+        "ship"
+      ],
+      "latitude": 51.2166667,
+      "longitude": 4.4166665
+    },
+    {
+      "id": "GEN_1110",
+      "name": "Gent Terminal",
+      "supported_modes": [
+        "road",
+        "rail"
+      ],
+      "latitude": 51.05,
+      "longitude": 3.7166667
+    },
+    {
+      "id": "COP_3034",
+      "name": "Copenhagen Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air"
+      ],
+      "latitude": 55.6776812,
+      "longitude": 12.5709343
+    },
+    {
+      "id": "ODE_3036",
+      "name": "Odense Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air"
+      ],
+      "latitude": 55.3959381,
+      "longitude": 10.3883133
+    },
+    {
+      "id": "PAR_3672",
+      "name": "Paris Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air"
+      ],
+      "latitude": 48.85341,
+      "longitude": 2.3487999
+    },
+    {
+      "id": "MAR_3673",
+      "name": "Marseille Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air"
+      ],
+      "latitude": 43.3,
+      "longitude": 5.4000001
+    },
+    {
+      "id": "LYO_3674",
+      "name": "Lyon Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air"
+      ],
+      "latitude": 45.75,
+      "longitude": 4.8499999
+    },
+    {
+      "id": "BER_3970",
+      "name": "Berlin Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air"
+      ],
+      "latitude": 52.5166667,
+      "longitude": 13.3999996
+    },
+    {
+      "id": "HAM_3971",
+      "name": "Hamburg Terminal",
+      "supported_modes": [
+        "road",
+        "rail",
+        "air",
+        "ship"
+      ],
+      "latitude": 53.55,
+      "longitude": 10.0
+    }
+  ],
+  "mode_factors": {
+    "road": {
+      "cost_per_ton_km": 1.2,
+      "emissions_kg_per_ton_km": 0.09
+    },
+    "rail": {
+      "cost_per_ton_km": 0.7,
+      "emissions_kg_per_ton_km": 0.025
+    },
+    "air": {
+      "cost_per_ton_km": 3.5,
+      "emissions_kg_per_ton_km": 0.6
+    },
+    "ship": {
+      "cost_per_ton_km": 0.4,
+      "emissions_kg_per_ton_km": 0.015
+    }
+  },
+  "capacities": {
+    "road": 10.0,
+    "rail": 1000.0,
+    "air": 50.0,
+    "ship": 8000.0,
+    "waiting": 100.0,
+    "transfer": 25.0
+  },
+  "default_fixed_costs": {
+    "transport": {
+      "road": 150.0,
+      "rail": 500.0,
+      "air": 1200.0,
+      "ship": 800.0
+    },
+    "waiting": 0.0,
+    "transfer": 100.0
+  },
+  "default_fixed_emissions": {
+    "transport": {
+      "road": 30.0,
+      "rail": 80.0,
+      "air": 250.0,
+      "ship": 120.0
+    },
+    "waiting": 0.0,
+    "transfer": 10.0
+  },
+  "default_variable_factors": {
+    "waiting_cost_per_hour": 5.0,
+    "waiting_emissions_per_hour": 0.0,
+    "transfer_cost_per_ton": 50.0,
+    "transfer_emissions_per_ton": 5.0
+  },
+  "arc_templates": [
+    {
+      "id": "ALG_185_CON_187_road",
+      "arc_type": "transport",
+      "from": "ALG_185",
+      "to": "CON_187",
+      "mode": "road",
+      "dist": 390.4,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 277
+    },
+    {
+      "id": "ALG_185_ORA_186_road",
+      "arc_type": "transport",
+      "from": "ALG_185",
+      "to": "ORA_186",
+      "mode": "road",
+      "dist": 416.1,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 281
+    },
+    {
+      "id": "ORA_186_ALG_185_road",
+      "arc_type": "transport",
+      "from": "ORA_186",
+      "to": "ALG_185",
+      "mode": "road",
+      "dist": 416.1,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 284
+    },
+    {
+      "id": "CON_187_ALG_185_road",
+      "arc_type": "transport",
+      "from": "CON_187",
+      "to": "ALG_185",
+      "mode": "road",
+      "dist": 389.4,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 277
+    },
+    {
+      "id": "BRU_1108_ANT_1109_road",
+      "arc_type": "transport",
+      "from": "BRU_1108",
+      "to": "ANT_1109",
+      "mode": "road",
+      "dist": 52.7,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 46
+    },
+    {
+      "id": "BRU_1108_GEN_1110_road",
+      "arc_type": "transport",
+      "from": "BRU_1108",
+      "to": "GEN_1110",
+      "mode": "road",
+      "dist": 58.1,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 54
+    },
+    {
+      "id": "ANT_1109_BRU_1108_road",
+      "arc_type": "transport",
+      "from": "ANT_1109",
+      "to": "BRU_1108",
+      "mode": "road",
+      "dist": 46.9,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 48
+    },
+    {
+      "id": "ANT_1109_GEN_1110_road",
+      "arc_type": "transport",
+      "from": "ANT_1109",
+      "to": "GEN_1110",
+      "mode": "road",
+      "dist": 61.9,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 49
+    },
+    {
+      "id": "GEN_1110_BRU_1108_road",
+      "arc_type": "transport",
+      "from": "GEN_1110",
+      "to": "BRU_1108",
+      "mode": "road",
+      "dist": 58.6,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 53
+    },
+    {
+      "id": "GEN_1110_ANT_1109_road",
+      "arc_type": "transport",
+      "from": "GEN_1110",
+      "to": "ANT_1109",
+      "mode": "road",
+      "dist": 60.6,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 48
+    },
+    {
+      "id": "COP_3034_ODE_3036_road",
+      "arc_type": "transport",
+      "from": "COP_3034",
+      "to": "ODE_3036",
+      "mode": "road",
+      "dist": 165.3,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 118
+    },
+    {
+      "id": "ODE_3036_COP_3034_road",
+      "arc_type": "transport",
+      "from": "ODE_3036",
+      "to": "COP_3034",
+      "mode": "road",
+      "dist": 164.9,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 119
+    },
+    {
+      "id": "PAR_3672_GEN_1110_road",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "GEN_1110",
+      "mode": "road",
+      "dist": 292.5,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 205
+    },
+    {
+      "id": "PAR_3672_BRU_1108_road",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "BRU_1108",
+      "mode": "road",
+      "dist": 307.2,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 218
+    },
+    {
+      "id": "MAR_3673_LYO_3674_road",
+      "arc_type": "transport",
+      "from": "MAR_3673",
+      "to": "LYO_3674",
+      "mode": "road",
+      "dist": 315.2,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 208
+    },
+    {
+      "id": "LYO_3674_MAR_3673_road",
+      "arc_type": "transport",
+      "from": "LYO_3674",
+      "to": "MAR_3673",
+      "mode": "road",
+      "dist": 314.0,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 209
+    },
+    {
+      "id": "BER_3970_HAM_3971_road",
+      "arc_type": "transport",
+      "from": "BER_3970",
+      "to": "HAM_3971",
+      "mode": "road",
+      "dist": 289.4,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 178
+    },
+    {
+      "id": "HAM_3971_ODE_3036_road",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "ODE_3036",
+      "mode": "road",
+      "dist": 312.3,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 201
+    },
+    {
+      "id": "HAM_3971_BER_3970_road",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "BER_3970",
+      "mode": "road",
+      "dist": 288.6,
+      "departure_minutes": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480,
+        540,
+        600,
+        660,
+        720,
+        780,
+        840,
+        900,
+        960,
+        1020,
+        1080,
+        1140,
+        1200,
+        1260,
+        1320,
+        1380
+      ],
+      "duration_min": 176
+    },
+    {
+      "id": "BRU_1108_ANT_1109_rail",
+      "arc_type": "transport",
+      "from": "BRU_1108",
+      "to": "ANT_1109",
+      "mode": "rail",
+      "dist": 51.8,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 182
+    },
+    {
+      "id": "ANT_1109_BRU_1108_rail",
+      "arc_type": "transport",
+      "from": "ANT_1109",
+      "to": "BRU_1108",
+      "mode": "rail",
+      "dist": 51.8,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 182
+    },
+    {
+      "id": "GEN_1110_BRU_1108_rail",
+      "arc_type": "transport",
+      "from": "GEN_1110",
+      "to": "BRU_1108",
+      "mode": "rail",
+      "dist": 62.6,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 195
+    },
+    {
+      "id": "COP_3034_ODE_3036_rail",
+      "arc_type": "transport",
+      "from": "COP_3034",
+      "to": "ODE_3036",
+      "mode": "rail",
+      "dist": 176.7,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 332
+    },
+    {
+      "id": "PAR_3672_GEN_1110_rail",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "GEN_1110",
+      "mode": "rail",
+      "dist": 329.1,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 514
+    },
+    {
+      "id": "MAR_3673_LYO_3674_rail",
+      "arc_type": "transport",
+      "from": "MAR_3673",
+      "to": "LYO_3674",
+      "mode": "rail",
+      "dist": 344.7,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 533
+    },
+    {
+      "id": "LYO_3674_MAR_3673_rail",
+      "arc_type": "transport",
+      "from": "LYO_3674",
+      "to": "MAR_3673",
+      "mode": "rail",
+      "dist": 344.7,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 533
+    },
+    {
+      "id": "BER_3970_HAM_3971_rail",
+      "arc_type": "transport",
+      "from": "BER_3970",
+      "to": "HAM_3971",
+      "mode": "rail",
+      "dist": 319.3,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 503
+    },
+    {
+      "id": "HAM_3971_ODE_3036_rail",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "ODE_3036",
+      "mode": "rail",
+      "dist": 258.8,
+      "departure_minutes": [
+        360,
+        1080
+      ],
+      "duration_min": 430
+    },
+    {
+      "id": "ALG_185_ORA_186_ship",
+      "arc_type": "transport",
+      "from": "ALG_185",
+      "to": "ORA_186",
+      "mode": "ship",
+      "dist": 476.0,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 2018
+    },
+    {
+      "id": "ALG_185_BRU_1108_ship",
+      "arc_type": "transport",
+      "from": "ALG_185",
+      "to": "BRU_1108",
+      "mode": "ship",
+      "dist": 2117.1,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 6493
+    },
+    {
+      "id": "ALG_185_ANT_1109_ship",
+      "arc_type": "transport",
+      "from": "ALG_185",
+      "to": "ANT_1109",
+      "mode": "ship",
+      "dist": 2173.0,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 6646
+    },
+    {
+      "id": "ALG_185_HAM_3971_ship",
+      "arc_type": "transport",
+      "from": "ALG_185",
+      "to": "HAM_3971",
+      "mode": "ship",
+      "dist": 2621.3,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 7869
+    },
+    {
+      "id": "ORA_186_ALG_185_ship",
+      "arc_type": "transport",
+      "from": "ORA_186",
+      "to": "ALG_185",
+      "mode": "ship",
+      "dist": 476.0,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 2018
+    },
+    {
+      "id": "ORA_186_BRU_1108_ship",
+      "arc_type": "transport",
+      "from": "ORA_186",
+      "to": "BRU_1108",
+      "mode": "ship",
+      "dist": 2336.6,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 7092
+    },
+    {
+      "id": "ORA_186_ANT_1109_ship",
+      "arc_type": "transport",
+      "from": "ORA_186",
+      "to": "ANT_1109",
+      "mode": "ship",
+      "dist": 2391.9,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 7243
+    },
+    {
+      "id": "ORA_186_HAM_3971_ship",
+      "arc_type": "transport",
+      "from": "ORA_186",
+      "to": "HAM_3971",
+      "mode": "ship",
+      "dist": 2904.2,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 8640
+    },
+    {
+      "id": "BRU_1108_ALG_185_ship",
+      "arc_type": "transport",
+      "from": "BRU_1108",
+      "to": "ALG_185",
+      "mode": "ship",
+      "dist": 2117.1,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 6493
+    },
+    {
+      "id": "BRU_1108_ORA_186_ship",
+      "arc_type": "transport",
+      "from": "BRU_1108",
+      "to": "ORA_186",
+      "mode": "ship",
+      "dist": 2336.6,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 7092
+    },
+    {
+      "id": "BRU_1108_HAM_3971_ship",
+      "arc_type": "transport",
+      "from": "BRU_1108",
+      "to": "HAM_3971",
+      "mode": "ship",
+      "dist": 660.4,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 2521
+    },
+    {
+      "id": "ANT_1109_ALG_185_ship",
+      "arc_type": "transport",
+      "from": "ANT_1109",
+      "to": "ALG_185",
+      "mode": "ship",
+      "dist": 2173.0,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 6646
+    },
+    {
+      "id": "ANT_1109_ORA_186_ship",
+      "arc_type": "transport",
+      "from": "ANT_1109",
+      "to": "ORA_186",
+      "mode": "ship",
+      "dist": 2391.9,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 7243
+    },
+    {
+      "id": "ANT_1109_HAM_3971_ship",
+      "arc_type": "transport",
+      "from": "ANT_1109",
+      "to": "HAM_3971",
+      "mode": "ship",
+      "dist": 621.2,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 2414
+    },
+    {
+      "id": "HAM_3971_ALG_185_ship",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "ALG_185",
+      "mode": "ship",
+      "dist": 2621.3,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 7869
+    },
+    {
+      "id": "HAM_3971_ORA_186_ship",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "ORA_186",
+      "mode": "ship",
+      "dist": 2904.2,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 8640
+    },
+    {
+      "id": "HAM_3971_BRU_1108_ship",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "BRU_1108",
+      "mode": "ship",
+      "dist": 660.4,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 2521
+    },
+    {
+      "id": "HAM_3971_ANT_1109_ship",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "ANT_1109",
+      "mode": "ship",
+      "dist": 621.2,
+      "departure_minutes": [
+        480
+      ],
+      "duration_min": 2414
+    },
+    {
+      "id": "ALG_185_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "ALG_185",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 1411.5,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 285
+    },
+    {
+      "id": "PAR_3672_ALG_185_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "ALG_185",
+      "mode": "air",
+      "dist": 1411.5,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 285
+    },
+    {
+      "id": "ORA_186_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "ORA_186",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 1556.5,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 296
+    },
+    {
+      "id": "PAR_3672_ORA_186_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "ORA_186",
+      "mode": "air",
+      "dist": 1556.5,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 296
+    },
+    {
+      "id": "CON_187_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "CON_187",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 1501.7,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 292
+    },
+    {
+      "id": "PAR_3672_CON_187_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "CON_187",
+      "mode": "air",
+      "dist": 1501.7,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 292
+    },
+    {
+      "id": "BRU_1108_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "BRU_1108",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 277.6,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 200
+    },
+    {
+      "id": "PAR_3672_BRU_1108_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "BRU_1108",
+      "mode": "air",
+      "dist": 277.6,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 200
+    },
+    {
+      "id": "ANT_1109_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "ANT_1109",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 316.8,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 203
+    },
+    {
+      "id": "PAR_3672_ANT_1109_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "ANT_1109",
+      "mode": "air",
+      "dist": 316.8,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 203
+    },
+    {
+      "id": "COP_3034_HAM_3971_air",
+      "arc_type": "transport",
+      "from": "COP_3034",
+      "to": "HAM_3971",
+      "mode": "air",
+      "dist": 303.7,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 202
+    },
+    {
+      "id": "HAM_3971_COP_3034_air",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "COP_3034",
+      "mode": "air",
+      "dist": 303.7,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 202
+    },
+    {
+      "id": "ODE_3036_HAM_3971_air",
+      "arc_type": "transport",
+      "from": "ODE_3036",
+      "to": "HAM_3971",
+      "mode": "air",
+      "dist": 217.4,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 196
+    },
+    {
+      "id": "HAM_3971_ODE_3036_air",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "ODE_3036",
+      "mode": "air",
+      "dist": 217.4,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 196
+    },
+    {
+      "id": "PAR_3672_HAM_3971_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "HAM_3971",
+      "mode": "air",
+      "dist": 784.2,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 238
+    },
+    {
+      "id": "HAM_3971_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 784.2,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 238
+    },
+    {
+      "id": "MAR_3673_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "MAR_3673",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 693.8,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 232
+    },
+    {
+      "id": "PAR_3672_MAR_3673_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "MAR_3673",
+      "mode": "air",
+      "dist": 693.8,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 232
+    },
+    {
+      "id": "LYO_3674_PAR_3672_air",
+      "arc_type": "transport",
+      "from": "LYO_3674",
+      "to": "PAR_3672",
+      "mode": "air",
+      "dist": 413.1,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 210
+    },
+    {
+      "id": "PAR_3672_LYO_3674_air",
+      "arc_type": "transport",
+      "from": "PAR_3672",
+      "to": "LYO_3674",
+      "mode": "air",
+      "dist": 413.1,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 210
+    },
+    {
+      "id": "BER_3970_HAM_3971_air",
+      "arc_type": "transport",
+      "from": "BER_3970",
+      "to": "HAM_3971",
+      "mode": "air",
+      "dist": 268.2,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 200
+    },
+    {
+      "id": "HAM_3971_BER_3970_air",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "BER_3970",
+      "mode": "air",
+      "dist": 268.2,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 200
+    },
+    {
+      "id": "HAM_3971_BER_3970_air",
+      "arc_type": "transport",
+      "from": "HAM_3971",
+      "to": "BER_3970",
+      "mode": "air",
+      "dist": 268.2,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 200
+    },
+    {
+      "id": "BER_3970_HAM_3971_air",
+      "arc_type": "transport",
+      "from": "BER_3970",
+      "to": "HAM_3971",
+      "mode": "air",
+      "dist": 268.2,
+      "departure_minutes": [
+        540,
+        1080
+      ],
+      "duration_min": 200
+    },
+    {
+      "id": "ALG_185_ALG_185_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "ALG_185",
+      "to": "ALG_185",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ALG_185_ALG_185_road_ship_transfer",
+      "arc_type": "transfer",
+      "from": "ALG_185",
+      "to": "ALG_185",
+      "from_mode": "road",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ALG_185_ALG_185_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "ALG_185",
+      "to": "ALG_185",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ALG_185_ALG_185_air_ship_transfer",
+      "arc_type": "transfer",
+      "from": "ALG_185",
+      "to": "ALG_185",
+      "from_mode": "air",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "ALG_185_ALG_185_ship_road_transfer",
+      "arc_type": "transfer",
+      "from": "ALG_185",
+      "to": "ALG_185",
+      "from_mode": "ship",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ALG_185_ALG_185_ship_air_transfer",
+      "arc_type": "transfer",
+      "from": "ALG_185",
+      "to": "ALG_185",
+      "from_mode": "ship",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "ORA_186_ORA_186_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "ORA_186",
+      "to": "ORA_186",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ORA_186_ORA_186_road_ship_transfer",
+      "arc_type": "transfer",
+      "from": "ORA_186",
+      "to": "ORA_186",
+      "from_mode": "road",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ORA_186_ORA_186_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "ORA_186",
+      "to": "ORA_186",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ORA_186_ORA_186_air_ship_transfer",
+      "arc_type": "transfer",
+      "from": "ORA_186",
+      "to": "ORA_186",
+      "from_mode": "air",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "ORA_186_ORA_186_ship_road_transfer",
+      "arc_type": "transfer",
+      "from": "ORA_186",
+      "to": "ORA_186",
+      "from_mode": "ship",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ORA_186_ORA_186_ship_air_transfer",
+      "arc_type": "transfer",
+      "from": "ORA_186",
+      "to": "ORA_186",
+      "from_mode": "ship",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "CON_187_CON_187_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "CON_187",
+      "to": "CON_187",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "CON_187_CON_187_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "CON_187",
+      "to": "CON_187",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "BRU_1108_BRU_1108_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "BRU_1108_BRU_1108_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "BRU_1108_BRU_1108_road_ship_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "road",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "BRU_1108_BRU_1108_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "BRU_1108_BRU_1108_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "BRU_1108_BRU_1108_rail_ship_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "rail",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "BRU_1108_BRU_1108_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "BRU_1108_BRU_1108_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "BRU_1108_BRU_1108_air_ship_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "air",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "BRU_1108_BRU_1108_ship_road_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "ship",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "BRU_1108_BRU_1108_ship_rail_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "ship",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "BRU_1108_BRU_1108_ship_air_transfer",
+      "arc_type": "transfer",
+      "from": "BRU_1108",
+      "to": "BRU_1108",
+      "from_mode": "ship",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "ANT_1109_ANT_1109_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "ANT_1109_ANT_1109_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ANT_1109_ANT_1109_road_ship_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "road",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ANT_1109_ANT_1109_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "ANT_1109_ANT_1109_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "ANT_1109_ANT_1109_rail_ship_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "rail",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ANT_1109_ANT_1109_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ANT_1109_ANT_1109_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "ANT_1109_ANT_1109_air_ship_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "air",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "ANT_1109_ANT_1109_ship_road_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "ship",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ANT_1109_ANT_1109_ship_rail_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "ship",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "ANT_1109_ANT_1109_ship_air_transfer",
+      "arc_type": "transfer",
+      "from": "ANT_1109",
+      "to": "ANT_1109",
+      "from_mode": "ship",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "GEN_1110_GEN_1110_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "GEN_1110",
+      "to": "GEN_1110",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "GEN_1110_GEN_1110_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "GEN_1110",
+      "to": "GEN_1110",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "COP_3034_COP_3034_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "COP_3034",
+      "to": "COP_3034",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "COP_3034_COP_3034_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "COP_3034",
+      "to": "COP_3034",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "COP_3034_COP_3034_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "COP_3034",
+      "to": "COP_3034",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "COP_3034_COP_3034_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "COP_3034",
+      "to": "COP_3034",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "COP_3034_COP_3034_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "COP_3034",
+      "to": "COP_3034",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "COP_3034_COP_3034_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "COP_3034",
+      "to": "COP_3034",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "ODE_3036_ODE_3036_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "ODE_3036",
+      "to": "ODE_3036",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "ODE_3036_ODE_3036_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "ODE_3036",
+      "to": "ODE_3036",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ODE_3036_ODE_3036_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "ODE_3036",
+      "to": "ODE_3036",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "ODE_3036_ODE_3036_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "ODE_3036",
+      "to": "ODE_3036",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "ODE_3036_ODE_3036_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "ODE_3036",
+      "to": "ODE_3036",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "ODE_3036_ODE_3036_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "ODE_3036",
+      "to": "ODE_3036",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "PAR_3672_PAR_3672_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "PAR_3672",
+      "to": "PAR_3672",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "PAR_3672_PAR_3672_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "PAR_3672",
+      "to": "PAR_3672",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "PAR_3672_PAR_3672_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "PAR_3672",
+      "to": "PAR_3672",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "PAR_3672_PAR_3672_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "PAR_3672",
+      "to": "PAR_3672",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "PAR_3672_PAR_3672_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "PAR_3672",
+      "to": "PAR_3672",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "PAR_3672_PAR_3672_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "PAR_3672",
+      "to": "PAR_3672",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "MAR_3673_MAR_3673_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "MAR_3673",
+      "to": "MAR_3673",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "MAR_3673_MAR_3673_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "MAR_3673",
+      "to": "MAR_3673",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "MAR_3673_MAR_3673_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "MAR_3673",
+      "to": "MAR_3673",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "MAR_3673_MAR_3673_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "MAR_3673",
+      "to": "MAR_3673",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "MAR_3673_MAR_3673_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "MAR_3673",
+      "to": "MAR_3673",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "MAR_3673_MAR_3673_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "MAR_3673",
+      "to": "MAR_3673",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "LYO_3674_LYO_3674_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "LYO_3674",
+      "to": "LYO_3674",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "LYO_3674_LYO_3674_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "LYO_3674",
+      "to": "LYO_3674",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "LYO_3674_LYO_3674_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "LYO_3674",
+      "to": "LYO_3674",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "LYO_3674_LYO_3674_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "LYO_3674",
+      "to": "LYO_3674",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "LYO_3674_LYO_3674_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "LYO_3674",
+      "to": "LYO_3674",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "LYO_3674_LYO_3674_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "LYO_3674",
+      "to": "LYO_3674",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "BER_3970_BER_3970_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "BER_3970",
+      "to": "BER_3970",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "BER_3970_BER_3970_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "BER_3970",
+      "to": "BER_3970",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "BER_3970_BER_3970_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "BER_3970",
+      "to": "BER_3970",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "BER_3970_BER_3970_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "BER_3970",
+      "to": "BER_3970",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "BER_3970_BER_3970_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "BER_3970",
+      "to": "BER_3970",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "BER_3970_BER_3970_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "BER_3970",
+      "to": "BER_3970",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "HAM_3971_HAM_3971_road_rail_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "road",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "HAM_3971_HAM_3971_road_air_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "road",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "HAM_3971_HAM_3971_road_ship_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "road",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "HAM_3971_HAM_3971_rail_road_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "rail",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 60
+    },
+    {
+      "id": "HAM_3971_HAM_3971_rail_air_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "rail",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "HAM_3971_HAM_3971_rail_ship_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "rail",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "HAM_3971_HAM_3971_air_road_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "air",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 180
+    },
+    {
+      "id": "HAM_3971_HAM_3971_air_rail_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "air",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 240
+    },
+    {
+      "id": "HAM_3971_HAM_3971_air_ship_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "air",
+      "to_mode": "ship",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    },
+    {
+      "id": "HAM_3971_HAM_3971_ship_road_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "ship",
+      "to_mode": "road",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "HAM_3971_HAM_3971_ship_rail_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "ship",
+      "to_mode": "rail",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 360
+    },
+    {
+      "id": "HAM_3971_HAM_3971_ship_air_transfer",
+      "arc_type": "transfer",
+      "from": "HAM_3971",
+      "to": "HAM_3971",
+      "from_mode": "ship",
+      "to_mode": "air",
+      "departure_minutes": [
+        300,
+        780,
+        1260
+      ],
+      "duration_min": 480
+    }
+  ]
+}
