@@ -30,7 +30,12 @@ def create_network_map(
 
     # prefer_canvas=True instructs Leaflet to render polylines using HTML5 Canvas rather than SVG,
     # boosting performance significantly for dense datasets.
-    m = folium.Map(location=[avg_lat, avg_lon], tiles="CartoDB positron", zoom_start=4, prefer_canvas=True)
+    m = folium.Map(
+        location=[avg_lat, avg_lon],
+        tiles="CartoDB positron",
+        zoom_start=4,
+        prefer_canvas=True,
+    )
 
     # Use marker clustering for performance
     marker_cluster = MarkerCluster(name="Hubs (Clustered)").add_to(m)

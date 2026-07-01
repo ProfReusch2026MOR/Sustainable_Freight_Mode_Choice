@@ -23,7 +23,7 @@ from freight_routing.data_models import (  # noqa: E402
     Shipment,
     TransportArcTemplate,
 )
-from freight_routing.model import TimeExpandedFreightRoutingModel  # noqa: E402
+from freight_routing.model import TimeExpandedFreightRoutingModel, TimeExpandedNetwork  # noqa: E402
 
 DATASET_PATH = ROOT / "dataset" / "multimodal_network.json"
 DEFAULT_OUTPUT_DIR = ROOT / "experiments" / "results"
@@ -292,10 +292,10 @@ def solve_instance(
     weights: ObjectiveWeights,
     time_limit_sec: float,
 ) -> tuple[RoutingResult, float]:
-    model = TimeExpandedFreightRoutingModel(network_data, objective_weights=weights)
-    model.build(DEFAULT_PLANNING_DAYS, shipments)
+    network = TimeExpandedNetwork.build(network_data, DEFAULT_PLANNING_DAYS, shipments)
+    model = TimeExpandedFreightRoutingModel(objective_weights=weights)
     started = time.perf_counter()
-    result = model.solve(shipments, time_limit_sec=time_limit_sec)
+    result = model.solve(network, time_limit_sec=time_limit_sec)
     runtime_sec = time.perf_counter() - started
     return result, runtime_sec
 

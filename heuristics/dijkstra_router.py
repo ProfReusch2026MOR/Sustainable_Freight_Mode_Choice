@@ -5,24 +5,21 @@ import math
 from collections import defaultdict
 
 from freight_routing.data_models import (
-    NetworkData,
     Shipment,
     ObjectiveWeights,
     RoutingResult,
     ArcType,
 )
-from freight_routing.model import TimeExpandedFreightRoutingModel
+from freight_routing.model import TimeExpandedNetwork
 
 
 class DijkstraRouter:
-    def __init__(self, network_data: NetworkData, objective_weights: ObjectiveWeights):
-        self.network_data = network_data
+    def __init__(self, objective_weights: ObjectiveWeights):
         self.objective_weights = objective_weights
-        self.model = None  # Cache for the time-expanded model instance
 
     def _find_shortest_path(
         self,
-        model: TimeExpandedFreightRoutingModel,
+        network: TimeExpandedNetwork,
         shipment: Shipment,
         remaining_capacity: list[float] | None,
         active_vehicles: list[int] | None,
@@ -35,7 +32,7 @@ class DijkstraRouter:
         """Helper to run Dijkstra shortest-path search for a single shipment.
 
         Args:
-            model: The time-expanded model.
+            network: The time-expanded network.
             shipment: The shipment to route.
             remaining_capacity: List of remaining capacities per arc index (None if infinite/single routing).
             active_vehicles: List of active vehicle counts per arc index (None if infinite/single routing).
@@ -47,20 +44,20 @@ class DijkstraRouter:
             A list of Arc objects forming the path, or None if infeasible.
         """
         if remaining_capacity is None:
-            remaining_capacity = [0.0] * len(model.all_arcs)
+            remaining_capacity = [0.0] * len(network.all_arcs)
         if active_vehicles is None:
-            active_vehicles = [0] * len(model.all_arcs)
+            active_vehicles = [0] * len(network.all_arcs)
 
         # Identify start and end nodes in the time-expanded graph
         start_nodes = {
             node
-            for node in model.nodes
+            for node in network.nodes
             if node.hub_id == shipment.start_hub
             and node.time_min == shipment.start_time
         }
         end_nodes = {
             node
-            for node in model.nodes
+            for node in network.nodes
             if node.hub_id == shipment.end_hub and node.time_min <= shipment.deadline
         }
 
@@ -134,8 +131,8 @@ class DijkstraRouter:
                     c_fixed = 0.0
                     e_fixed = 0.0
                 else:
-                    c_fixed = model._get_fixed_cost(arc) * needed
-                    e_fixed = model._get_fixed_emissions(arc) * needed
+                    c_fixed = network._get_fixed_cost(arc) * needed
+                    e_fixed = network._get_fixed_emissions(arc) * needed
 
                 c_var = arc.cost * shipment.weight
                 c_total = c_fixed + c_var
@@ -176,25 +173,22 @@ class DijkstraRouter:
         route_arcs.reverse()
         return route_arcs
 
-    def solve(self, shipment: Shipment, planning_days: int = 7) -> RoutingResult:
+    def solve(
+        self,
+        network: TimeExpandedNetwork,
+    ) -> RoutingResult:
         """Solves the routing problem for a single shipment using Dijkstra's algorithm.
 
         Args:
-            shipment: The shipment to route.
-            planning_days: The planning horizon in days.
+            network: The pre-built TimeExpandedNetwork instance.
 
         Returns:
             A RoutingResult containing the optimal path and objective metrics.
         """
-        # 1. Build the time-expanded graph
-        model = TimeExpandedFreightRoutingModel(
-            self.network_data, objective_weights=self.objective_weights
-        )
-        model.build(planning_days=planning_days, shipments=[shipment])
-        self.model = model
+        shipment = network.shipments[0]
 
         # 2. Extract bounds for normalization
-        bounds = model.estimate_normalization_bounds([shipment])
+        bounds = network.estimate_normalization_bounds([shipment])
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
@@ -206,13 +200,13 @@ class DijkstraRouter:
         # 3. Adjacency list and index mapping
         adj = defaultdict(list)
         arc_to_index = {}
-        for idx, arc in enumerate(model.all_arcs):
+        for idx, arc in enumerate(network.all_arcs):
             adj[arc.from_node].append(arc)
             arc_to_index[arc] = idx
 
         # 4. Run Dijkstra helper
         route_arcs = self._find_shortest_path(
-            model=model,
+            network=network,
             shipment=shipment,
             remaining_capacity=None,
             active_vehicles=None,
@@ -238,12 +232,12 @@ class DijkstraRouter:
             )
 
         # 5. Compute final metrics
-        total_fixed_cost = sum(model._get_fixed_cost(arc) for arc in route_arcs)
+        total_fixed_cost = sum(network._get_fixed_cost(arc) for arc in route_arcs)
         total_var_cost = sum(arc.cost * shipment.weight for arc in route_arcs)
         total_cost = total_fixed_cost + total_var_cost
 
         total_fixed_emissions = sum(
-            model._get_fixed_emissions(arc) for arc in route_arcs
+            network._get_fixed_emissions(arc) for arc in route_arcs
         )
         total_var_emissions = sum(arc.emissions * shipment.weight for arc in route_arcs)
         total_emissions = total_fixed_emissions + total_var_emissions
@@ -275,26 +269,21 @@ class DijkstraRouter:
         )
 
     def solve_multiple(
-        self, shipments: list[Shipment], planning_days: int = 7
+        self,
+        network: TimeExpandedNetwork,
     ) -> RoutingResult:
         """Solves the routing problem for multiple shipments sequentially.
 
         Args:
-            shipments: List of shipments to route.
-            planning_days: Planning horizon in days.
+            network: The pre-built TimeExpandedNetwork instance.
 
         Returns:
             A RoutingResult containing the consolidated routes and objective metrics.
         """
-        # 1. Build the time-expanded graph using a shared model instance
-        model = TimeExpandedFreightRoutingModel(
-            self.network_data, objective_weights=self.objective_weights
-        )
-        model.build(planning_days=planning_days, shipments=shipments)
-        self.model = model
+        shipments = network.shipments
 
         # 2. Extract bounds for normalization using all shipments
-        bounds = model.estimate_normalization_bounds(shipments)
+        bounds = network.estimate_normalization_bounds(shipments)
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
@@ -305,7 +294,7 @@ class DijkstraRouter:
         # 3. Adjacency list and indices
         adj = defaultdict(list)
         arc_to_index = {}
-        for idx, arc in enumerate(model.all_arcs):
+        for idx, arc in enumerate(network.all_arcs):
             adj[arc.from_node].append(arc)
             arc_to_index[arc] = idx
 
@@ -313,8 +302,8 @@ class DijkstraRouter:
         sorted_shipments = sorted(shipments, key=lambda s: s.weight, reverse=True)
 
         # Track active vehicles and remaining capacities on each time-expanded arc
-        active_vehicles = [0] * len(model.all_arcs)
-        remaining_capacity = [0.0] * len(model.all_arcs)
+        active_vehicles = [0] * len(network.all_arcs)
+        remaining_capacity = [0.0] * len(network.all_arcs)
 
         shipment_routes = {}
         diagnostics = []
@@ -322,7 +311,7 @@ class DijkstraRouter:
         # Route each shipment sequentially
         for shipment in sorted_shipments:
             route_arcs = self._find_shortest_path(
-                model=model,
+                network=network,
                 shipment=shipment,
                 remaining_capacity=remaining_capacity,
                 active_vehicles=active_vehicles,
@@ -355,7 +344,7 @@ class DijkstraRouter:
             shipment_routes[shipment.id] = tuple(route_arcs)
 
         return self._build_combined_result(
-            model=model,
+            network=network,
             shipment_routes=shipment_routes,
             active_vehicles=active_vehicles,
             shipments=shipments,
@@ -371,20 +360,18 @@ class DijkstraRouter:
     def optimize_multiple(
         self,
         initial_result: RoutingResult,
-        shipments: list[Shipment],
+        network: TimeExpandedNetwork,
         iterations: int = 20,
         ruin_fraction: float = 0.2,
-        planning_days: int = 7,
         seed: int | None = None,
     ) -> RoutingResult:
         """Optimizes an initial RoutingResult for multiple shipments using Ruin-and-Recreate (LNS).
 
         Args:
             initial_result: The initial RoutingResult to optimize.
-            shipments: List of all shipments.
+            network: The pre-built TimeExpandedNetwork instance.
             iterations: Number of LNS iterations.
             ruin_fraction: Fraction of shipments to remove and reroute in each iteration.
-            planning_days: Planning horizon in days.
             seed: Optional random seed for reproducibility.
 
         Returns:
@@ -398,18 +385,10 @@ class DijkstraRouter:
         if seed is not None:
             random.seed(seed)
 
-        # 1. Reuse existing model if cached, otherwise build
-        if self.model is not None:
-            model = self.model
-        else:
-            model = TimeExpandedFreightRoutingModel(
-                self.network_data, objective_weights=self.objective_weights
-            )
-            model.build(planning_days=planning_days, shipments=shipments)
-            self.model = model
+        shipments = network.shipments
 
         # 2. Extract bounds for normalization
-        bounds = model.estimate_normalization_bounds(shipments)
+        bounds = network.estimate_normalization_bounds(shipments)
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
@@ -420,7 +399,7 @@ class DijkstraRouter:
         # 3. Adjacency list and indices
         adj = defaultdict(list)
         arc_to_index = {}
-        for idx, arc in enumerate(model.all_arcs):
+        for idx, arc in enumerate(network.all_arcs):
             adj[arc.from_node].append(arc)
             arc_to_index[arc] = idx
 
@@ -445,8 +424,8 @@ class DijkstraRouter:
             ]
 
             # Rebuild network state from remaining shipments' routes
-            active_vehicles = [0] * len(model.all_arcs)
-            remaining_capacity = [0.0] * len(model.all_arcs)
+            active_vehicles = [0] * len(network.all_arcs)
+            remaining_capacity = [0.0] * len(network.all_arcs)
 
             for s_id in remaining_ids:
                 shipment = shipment_by_id[s_id]
@@ -476,7 +455,7 @@ class DijkstraRouter:
 
             for shipment in ruined_shipments:
                 route_arcs = self._find_shortest_path(
-                    model=model,
+                    network=network,
                     shipment=shipment,
                     remaining_capacity=remaining_capacity,
                     active_vehicles=active_vehicles,
@@ -513,7 +492,7 @@ class DijkstraRouter:
 
             # Evaluate candidate solution
             candidate_result = self._build_combined_result(
-                model=model,
+                network=network,
                 shipment_routes=candidate_routes,
                 active_vehicles=active_vehicles,
                 shipments=shipments,
@@ -540,7 +519,7 @@ class DijkstraRouter:
 
     def _build_combined_result(
         self,
-        model: TimeExpandedFreightRoutingModel,
+        network: TimeExpandedNetwork,
         shipment_routes: dict[str, tuple],
         active_vehicles: list[int],
         shipments: list[Shipment],
@@ -573,8 +552,8 @@ class DijkstraRouter:
 
         # Compute total fixed costs based on activated vehicles
         total_fixed_cost = sum(
-            model._get_fixed_cost(arc) * active_vehicles[idx]
-            for idx, arc in enumerate(model.all_arcs)
+            network._get_fixed_cost(arc) * active_vehicles[idx]
+            for idx, arc in enumerate(network.all_arcs)
         )
         total_var_cost = 0.0
         for shipment in shipments:
@@ -587,8 +566,8 @@ class DijkstraRouter:
 
         # Emissions
         total_fixed_emissions = sum(
-            model._get_fixed_emissions(arc) * active_vehicles[idx]
-            for idx, arc in enumerate(model.all_arcs)
+            network._get_fixed_emissions(arc) * active_vehicles[idx]
+            for idx, arc in enumerate(network.all_arcs)
         )
         total_var_emissions = 0.0
         for shipment in shipments:

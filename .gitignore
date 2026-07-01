@@ -15,3 +15,6 @@ experiments/_scratch_verify_comparison/
 experiments/_verify_solver_heuristic/
 experiments/results_fixed/
 experiments/.idea/
+
+# Antigravity files
+.antigravitycli/
