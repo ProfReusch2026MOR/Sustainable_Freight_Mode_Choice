@@ -614,15 +614,10 @@ class TimeExpandedFreightRoutingModel:
         )
 
         # Normalize soft-constraint violations to the same dimensionless scales
-        # as the routing objective. A 1% range violation therefore contributes
-        # one objective unit when the penalty weight is 100.
+        # as the routing objective.
         normalized_constraint_violation = (
-            pulp.lpSum(
-                self.slack_deadline[k] / time_range for k in shipment_indices
-            )
-            + pulp.lpSum(
-                self.slack_price[k] / cost_range for k in shipment_indices
-            )
+            pulp.lpSum(self.slack_deadline[k] / time_range for k in shipment_indices)
+            + pulp.lpSum(self.slack_price[k] / cost_range for k in shipment_indices)
             + pulp.lpSum(
                 self.slack_emissions[k] / emissions_range
                 for k in shipment_indices
