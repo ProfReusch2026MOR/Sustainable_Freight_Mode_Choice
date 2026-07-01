@@ -188,7 +188,7 @@ class DijkstraRouter:
         shipment = network.shipments[0]
 
         # 2. Extract bounds for normalization
-        bounds = network.estimate_normalization_bounds([shipment])
+        bounds = network.estimate_normalization_bounds()
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
@@ -284,8 +284,8 @@ class DijkstraRouter:
         """
         shipments = network.shipments
 
-        # 2. Extract bounds for normalization using all shipments
-        bounds = network.estimate_normalization_bounds(shipments)
+        # 2. Extract bounds for normalization
+        bounds = network.estimate_normalization_bounds()
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
@@ -398,7 +398,7 @@ class DijkstraRouter:
         shipments = network.shipments
 
         # 2. Extract bounds for normalization
-        bounds = network.estimate_normalization_bounds(shipments)
+        bounds = network.estimate_normalization_bounds()
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]

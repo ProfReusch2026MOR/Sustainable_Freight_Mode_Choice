@@ -64,7 +64,7 @@ class TimeExpandedNetwork:
         self.all_arcs: list[_TimedArc] = []
         self.nodes: set[NetworkNode] = set()
 
-        self._build(self.shipments)
+        self._build()
 
     @staticmethod
     def build(
@@ -103,14 +103,12 @@ class TimeExpandedNetwork:
             return self.default_fixed_emissions.transfer
         return self.default_fixed_emissions.waiting
 
-    def estimate_normalization_bounds(
-        self, shipments: Iterable[Shipment]
-    ) -> dict[str, tuple[float, float]]:
-        total_weight = sum(s.weight for s in shipments)
+    def estimate_normalization_bounds(self) -> dict[str, tuple[float, float]]:
+        total_weight = sum(s.weight for s in self.shipments)
 
         # Aerial distance (geodetic start-to-end distance) is always needed for minimum bounds
         max_aerial_dist = 0.0
-        for s in shipments:
+        for s in self.shipments:
             start_hub = self.network_data.hubs.get(s.start_hub)
             end_hub = self.network_data.hubs.get(s.end_hub)
             if (
@@ -239,7 +237,7 @@ class TimeExpandedNetwork:
             "emissions": (min_eco, max_eco),
         }
 
-    def _build(self, shipments: Iterable[Shipment] | None = None) -> None:
+    def _build(self) -> None:
         # Populate event times based on templates
         for template in self.network_data.arc_templates:
             if isinstance(template, TransportArcTemplate):
@@ -268,8 +266,8 @@ class TimeExpandedNetwork:
                             )
 
         # Dynamic adjustments if shipments are provided
-        if shipments:
-            for s in shipments:
+        if self.shipments:
+            for s in self.shipments:
                 for mode in self.network_data.hubs[s.start_hub].supported_modes:
                     if s.start_time <= self.max_time_min:
                         self.event_times[(s.start_hub, mode)].add(s.start_time)
@@ -440,6 +438,7 @@ class TimeExpandedNetwork:
         print("Summary TimeExpandedNetwork:")
         print(f"planning_days={self.planning_days}")
         print(f"planning_horizon_min={self.max_time_min}")
+        print(f"shipments={len(self.shipments)}")
         print(f"nodes={len(self.nodes)}")
         print(f"arcs={len(self.all_arcs)}")
         print(f"  - transport_arcs={len(self.transport_arcs)}")
@@ -598,28 +597,44 @@ class TimeExpandedFreightRoutingModel:
         total_emissions = fixed_emissions + var_emissions
 
         # Combined Weighted Objective Function (Min-Max scaled dynamically)
-        bounds = self.network.estimate_normalization_bounds(shipments)
+        bounds = self.network.estimate_normalization_bounds()
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
 
-        # Dynamic penalty factor Big-M for soft constraints
-        penalty_m = max(c_max, t_max, e_max, 1000.0) * 100.0
+        cost_range = c_max - c_min
+        time_range = t_max - t_min
+        emissions_range = e_max - e_min
 
-        self.prob += (
-            self.objective_weights.cost * ((total_cost - c_min) / (c_max - c_min))
-            + self.objective_weights.time * ((total_time - t_min) / (t_max - t_min))
+        routing_objective = (
+            self.objective_weights.cost * ((total_cost - c_min) / cost_range)
+            + self.objective_weights.time * ((total_time - t_min) / time_range)
             + self.objective_weights.emissions
-            * ((total_emissions - e_min) / (e_max - e_min))
-            + penalty_m * pulp.lpSum(self.slack_deadline[k] for k in shipment_indices)
-            + penalty_m * pulp.lpSum(self.slack_price[k] for k in shipment_indices)
-            + penalty_m
-            * pulp.lpSum(
-                self.slack_emissions[k]
+            * ((total_emissions - e_min) / emissions_range)
+        )
+
+        # Normalize soft-constraint violations to the same dimensionless scales
+        # as the routing objective. A 1% range violation therefore contributes
+        # one objective unit when the penalty weight is 100.
+        normalized_constraint_violation = (
+            pulp.lpSum(
+                self.slack_deadline[k] / time_range for k in shipment_indices
+            )
+            + pulp.lpSum(
+                self.slack_price[k] / cost_range for k in shipment_indices
+            )
+            + pulp.lpSum(
+                self.slack_emissions[k] / emissions_range
                 for k in shipment_indices
                 if shipments[k].max_emissions is not None
             )
-            + penalty_m * self.slack_total_budget
+            + self.slack_total_budget / cost_range
+        )
+
+        soft_constraint_penalty = 100.0
+        self.prob += (
+            routing_objective
+            + soft_constraint_penalty * normalized_constraint_violation
         )
 
         ########################################
@@ -739,7 +754,11 @@ class TimeExpandedFreightRoutingModel:
         ########################################
         #           solver execution           #
         ########################################
-        highs_py = pulp.HiGHS(msg=show_progress, timeLimit=time_limit_sec)
+        highs_py = pulp.HiGHS(
+            msg=show_progress,
+            timeLimit=time_limit_sec,
+            user_objective_scale=10,
+        )
         status = self.prob.solve(highs_py)
 
         self.status = pulp.LpStatus[status]
