@@ -31,7 +31,7 @@ from freight_routing.data_models import (  # noqa: E402
     TransferArcTemplate,
     TransportArcTemplate,
 )
-from freight_routing.model import TimeExpandedFreightRoutingModel  # noqa: E402
+from freight_routing.model import TimeExpandedFreightRoutingModel, TimeExpandedNetwork  # noqa: E402
 
 HEURISTIC_PATH = ROOT / "heuristics" / "Tabu search Heuristik.py"
 COMPARISON_COLUMNS = (
@@ -241,10 +241,10 @@ def run_solver(
         time=variant.weights["time"],
         emissions=variant.weights["emissions"],
     )
-    model = TimeExpandedFreightRoutingModel(network_data, objective_weights=weights)
-    model.build(DEFAULT_PLANNING_DAYS, [shipment])
+    network = TimeExpandedNetwork.build(network_data, DEFAULT_PLANNING_DAYS, [shipment])
+    model = TimeExpandedFreightRoutingModel(objective_weights=weights)
     started = time.perf_counter()
-    result = model.solve([shipment], time_limit_sec=time_limit_sec)
+    result = model.solve(network, time_limit_sec=time_limit_sec)
     runtime_sec = time.perf_counter() - started
     return solver_result_to_row(variant, result, shipment, runtime_sec)
 

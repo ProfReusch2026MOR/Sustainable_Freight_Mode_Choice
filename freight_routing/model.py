@@ -23,19 +23,25 @@ from .data_models import (
 ########################################
 #   TimeExpandedFreightRoutingModel    #
 ########################################
-class TimeExpandedFreightRoutingModel:
-    """Build and solve routing models on a multimodal freight network."""
+class TimeExpandedNetwork:
+    """Builds and stores the time-expanded representation of a multimodal network."""
 
     def __init__(
         self,
         network_data: NetworkData,
-        objective_weights: ObjectiveWeights | None = None,
+        planning_days: int,
+        shipments: Iterable[Shipment],
         default_fixed_costs: FixedFactorDefaults | None = None,
         default_fixed_emissions: FixedFactorDefaults | None = None,
         default_variable_factors: VariableFactorDefaults | None = None,
     ):
+        if not isinstance(planning_days, int) or planning_days <= 0:
+            raise ValueError("planning_days must be a positive integer.")
+
         self.network_data = network_data
-        self.objective_weights = objective_weights or ObjectiveWeights()
+        self.planning_days = planning_days
+        self.max_time_min = planning_days * 24 * 60
+        self.shipments = list(shipments)
         self.default_fixed_costs = (
             default_fixed_costs or network_data.default_fixed_costs
         )
@@ -44,6 +50,39 @@ class TimeExpandedFreightRoutingModel:
         )
         self.default_variable_factors = (
             default_variable_factors or network_data.default_variable_factors
+        )
+
+        # Initialize event times for all (hub, mode) pairs
+        self.event_times: dict[tuple[str, str], set[int]] = {}
+        for hub in self.network_data.hubs.values():
+            for mode in hub.supported_modes:
+                self.event_times[(hub.id, mode)] = {0, self.max_time_min}
+
+        self.transport_arcs: list[_TimedArc] = []
+        self.transfer_arcs: list[_TimedArc] = []
+        self.waiting_arcs: list[_TimedArc] = []
+        self.all_arcs: list[_TimedArc] = []
+        self.nodes: set[NetworkNode] = set()
+
+        self._build(self.shipments)
+
+    @staticmethod
+    def build(
+        network_data: NetworkData,
+        planning_days: int,
+        shipments: Iterable[Shipment],
+        default_fixed_costs: FixedFactorDefaults | None = None,
+        default_fixed_emissions: FixedFactorDefaults | None = None,
+        default_variable_factors: VariableFactorDefaults | None = None,
+    ) -> "TimeExpandedNetwork":
+        """Build reusable lookup indexes from the loaded network data and returns the built network."""
+        return TimeExpandedNetwork(
+            network_data=network_data,
+            planning_days=planning_days,
+            shipments=shipments,
+            default_fixed_costs=default_fixed_costs,
+            default_fixed_emissions=default_fixed_emissions,
+            default_variable_factors=default_variable_factors,
         )
 
     def _get_fixed_cost(self, arc: _TimedArc) -> float:
@@ -200,167 +239,162 @@ class TimeExpandedFreightRoutingModel:
             "emissions": (min_eco, max_eco),
         }
 
-    def build(
-        self, planning_days: int, shipments: Iterable[Shipment] | None = None
-    ) -> None:
-        """Build reusable lookup indexes from the loaded network data."""
-
-        if not isinstance(planning_days, int) or planning_days <= 0:
-            raise ValueError("planning_days must be a positive integer.")
-        self.planning_days = planning_days
-        self.max_time_min = planning_days * 24 * 60
-
-        # Initialize event times for all (hub, mode) pairs
-        self.event_times: dict[tuple[str, str], set[int]] = {}
-        for hub in self.network_data.hubs.values():
-            for mode in hub.supported_modes:
-                self.event_times[(hub.id, mode)] = {0, self.max_time_min}
-
-        self.transport_arcs: list[_TimedArc] = []
-        self.transfer_arcs: list[_TimedArc] = []
-
-        def add_event(hub_id: str, mode: str, time_min: int) -> None:
-            key = (hub_id, mode)
-            if key in self.event_times:
-                if 0 <= time_min <= self.max_time_min:
-                    self.event_times[key].add(time_min)
-
-        # Add shipment start times and deadlines as events
-        if shipments is not None:
-            for shipment in shipments:
-                start_hub = self.network_data.hubs.get(shipment.start_hub)
-                if start_hub:
-                    for mode in start_hub.supported_modes:
-                        add_event(shipment.start_hub, mode, shipment.start_time)
-                end_hub = self.network_data.hubs.get(shipment.end_hub)
-                if end_hub:
-                    for mode in end_hub.supported_modes:
-                        add_event(shipment.end_hub, mode, shipment.deadline)
-
-        ########################################
-        #       generate transport arcs        #
-        ########################################
+    def _build(self, shipments: Iterable[Shipment] | None = None) -> None:
+        # Populate event times based on templates
         for template in self.network_data.arc_templates:
             if isinstance(template, TransportArcTemplate):
-                for day in range(planning_days):
-                    for dep_min in template.departure_minutes:
-                        start_min = day * 24 * 60 + dep_min
+                for day in range(self.planning_days):
+                    for departure_min in template.departure_minutes:
+                        start_min = day * 24 * 60 + departure_min
                         arrival_min = start_min + template.duration_min
                         if arrival_min <= self.max_time_min:
-                            add_event(template.from_hub, template.mode, start_min)
-                            add_event(template.to_hub, template.mode, arrival_min)
-
-                            cost = template.cost
-                            if cost is None:
-                                factor = self.network_data.mode_factors.get(
-                                    template.mode
-                                )
-                                if not factor:
-                                    raise ValueError(
-                                        f"Missing mode factor for mode: {template.mode}"
-                                    )
-                                cost = template.distance * factor.cost_per_ton_km
-
-                            emissions = template.emissions
-                            if emissions is None:
-                                factor = self.network_data.mode_factors.get(
-                                    template.mode
-                                )
-                                if not factor:
-                                    raise ValueError(
-                                        f"Missing mode factor for mode: {template.mode}"
-                                    )
-                                emissions = (
-                                    template.distance * factor.emissions_kg_per_ton_km
-                                )
-
-                            transport_capacity = (
-                                template.capacity
-                                if template.capacity is not None
-                                else self.network_data.capacities[template.mode]
+                            self.event_times[(template.from_hub, template.mode)].add(
+                                start_min
                             )
-
-                            self.transport_arcs.append(
-                                _TimedArc(
-                                    from_node=NetworkNode(
-                                        template.from_hub, template.mode, start_min
-                                    ),
-                                    to_node=NetworkNode(
-                                        template.to_hub, template.mode, arrival_min
-                                    ),
-                                    mode=template.mode,
-                                    arc_type=ArcType.TRANSPORT,
-                                    departure_min=start_min,
-                                    arrival_min=arrival_min,
-                                    cost=cost,
-                                    emissions=emissions,
-                                    capacity=transport_capacity,
-                                    distance=template.distance,
-                                    max_vehicles=template.max_vehicles,
-                                    fixed_cost=template.fixed_cost,
-                                    fixed_emissions=template.fixed_emissions,
-                                )
+                            self.event_times[(template.to_hub, template.mode)].add(
+                                arrival_min
                             )
-
             elif isinstance(template, TransferArcTemplate):
-                ########################################
-                #        generate transfer arcs        #
-                ########################################
-                for day in range(planning_days):
-                    for dep_min in template.departure_minutes:
-                        start_min = day * 24 * 60 + dep_min
+                for day in range(self.planning_days):
+                    for departure_min in template.departure_minutes:
+                        start_min = day * 24 * 60 + departure_min
                         arrival_min = start_min + template.duration_min
                         if arrival_min <= self.max_time_min:
-                            add_event(template.hub, template.from_mode, start_min)
-                            add_event(template.hub, template.to_mode, arrival_min)
-
-                            transfer_cost_per_ton = (
-                                template.transfer_cost_per_ton
-                                if template.transfer_cost_per_ton is not None
-                                else self.default_variable_factors.transfer_cost_per_ton
-                            )
-                            transfer_emissions_per_ton = (
-                                template.transfer_emissions_per_ton
-                                if template.transfer_emissions_per_ton is not None
-                                else self.default_variable_factors.transfer_emissions_per_ton
-                            )
-                            transfer_capacity = (
-                                template.capacity
-                                if template.capacity is not None
-                                else self.network_data.capacities["transfer"]
+                            self.event_times[
+                                (template.from_hub, template.from_mode)
+                            ].add(start_min)
+                            self.event_times[(template.from_hub, template.to_mode)].add(
+                                arrival_min
                             )
 
-                            self.transfer_arcs.append(
-                                _TimedArc(
-                                    from_node=NetworkNode(
-                                        template.hub, template.from_mode, start_min
-                                    ),
-                                    to_node=NetworkNode(
-                                        template.hub, template.to_mode, arrival_min
-                                    ),
-                                    mode=f"{template.from_mode}->{template.to_mode}",
-                                    arc_type=ArcType.TRANSFER,
-                                    departure_min=start_min,
-                                    arrival_min=arrival_min,
-                                    cost=transfer_cost_per_ton,
-                                    emissions=transfer_emissions_per_ton,
-                                    capacity=transfer_capacity,
-                                    max_vehicles=template.max_vehicles,
-                                    fixed_cost=template.fixed_cost,
-                                    fixed_emissions=template.fixed_emissions,
+        # Dynamic adjustments if shipments are provided
+        if shipments:
+            for s in shipments:
+                for mode in self.network_data.hubs[s.start_hub].supported_modes:
+                    if s.start_time <= self.max_time_min:
+                        self.event_times[(s.start_hub, mode)].add(s.start_time)
+                for mode in self.network_data.hubs[s.end_hub].supported_modes:
+                    if s.deadline <= self.max_time_min:
+                        self.event_times[(s.end_hub, mode)].add(s.deadline)
+
+        # Convert event times to sorted lists
+        event_times_list = {k: sorted(list(v)) for k, v in self.event_times.items()}
+
+        # 1. Transport Arcs
+        for template in self.network_data.arc_templates:
+            if isinstance(template, TransportArcTemplate):
+                for day in range(self.planning_days):
+                    for departure_min in template.departure_minutes:
+                        start_min = day * 24 * 60 + departure_min
+                        arrival_min = start_min + template.duration_min
+
+                        if arrival_min > self.max_time_min:
+                            continue
+
+                        cost = template.cost
+                        if cost is None:
+                            factor = self.network_data.mode_factors.get(template.mode)
+                            if not factor:
+                                raise ValueError(
+                                    f"Missing mode factor for mode: {template.mode}"
                                 )
+                            cost = template.distance * factor.cost_per_ton_km
+
+                        emissions = template.emissions
+                        if emissions is None:
+                            factor = self.network_data.mode_factors.get(template.mode)
+                            if not factor:
+                                raise ValueError(
+                                    f"Missing mode factor for mode: {template.mode}"
+                                )
+                            emissions = (
+                                template.distance * factor.emissions_kg_per_ton_km
                             )
 
-        ########################################
-        #        generate waiting arcs         #
-        ########################################
-        self.waiting_arcs: list[_TimedArc] = []
-        for (hub_id, mode), times in self.event_times.items():
-            sorted_times = sorted(times)
-            for start_min, arrival_min in zip(sorted_times, sorted_times[1:]):
-                duration = arrival_min - start_min
-                if duration <= 0:
-                    continue
+                        transport_capacity = (
+                            template.capacity
+                            if template.capacity is not None
+                            else self.network_data.capacities[template.mode]
+                        )
+
+                        self.transport_arcs.append(
+                            _TimedArc(
+                                from_node=NetworkNode(
+                                    template.from_hub, template.mode, start_min
+                                ),
+                                to_node=NetworkNode(
+                                    template.to_hub, template.mode, arrival_min
+                                ),
+                                mode=template.mode,
+                                arc_type=ArcType.TRANSPORT,
+                                departure_min=start_min,
+                                arrival_min=arrival_min,
+                                cost=cost,
+                                emissions=emissions,
+                                capacity=transport_capacity,
+                                distance=template.distance,
+                                max_vehicles=template.max_vehicles,
+                                fixed_cost=template.fixed_cost,
+                                fixed_emissions=template.fixed_emissions,
+                            )
+                        )
+
+        # 2. Transfer Arcs
+        for template in self.network_data.arc_templates:
+            if isinstance(template, TransferArcTemplate):
+                for day in range(self.planning_days):
+                    for departure_min in template.departure_minutes:
+                        start_min = day * 24 * 60 + departure_min
+                        arrival_min = start_min + template.duration_min
+
+                        if arrival_min > self.max_time_min:
+                            continue
+
+                        cost = template.transfer_cost_per_ton
+                        if cost is None:
+                            cost = self.default_variable_factors.transfer_cost_per_ton
+
+                        emissions = template.transfer_emissions_per_ton
+                        if emissions is None:
+                            emissions = (
+                                self.default_variable_factors.transfer_emissions_per_ton
+                            )
+
+                        transfer_capacity = (
+                            template.capacity
+                            if template.capacity is not None
+                            else self.network_data.capacities["transfer"]
+                        )
+
+                        self.transfer_arcs.append(
+                            _TimedArc(
+                                from_node=NetworkNode(
+                                    template.hub, template.from_mode, start_min
+                                ),
+                                to_node=NetworkNode(
+                                    template.hub, template.to_mode, arrival_min
+                                ),
+                                mode=f"{template.from_mode}->{template.to_mode}",
+                                arc_type=ArcType.TRANSFER,
+                                departure_min=start_min,
+                                arrival_min=arrival_min,
+                                cost=cost,
+                                emissions=emissions,
+                                capacity=transfer_capacity,
+                                distance=0.0,
+                                max_vehicles=template.max_vehicles,
+                                fixed_cost=template.fixed_cost,
+                                fixed_emissions=template.fixed_emissions,
+                            )
+                        )
+
+        # 3. Waiting Arcs
+        for (hub_id, mode), times in event_times_list.items():
+            for i in range(len(times) - 1):
+                start_min = times[i]
+                arrival_min = times[i + 1]
+                duration_hours = (arrival_min - start_min) / 60.0
+
                 hub = self.network_data.hubs[hub_id]
                 waiting_cost_per_hour = (
                     hub.waiting_cost_per_hour
@@ -372,8 +406,8 @@ class TimeExpandedFreightRoutingModel:
                     if hub.waiting_emissions_per_hour is not None
                     else self.default_variable_factors.waiting_emissions_per_hour
                 )
-                cost = waiting_cost_per_hour * (duration / 60)
-                emissions = waiting_emissions_per_hour * (duration / 60)
+                cost = duration_hours * waiting_cost_per_hour
+                emissions = duration_hours * waiting_emissions_per_hour
 
                 self.waiting_arcs.append(
                     _TimedArc(
@@ -400,46 +434,60 @@ class TimeExpandedFreightRoutingModel:
             self.nodes.add(arc.from_node)
             self.nodes.add(arc.to_node)
 
+    def summary(self) -> None:
+        """Print an overview of the generated time-expanded network."""
+        print("==============================")
+        print("Summary TimeExpandedNetwork:")
+        print(f"planning_days={self.planning_days}")
+        print(f"planning_horizon_min={self.max_time_min}")
+        print(f"nodes={len(self.nodes)}")
+        print(f"arcs={len(self.all_arcs)}")
+        print(f"  - transport_arcs={len(self.transport_arcs)}")
+        print(f"  - transfer_arcs={len(self.transfer_arcs)}")
+        print(f"  - waiting_arcs={len(self.waiting_arcs)}")
+        print("==============================")
+
+
+class TimeExpandedFreightRoutingModel:
+    """Build and solve routing models on a multimodal freight network."""
+
+    def __init__(
+        self,
+        objective_weights: ObjectiveWeights | None = None,
+    ):
+        self.objective_weights = objective_weights or ObjectiveWeights()
+
     def solve(
         self,
-        shipments: Iterable[Shipment],
+        network: TimeExpandedNetwork,
         time_limit_sec: float | None = None,
     ) -> RoutingResult:
-        """Solve the routing problem for explicitly provided shipments."""
-        return self._solve(shipments, time_limit_sec=time_limit_sec)
+        """Solve the routing problem for the shipments built into the network."""
+        return self._solve(network, time_limit_sec=time_limit_sec)
 
     def _solve(
         self,
-        shipments: Iterable[Shipment],
+        network: TimeExpandedNetwork,
         time_limit_sec: float | None = None,
     ) -> RoutingResult:
         """Solve the routing problem with an optional solver time limit."""
-        shipments = tuple(shipments)
+        shipments = tuple(network.shipments)
         if not shipments:
             raise ValueError("shipments must not be empty.")
+
+        self.network = network
+        self.network_data = network.network_data
+        self.default_fixed_costs = network.default_fixed_costs
+        self.default_fixed_emissions = network.default_fixed_emissions
+        self.default_variable_factors = network.default_variable_factors
+        self.all_arcs = network.all_arcs
+        self.nodes = network.nodes
+        self.transport_arcs = network.transport_arcs
+        self.transfer_arcs = network.transfer_arcs
+        self.waiting_arcs = network.waiting_arcs
+        self.planning_days = network.planning_days
+
         self._validate_shipments(shipments)
-
-        # Rebuild network if needed to ensure shipment start/deadline nodes exist
-        rebuild_needed = False
-        if not hasattr(self, "planning_days"):
-            rebuild_needed = True
-            planning_days = 1
-        else:
-            planning_days = self.planning_days
-            for s in shipments:
-                start_key = (
-                    s.start_hub,
-                    next(iter(self.network_data.hubs[s.start_hub].supported_modes)),
-                )
-                if (
-                    start_key not in self.event_times
-                    or s.start_time not in self.event_times[start_key]
-                ):
-                    rebuild_needed = True
-                    break
-
-        if rebuild_needed:
-            self.build(planning_days, shipments)
 
         ########################################
         #           setup lp problem           #
@@ -508,7 +556,7 @@ class TimeExpandedFreightRoutingModel:
         ########################################
         # Cost Component (Fixed + Variable)
         fixed_cost = pulp.lpSum(
-            self._get_fixed_cost(self.all_arcs[i]) * self.vehicle_count[i]
+            self.network._get_fixed_cost(self.all_arcs[i]) * self.vehicle_count[i]
             for i in range(len(self.all_arcs))
         )
         var_cost = pulp.lpSum(
@@ -527,7 +575,7 @@ class TimeExpandedFreightRoutingModel:
 
         # Emissions Component (Fixed + Variable)
         fixed_emissions = pulp.lpSum(
-            self._get_fixed_emissions(self.all_arcs[i]) * self.vehicle_count[i]
+            self.network._get_fixed_emissions(self.all_arcs[i]) * self.vehicle_count[i]
             for i in range(len(self.all_arcs))
         )
         var_emissions = pulp.lpSum(
@@ -538,7 +586,7 @@ class TimeExpandedFreightRoutingModel:
         total_emissions = fixed_emissions + var_emissions
 
         # Combined Weighted Objective Function (Min-Max scaled dynamically)
-        bounds = self.estimate_normalization_bounds(shipments)
+        bounds = self.network.estimate_normalization_bounds(shipments)
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
@@ -733,12 +781,13 @@ class TimeExpandedFreightRoutingModel:
             # filter decision variables using a > 0.5 threshold
             # to remain robust against small floating-point solver tolerances.
             self.total_fixed_cost = sum(
-                self._get_fixed_cost(arc) * pulp.value(self.vehicle_count[i])
+                self.network._get_fixed_cost(arc) * pulp.value(self.vehicle_count[i])
                 for i, arc in enumerate(self.all_arcs)
                 if pulp.value(self.vehicle_count[i]) > 0.5
             )
             self.total_fixed_emissions = sum(
-                self._get_fixed_emissions(arc) * pulp.value(self.vehicle_count[i])
+                self.network._get_fixed_emissions(arc)
+                * pulp.value(self.vehicle_count[i])
                 for i, arc in enumerate(self.all_arcs)
                 if pulp.value(self.vehicle_count[i]) > 0.5
             )
@@ -810,21 +859,3 @@ class TimeExpandedFreightRoutingModel:
                 raise ValueError(
                     f"{shipment.id}: unknown end_hub {shipment.end_hub!r}."
                 )
-
-    def summary(self) -> None:
-        """Print an overview of the generated time-expanded network."""
-        if not hasattr(self, "all_arcs"):
-            raise ValueError(
-                "Model has not been built yet. Call build(planning_days) first."
-            )
-
-        print("==============================")
-        print("Summary TimeExpandedFreightRoutingModel:")
-        print(f"planning_days={self.planning_days}")
-        print(f"planning_horizon_min={self.max_time_min}")
-        print(f"nodes={len(self.nodes)}")
-        print(f"arcs={len(self.all_arcs)}")
-        print(f"  - transport_arcs={len(self.transport_arcs)}")
-        print(f"  - transfer_arcs={len(self.transfer_arcs)}")
-        print(f"  - waiting_arcs={len(self.waiting_arcs)}")
-        print("==============================")
