@@ -63,24 +63,13 @@ class DijkstraRouter:
             active_vehicles = [0] * len(network.all_arcs)
 
         # Identify start and end nodes in the time-expanded graph using precomputed indices
-        nodes_by_hub_time, nodes_by_hub = self._get_node_indices(model)
+        nodes_by_hub_time, nodes_by_hub = self._get_node_indices(network)
         start_nodes = set(nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), []))
-        end_nodes = set(
+        end_nodes = set([
             node
             for node in nodes_by_hub.get(shipment.end_hub, [])
             if node.time_min <= shipment.deadline
-        # Identify start and end nodes in the time-expanded graph
-        start_nodes = {
-            node
-            for node in network.nodes
-            if node.hub_id == shipment.start_hub
-            and node.time_min == shipment.start_time
-        }
-        end_nodes = {
-            node
-            for node in network.nodes
-            if node.hub_id == shipment.end_hub and node.time_min <= shipment.deadline
-        }
+        ])
 
         if not start_nodes or not end_nodes:
             return None
@@ -653,20 +642,20 @@ class DijkstraRouter:
 
 
 class AStarRouter(DijkstraRouter):
-    def __init__(self, network_data: NetworkData, objective_weights: ObjectiveWeights):
-        super().__init__(network_data, objective_weights)
+    def __init__(self, objective_weights: ObjectiveWeights):
+        super().__init__(objective_weights)
         self._static_rev_adj_cache = {}
 
-    def _get_static_rev_adj(self, weight: float, weights: ObjectiveWeights, c_diff: float, t_diff: float, e_diff: float):
+    def _get_static_rev_adj(self, network_data: NetworkData, weight: float, weights: ObjectiveWeights, c_diff: float, t_diff: float, e_diff: float):
         cache_key = (weight, weights.cost, weights.time, weights.emissions, c_diff, t_diff, e_diff)
         if cache_key not in self._static_rev_adj_cache:
             static_rev_adj = defaultdict(list)
             from freight_routing.data_models import TransportArcTemplate
-            for template in self.network_data.arc_templates:
+            for template in network_data.arc_templates:
                 if isinstance(template, TransportArcTemplate):
                     cost = template.cost
                     if cost is None:
-                        cost = template.distance * self.network_data.mode_factors[template.mode].cost_per_ton_km
+                        cost = template.distance * network_data.mode_factors[template.mode].cost_per_ton_km
                     var_cost = cost * weight
                     cost_scaled = var_cost / c_diff
 
@@ -674,7 +663,7 @@ class AStarRouter(DijkstraRouter):
 
                     emissions = template.emissions
                     if emissions is None:
-                        emissions = template.distance * self.network_data.mode_factors[template.mode].emissions_kg_per_ton_km
+                        emissions = template.distance * network_data.mode_factors[template.mode].emissions_kg_per_ton_km
                     var_emissions = emissions * weight
                     emissions_scaled = var_emissions / e_diff
 
@@ -703,7 +692,7 @@ class AStarRouter(DijkstraRouter):
 
     def _find_shortest_path(
         self,
-        model: TimeExpandedFreightRoutingModel,
+        network: TimeExpandedNetwork,
         shipment: Shipment,
         remaining_capacity: list[float] | None,
         active_vehicles: list[int] | None,
@@ -714,25 +703,25 @@ class AStarRouter(DijkstraRouter):
         e_diff: float,
     ) -> list | None:
         if remaining_capacity is None:
-            remaining_capacity = [0.0] * len(model.all_arcs)
+            remaining_capacity = [0.0] * len(network.all_arcs)
         if active_vehicles is None:
-            active_vehicles = [0] * len(model.all_arcs)
+            active_vehicles = [0] * len(network.all_arcs)
 
         # 1. Look up start and end nodes
-        nodes_by_hub_time, nodes_by_hub = self._get_node_indices(model)
+        nodes_by_hub_time, nodes_by_hub = self._get_node_indices(network)
         start_nodes = set(nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), []))
-        end_nodes = set(
+        end_nodes = set([
             node
             for node in nodes_by_hub.get(shipment.end_hub, [])
             if node.time_min <= shipment.deadline
-        )
+        ])
 
         if not start_nodes or not end_nodes:
             return None
 
         # 2. Get static heuristic values h(hub_id)
         weights = getattr(shipment, "objective_weights", self.objective_weights)
-        static_rev_adj = self._get_static_rev_adj(shipment.weight, weights, c_diff, t_diff, e_diff)
+        static_rev_adj = self._get_static_rev_adj(network.network_data, shipment.weight, weights, c_diff, t_diff, e_diff)
         h = self._compute_static_heuristics(shipment.end_hub, static_rev_adj)
 
         SOURCE = "SOURCE"
@@ -808,8 +797,8 @@ class AStarRouter(DijkstraRouter):
                     c_fixed = 0.0
                     e_fixed = 0.0
                 else:
-                    c_fixed = model._get_fixed_cost(arc) * needed
-                    e_fixed = model._get_fixed_emissions(arc) * needed
+                    c_fixed = network._get_fixed_cost(arc) * needed
+                    e_fixed = network._get_fixed_emissions(arc) * needed
 
                 c_var = arc.cost * shipment.weight
                 c_total = c_fixed + c_var
