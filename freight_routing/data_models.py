@@ -147,6 +147,7 @@ class Shipment:
     max_price: float
     max_emissions: float | None
     weight: float
+    objective_weights: ObjectiveWeights = ObjectiveWeights()
 
     def __post_init__(self) -> None:
         ########################################
