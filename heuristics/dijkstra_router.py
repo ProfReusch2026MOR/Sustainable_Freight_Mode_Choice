@@ -67,11 +67,11 @@ class DijkstraRouter:
         # Identify start and end nodes in the time-expanded graph using precomputed indices
         nodes_by_hub_time, nodes_by_hub = self._get_node_indices(model)
         start_nodes = set(nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), []))
-        end_nodes = {
+        end_nodes = set(
             node
             for node in nodes_by_hub.get(shipment.end_hub, [])
             if node.time_min <= shipment.deadline
-        }
+        )
 
         if not start_nodes or not end_nodes:
             return None
@@ -714,11 +714,11 @@ class AStarRouter(DijkstraRouter):
         # 1. Look up start and end nodes
         nodes_by_hub_time, nodes_by_hub = self._get_node_indices(model)
         start_nodes = set(nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), []))
-        end_nodes = {
+        end_nodes = set(
             node
             for node in nodes_by_hub.get(shipment.end_hub, [])
             if node.time_min <= shipment.deadline
-        }
+        )
 
         if not start_nodes or not end_nodes:
             return None
