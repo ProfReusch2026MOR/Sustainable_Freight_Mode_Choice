@@ -4,13 +4,15 @@
 
 [![CI](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/actions/workflows/ci.yml/badge.svg)](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/actions/workflows/ci.yml)
 
-## Projektmitglieder: 
+## Projektmitglieder
 
-- Benedikt Wehner (bennewehn)
-- Phil Kahlert (phil-kl)
-- Laurens Rüther (LaurensRuether)
-- Luis Kruse (Ikruse301) 
-- Minglu Li - Sam  (Sam1806927581) 
+| Name | GitHub-Username | Zuständigkeit im Projekt |
+|------|-----------------|--------------------------|
+| Benedikt Wehner | [bennewehn](https://github.com/bennewehn) | Konzeption der Datenstruktur, mathematische Modellierung (MILP) und Solver-Validierung |
+| Phil Kahlert | [phil-kl](https://github.com/phil-kl) | Datenaufbereitung, Einlesen der Datensätze und Entwicklung des ersten Test-Solvers |
+| Laurens Rüther | [LaurensRuether](https://github.com/LaurensRuether) | Datensammlung, Literaturrecherche und Ausarbeitung des multimodalen Netzwerks |
+| Luis Kruse | [lkruse301](https://github.com/lkruse301) | Problem- und Zieldefinition, Datensammlung/Vorverarbeitung (Luftfracht) sowie Heuristik-Entwicklung |
+| Minglu Li (Sam) | [Sam18069272581](https://github.com/Sam18069272581) | Solver-Heuristik-Vergleich, experimentelle Evaluation, Sensitivitätsanalysen und CI-Validierung |
 
 ---
 
