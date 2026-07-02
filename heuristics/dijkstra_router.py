@@ -16,6 +16,20 @@ from freight_routing.model import TimeExpandedNetwork
 class DijkstraRouter:
     def __init__(self, objective_weights: ObjectiveWeights):
         self.objective_weights = objective_weights
+        self.model = None  # Cache for the time-expanded model instance
+        self._cached_model = None
+        self._nodes_by_hub_time = {}
+        self._nodes_by_hub = {}
+
+    def _get_node_indices(self, model: TimeExpandedFreightRoutingModel):
+        if self._cached_model is not model:
+            self._cached_model = model
+            self._nodes_by_hub_time = defaultdict(list)
+            self._nodes_by_hub = defaultdict(list)
+            for node in model.nodes:
+                self._nodes_by_hub_time[(node.hub_id, node.time_min)].append(node)
+                self._nodes_by_hub[node.hub_id].append(node)
+        return self._nodes_by_hub_time, self._nodes_by_hub
 
     def _find_shortest_path(
         self,
@@ -48,18 +62,18 @@ class DijkstraRouter:
         if active_vehicles is None:
             active_vehicles = [0] * len(network.all_arcs)
 
-        # Identify start and end nodes in the time-expanded graph
-        start_nodes = {
-            node
-            for node in network.nodes
-            if node.hub_id == shipment.start_hub
-            and node.time_min == shipment.start_time
-        }
-        end_nodes = {
-            node
-            for node in network.nodes
-            if node.hub_id == shipment.end_hub and node.time_min <= shipment.deadline
-        }
+        # Identify start and end nodes in the time-expanded graph using precomputed indices
+        nodes_by_hub_time, nodes_by_hub = self._get_node_indices(network)
+        start_nodes = set(
+            nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), [])
+        )
+        end_nodes = set(
+            [
+                node
+                for node in nodes_by_hub.get(shipment.end_hub, [])
+                if node.time_min <= shipment.deadline
+            ]
+        )
 
         if not start_nodes or not end_nodes:
             return None
@@ -145,10 +159,11 @@ class DijkstraRouter:
                 e_total = e_fixed + e_var
                 emissions_scaled = e_total / e_diff
 
+                weights = getattr(shipment, "objective_weights", self.objective_weights)
                 score = (
-                    self.objective_weights.cost * cost_scaled
-                    + self.objective_weights.time * time_scaled
-                    + self.objective_weights.emissions * emissions_scaled
+                    weights.cost * cost_scaled
+                    + weights.time * time_scaled
+                    + weights.emissions * emissions_scaled
                 )
                 new_d = d + score
 
@@ -248,10 +263,11 @@ class DijkstraRouter:
         cost_scaled = (total_cost - c_min) / c_diff
         time_scaled = (total_time - t_min) / t_diff
         emissions_scaled = (total_emissions - e_min) / e_diff
+        weights = getattr(shipment, "objective_weights", self.objective_weights)
         objective_value = (
-            self.objective_weights.cost * cost_scaled
-            + self.objective_weights.time * time_scaled
-            + self.objective_weights.emissions * emissions_scaled
+            weights.cost * cost_scaled
+            + weights.time * time_scaled
+            + weights.emissions * emissions_scaled
         )
 
         return RoutingResult(
@@ -627,3 +643,233 @@ class DijkstraRouter:
             total_variable_emissions=total_var_emissions,
             diagnostics=tuple(diagnostics),
         )
+
+
+class AStarRouter(DijkstraRouter):
+    def __init__(self, objective_weights: ObjectiveWeights):
+        super().__init__(objective_weights)
+        self._static_rev_adj_cache = {}
+
+    def _get_static_rev_adj(
+        self,
+        network_data: NetworkData,
+        weight: float,
+        weights: ObjectiveWeights,
+        c_diff: float,
+        t_diff: float,
+        e_diff: float,
+    ):
+        cache_key = (
+            weight,
+            weights.cost,
+            weights.time,
+            weights.emissions,
+            c_diff,
+            t_diff,
+            e_diff,
+        )
+        if cache_key not in self._static_rev_adj_cache:
+            static_rev_adj = defaultdict(list)
+            from freight_routing.data_models import TransportArcTemplate
+
+            for template in network_data.arc_templates:
+                if isinstance(template, TransportArcTemplate):
+                    cost = template.cost
+                    if cost is None:
+                        cost = (
+                            template.distance
+                            * network_data.mode_factors[template.mode].cost_per_ton_km
+                        )
+                    var_cost = cost * weight
+                    cost_scaled = var_cost / c_diff
+
+                    time_scaled = template.duration_min / t_diff
+
+                    emissions = template.emissions
+                    if emissions is None:
+                        emissions = (
+                            template.distance
+                            * network_data.mode_factors[
+                                template.mode
+                            ].emissions_kg_per_ton_km
+                        )
+                    var_emissions = emissions * weight
+                    emissions_scaled = var_emissions / e_diff
+
+                    score = (
+                        weights.cost * cost_scaled
+                        + weights.time * time_scaled
+                        + weights.emissions * emissions_scaled
+                    )
+                    static_rev_adj[template.to_hub].append((template.from_hub, score))
+            self._static_rev_adj_cache[cache_key] = static_rev_adj
+        return self._static_rev_adj_cache[cache_key]
+
+    def _compute_static_heuristics(self, end_hub: str, static_rev_adj: dict):
+        dist = {end_hub: 0.0}
+        pq = [(0.0, end_hub)]
+        while pq:
+            d, u = heapq.heappop(pq)
+            if d > dist.get(u, math.inf):
+                continue
+            for v, weight in static_rev_adj.get(u, []):
+                new_d = d + weight
+                if new_d < dist.get(v, math.inf):
+                    dist[v] = new_d
+                    heapq.heappush(pq, (new_d, v))
+        return dist
+
+    def _find_shortest_path(
+        self,
+        network: TimeExpandedNetwork,
+        shipment: Shipment,
+        remaining_capacity: list[float] | None,
+        active_vehicles: list[int] | None,
+        arc_to_index: dict,
+        adj: dict,
+        c_diff: float,
+        t_diff: float,
+        e_diff: float,
+    ) -> list | None:
+        if remaining_capacity is None:
+            remaining_capacity = [0.0] * len(network.all_arcs)
+        if active_vehicles is None:
+            active_vehicles = [0] * len(network.all_arcs)
+
+        # 1. Look up start and end nodes
+        nodes_by_hub_time, nodes_by_hub = self._get_node_indices(network)
+        start_nodes = set(
+            nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), [])
+        )
+        end_nodes = set(
+            [
+                node
+                for node in nodes_by_hub.get(shipment.end_hub, [])
+                if node.time_min <= shipment.deadline
+            ]
+        )
+
+        if not start_nodes or not end_nodes:
+            return None
+
+        # 2. Get static heuristic values h(hub_id)
+        weights = getattr(shipment, "objective_weights", self.objective_weights)
+        static_rev_adj = self._get_static_rev_adj(
+            network.network_data, shipment.weight, weights, c_diff, t_diff, e_diff
+        )
+        h = self._compute_static_heuristics(shipment.end_hub, static_rev_adj)
+
+        SOURCE = "SOURCE"
+        SINK = "SINK"
+
+        counter = 0
+        h_source = min(h.get(node.hub_id, math.inf) for node in start_nodes)
+        if h_source == math.inf:
+            return None
+
+        # pq stores (f_score, g_score, counter, u)
+        pq = [(h_source, 0.0, counter, SOURCE)]
+        g_score = {SOURCE: 0.0}
+        parent_arc = {}
+
+        from freight_routing.data_models import ArcType
+
+        while pq:
+            f, current_g, _, u = heapq.heappop(pq)
+
+            if current_g > g_score.get(u, math.inf):
+                continue
+
+            if u == SINK:
+                break
+
+            if u == SOURCE:
+                for v in start_nodes:
+                    h_v = h.get(v.hub_id, math.inf)
+                    if h_v == math.inf:
+                        continue
+                    if 0.0 < g_score.get(v, math.inf):
+                        g_score[v] = 0.0
+                        parent_arc[v] = (SOURCE, None)
+                        counter += 1
+                        heapq.heappush(pq, (h_v, 0.0, counter, v))
+                continue
+
+            if u in end_nodes:
+                if current_g < g_score.get(SINK, math.inf):
+                    g_score[SINK] = current_g
+                    parent_arc[SINK] = (u, None)
+                    counter += 1
+                    heapq.heappush(pq, (current_g, current_g, counter, SINK))
+
+            for arc in adj.get(u, []):
+                v = arc.to_node
+
+                h_v = h.get(v.hub_id, math.inf)
+                if h_v == math.inf:
+                    continue
+
+                idx = arc_to_index[arc]
+                if remaining_capacity[idx] >= shipment.weight:
+                    needed = 0
+                else:
+                    needed = math.ceil(
+                        (shipment.weight - remaining_capacity[idx])
+                        / max(arc.capacity, 1e-9)
+                    )
+
+                limit = arc.max_vehicles
+                if limit is None:
+                    if arc.arc_type == ArcType.TRANSPORT and arc.mode == "road":
+                        limit = math.inf
+                    else:
+                        limit = 1
+
+                if active_vehicles[idx] + needed > limit:
+                    continue
+
+                if needed == 0:
+                    c_fixed = 0.0
+                    e_fixed = 0.0
+                else:
+                    c_fixed = network._get_fixed_cost(arc) * needed
+                    e_fixed = network._get_fixed_emissions(arc) * needed
+
+                c_var = arc.cost * shipment.weight
+                c_total = c_fixed + c_var
+                cost_scaled = c_total / c_diff
+
+                t_total = arc.duration_min
+                time_scaled = t_total / t_diff
+
+                e_var = arc.emissions * shipment.weight
+                e_total = e_fixed + e_var
+                emissions_scaled = e_total / e_diff
+
+                score = (
+                    weights.cost * cost_scaled
+                    + weights.time * time_scaled
+                    + weights.emissions * emissions_scaled
+                )
+                new_g = current_g + score
+
+                if new_g < g_score.get(v, math.inf):
+                    g_score[v] = new_g
+                    parent_arc[v] = (u, arc)
+                    counter += 1
+                    f_score = new_g + h_v
+                    heapq.heappush(pq, (f_score, new_g, counter, v))
+
+        if SINK not in parent_arc:
+            return None
+
+        route_arcs = []
+        curr = SINK
+        while curr != SOURCE:
+            prev, arc = parent_arc[curr]
+            if arc is not None:
+                route_arcs.append(arc)
+            curr = prev
+
+        route_arcs.reverse()
+        return route_arcs
