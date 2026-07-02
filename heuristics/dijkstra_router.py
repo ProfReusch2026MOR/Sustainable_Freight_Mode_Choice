@@ -19,6 +19,19 @@ class DijkstraRouter:
         self.network_data = network_data
         self.objective_weights = objective_weights
         self.model = None  # Cache for the time-expanded model instance
+        self._cached_model = None
+        self._nodes_by_hub_time = {}
+        self._nodes_by_hub = {}
+
+    def _get_node_indices(self, model: TimeExpandedFreightRoutingModel):
+        if self._cached_model is not model:
+            self._cached_model = model
+            self._nodes_by_hub_time = defaultdict(list)
+            self._nodes_by_hub = defaultdict(list)
+            for node in model.nodes:
+                self._nodes_by_hub_time[(node.hub_id, node.time_min)].append(node)
+                self._nodes_by_hub[node.hub_id].append(node)
+        return self._nodes_by_hub_time, self._nodes_by_hub
 
     def _find_shortest_path(
         self,
@@ -51,17 +64,13 @@ class DijkstraRouter:
         if active_vehicles is None:
             active_vehicles = [0] * len(model.all_arcs)
 
-        # Identify start and end nodes in the time-expanded graph
-        start_nodes = {
-            node
-            for node in model.nodes
-            if node.hub_id == shipment.start_hub
-            and node.time_min == shipment.start_time
-        }
+        # Identify start and end nodes in the time-expanded graph using precomputed indices
+        nodes_by_hub_time, nodes_by_hub = self._get_node_indices(model)
+        start_nodes = set(nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), []))
         end_nodes = {
             node
-            for node in model.nodes
-            if node.hub_id == shipment.end_hub and node.time_min <= shipment.deadline
+            for node in nodes_by_hub.get(shipment.end_hub, [])
+            if node.time_min <= shipment.deadline
         }
 
         if not start_nodes or not end_nodes:
