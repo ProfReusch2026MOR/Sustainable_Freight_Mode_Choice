@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from math import isfinite
+from math import isclose, isfinite
 from typing import ClassVar, TypeAlias
 
 
@@ -133,6 +133,17 @@ class ObjectiveWeights:
         if self.cost == 0 and self.time == 0 and self.emissions == 0:
             raise ValueError("At least one objective weight must be positive.")
 
+    def normalized(self) -> "ObjectiveWeights":
+        """Return weights whose sum is one while preserving their ratios."""
+        total = self.cost + self.time + self.emissions
+        if isclose(total, 1.0):
+            return self
+        return ObjectiveWeights(
+            cost=self.cost / total,
+            time=self.time / total,
+            emissions=self.emissions / total,
+        )
+
 
 ########################################
 #               Shipment               #
@@ -147,7 +158,7 @@ class Shipment:
     max_price: float
     max_emissions: float | None
     weight: float
-    objective_weights: ObjectiveWeights = ObjectiveWeights()
+    objective_weights: ObjectiveWeights | None = None
 
     def __post_init__(self) -> None:
         ########################################
@@ -170,6 +181,10 @@ class Shipment:
             raise ValueError("max_emissions must not be negative.")
         if self.weight <= 0:
             raise ValueError("weight must be positive.")
+        if self.objective_weights is not None and not isinstance(
+            self.objective_weights, ObjectiveWeights
+        ):
+            raise TypeError("objective_weights must be ObjectiveWeights or None.")
 
 
 ########################################

@@ -5,10 +5,11 @@ import math
 from collections import defaultdict
 
 from freight_routing.data_models import (
-    Shipment,
+    ArcType,
+    NetworkData,
     ObjectiveWeights,
     RoutingResult,
-    ArcType,
+    Shipment,
 )
 from freight_routing.model import TimeExpandedNetwork
 
@@ -21,7 +22,37 @@ class DijkstraRouter:
         self._nodes_by_hub_time = {}
         self._nodes_by_hub = {}
 
-    def _get_node_indices(self, model: TimeExpandedFreightRoutingModel):
+    def _normalization_context(
+        self,
+        network: TimeExpandedNetwork,
+        shipments: list[Shipment],
+    ) -> tuple[
+        dict[str, dict[str, tuple[float, float]]],
+        dict[str, dict[str, float]],
+        float,
+        float,
+    ]:
+        bounds_by_shipment = {
+            shipment.id: network.estimate_normalization_bounds(shipment)
+            for shipment in shipments
+        }
+        ranges_by_shipment = {
+            shipment.id: network.normalization_ranges(shipment)
+            for shipment in shipments
+        }
+        fixed_cost_coefficient, fixed_emissions_coefficient = (
+            network.shared_fixed_objective_coefficients(
+                shipments, self.objective_weights
+            )
+        )
+        return (
+            bounds_by_shipment,
+            ranges_by_shipment,
+            fixed_cost_coefficient,
+            fixed_emissions_coefficient,
+        )
+
+    def _get_node_indices(self, model: TimeExpandedNetwork):
         if self._cached_model is not model:
             self._cached_model = model
             self._nodes_by_hub_time = defaultdict(list)
@@ -42,6 +73,8 @@ class DijkstraRouter:
         c_diff: float,
         t_diff: float,
         e_diff: float,
+        fixed_cost_coefficient: float,
+        fixed_emissions_coefficient: float,
     ) -> list | None:
         """Helper to run Dijkstra shortest-path search for a single shipment.
 
@@ -52,7 +85,9 @@ class DijkstraRouter:
             active_vehicles: List of active vehicle counts per arc index (None if infinite/single routing).
             arc_to_index: Mapping from arc objects to list index.
             adj: Adjacency list of outgoing arcs.
-            c_diff, t_diff, e_diff: Normalization denominators.
+            c_diff, t_diff, e_diff: Shipment-specific normalization denominators.
+            fixed_cost_coefficient: Shared coefficient for activated vehicle costs.
+            fixed_emissions_coefficient: Shared coefficient for activated emissions.
 
         Returns:
             A list of Arc objects forming the path, or None if infeasible.
@@ -87,6 +122,7 @@ class DijkstraRouter:
         pq = [(0.0, counter, SOURCE)]
         dist = {SOURCE: 0.0}
         parent_arc = {}  # maps node -> (parent_node, arc)
+        weights = network.objective_weights_for(shipment, self.objective_weights)
 
         # Run Dijkstra shortest-path search
         while pq:
@@ -149,21 +185,20 @@ class DijkstraRouter:
                     e_fixed = network._get_fixed_emissions(arc) * needed
 
                 c_var = arc.cost * shipment.weight
-                c_total = c_fixed + c_var
-                cost_scaled = c_total / c_diff
+                variable_cost_scaled = c_var / c_diff
 
                 t_total = arc.duration_min
                 time_scaled = t_total / t_diff
 
                 e_var = arc.emissions * shipment.weight
-                e_total = e_fixed + e_var
-                emissions_scaled = e_total / e_diff
+                variable_emissions_scaled = e_var / e_diff
 
-                weights = getattr(shipment, "objective_weights", self.objective_weights)
                 score = (
-                    weights.cost * cost_scaled
+                    fixed_cost_coefficient * c_fixed
+                    + weights.cost * variable_cost_scaled
                     + weights.time * time_scaled
-                    + weights.emissions * emissions_scaled
+                    + fixed_emissions_coefficient * e_fixed
+                    + weights.emissions * variable_emissions_scaled
                 )
                 new_d = d + score
 
@@ -202,15 +237,21 @@ class DijkstraRouter:
         """
         shipment = network.shipments[0]
 
-        # 2. Extract bounds for normalization
-        bounds = network.estimate_normalization_bounds()
+        # 2. Extract the same shipment-specific bounds used by the exact model
+        (
+            bounds_by_shipment,
+            ranges_by_shipment,
+            fixed_cost_coefficient,
+            fixed_emissions_coefficient,
+        ) = self._normalization_context(network, [shipment])
+        bounds = bounds_by_shipment[shipment.id]
         c_min, c_max = bounds["cost"]
         t_min, t_max = bounds["time"]
         e_min, e_max = bounds["emissions"]
-
-        c_diff = max(c_max - c_min, 1e-9)
-        t_diff = max(t_max - t_min, 1e-9)
-        e_diff = max(e_max - e_min, 1e-9)
+        ranges = ranges_by_shipment[shipment.id]
+        c_diff = ranges["cost"]
+        t_diff = ranges["time"]
+        e_diff = ranges["emissions"]
 
         # 3. Adjacency list and index mapping
         adj = defaultdict(list)
@@ -230,6 +271,8 @@ class DijkstraRouter:
             c_diff=c_diff,
             t_diff=t_diff,
             e_diff=e_diff,
+            fixed_cost_coefficient=fixed_cost_coefficient,
+            fixed_emissions_coefficient=fixed_emissions_coefficient,
         )
 
         if route_arcs is None:
@@ -247,12 +290,18 @@ class DijkstraRouter:
             )
 
         # 5. Compute final metrics
-        total_fixed_cost = sum(network._get_fixed_cost(arc) for arc in route_arcs)
+        total_fixed_cost = sum(
+            network._get_fixed_cost(arc)
+            * network._required_vehicles(arc, shipment.weight)
+            for arc in route_arcs
+        )
         total_var_cost = sum(arc.cost * shipment.weight for arc in route_arcs)
         total_cost = total_fixed_cost + total_var_cost
 
         total_fixed_emissions = sum(
-            network._get_fixed_emissions(arc) for arc in route_arcs
+            network._get_fixed_emissions(arc)
+            * network._required_vehicles(arc, shipment.weight)
+            for arc in route_arcs
         )
         total_var_emissions = sum(arc.emissions * shipment.weight for arc in route_arcs)
         total_emissions = total_fixed_emissions + total_var_emissions
@@ -263,7 +312,7 @@ class DijkstraRouter:
         cost_scaled = (total_cost - c_min) / c_diff
         time_scaled = (total_time - t_min) / t_diff
         emissions_scaled = (total_emissions - e_min) / e_diff
-        weights = getattr(shipment, "objective_weights", self.objective_weights)
+        weights = network.objective_weights_for(shipment, self.objective_weights)
         objective_value = (
             weights.cost * cost_scaled
             + weights.time * time_scaled
@@ -300,14 +349,13 @@ class DijkstraRouter:
         """
         shipments = network.shipments
 
-        # 2. Extract bounds for normalization
-        bounds = network.estimate_normalization_bounds()
-        c_min, c_max = bounds["cost"]
-        t_min, t_max = bounds["time"]
-        e_min, e_max = bounds["emissions"]
-        c_diff = max(c_max - c_min, 1e-9)
-        t_diff = max(t_max - t_min, 1e-9)
-        e_diff = max(e_max - e_min, 1e-9)
+        # 2. Extract shipment-specific bounds from the shared network source
+        (
+            bounds_by_shipment,
+            ranges_by_shipment,
+            fixed_cost_coefficient,
+            fixed_emissions_coefficient,
+        ) = self._normalization_context(network, shipments)
 
         # 3. Adjacency list and indices
         adj = defaultdict(list)
@@ -334,6 +382,7 @@ class DijkstraRouter:
             shipment_iterable = tqdm(sorted_shipments, desc="Routing shipments")
 
         for shipment in shipment_iterable:
+            ranges = ranges_by_shipment[shipment.id]
             route_arcs = self._find_shortest_path(
                 network=network,
                 shipment=shipment,
@@ -341,9 +390,11 @@ class DijkstraRouter:
                 active_vehicles=active_vehicles,
                 arc_to_index=arc_to_index,
                 adj=adj,
-                c_diff=c_diff,
-                t_diff=t_diff,
-                e_diff=e_diff,
+                c_diff=ranges["cost"],
+                t_diff=ranges["time"],
+                e_diff=ranges["emissions"],
+                fixed_cost_coefficient=fixed_cost_coefficient,
+                fixed_emissions_coefficient=fixed_emissions_coefficient,
             )
 
             if route_arcs is None:
@@ -372,12 +423,7 @@ class DijkstraRouter:
             shipment_routes=shipment_routes,
             active_vehicles=active_vehicles,
             shipments=shipments,
-            c_min=c_min,
-            c_diff=c_diff,
-            t_min=t_min,
-            t_diff=t_diff,
-            e_min=e_min,
-            e_diff=e_diff,
+            bounds_by_shipment=bounds_by_shipment,
             diagnostics=diagnostics,
         )
 
@@ -413,14 +459,13 @@ class DijkstraRouter:
 
         shipments = network.shipments
 
-        # 2. Extract bounds for normalization
-        bounds = network.estimate_normalization_bounds()
-        c_min, c_max = bounds["cost"]
-        t_min, t_max = bounds["time"]
-        e_min, e_max = bounds["emissions"]
-        c_diff = max(c_max - c_min, 1e-9)
-        t_diff = max(t_max - t_min, 1e-9)
-        e_diff = max(e_max - e_min, 1e-9)
+        # 2. Extract shipment-specific bounds from the shared network source
+        (
+            bounds_by_shipment,
+            ranges_by_shipment,
+            fixed_cost_coefficient,
+            fixed_emissions_coefficient,
+        ) = self._normalization_context(network, shipments)
 
         # 3. Adjacency list and indices
         adj = defaultdict(list)
@@ -486,6 +531,7 @@ class DijkstraRouter:
             routing_failed = False
 
             for shipment in ruined_shipments:
+                ranges = ranges_by_shipment[shipment.id]
                 route_arcs = self._find_shortest_path(
                     network=network,
                     shipment=shipment,
@@ -493,9 +539,11 @@ class DijkstraRouter:
                     active_vehicles=active_vehicles,
                     arc_to_index=arc_to_index,
                     adj=adj,
-                    c_diff=c_diff,
-                    t_diff=t_diff,
-                    e_diff=e_diff,
+                    c_diff=ranges["cost"],
+                    t_diff=ranges["time"],
+                    e_diff=ranges["emissions"],
+                    fixed_cost_coefficient=fixed_cost_coefficient,
+                    fixed_emissions_coefficient=fixed_emissions_coefficient,
                 )
 
                 if route_arcs is None:
@@ -528,12 +576,7 @@ class DijkstraRouter:
                 shipment_routes=candidate_routes,
                 active_vehicles=active_vehicles,
                 shipments=shipments,
-                c_min=c_min,
-                c_diff=c_diff,
-                t_min=t_min,
-                t_diff=t_diff,
-                e_min=e_min,
-                e_diff=e_diff,
+                bounds_by_shipment=bounds_by_shipment,
                 diagnostics=diagnostics,
             )
 
@@ -555,12 +598,7 @@ class DijkstraRouter:
         shipment_routes: dict[str, tuple],
         active_vehicles: list[int],
         shipments: list[Shipment],
-        c_min: float,
-        c_diff: float,
-        t_min: float,
-        t_diff: float,
-        e_min: float,
-        e_diff: float,
+        bounds_by_shipment: dict[str, dict[str, tuple[float, float]]],
         diagnostics: list[str],
     ) -> RoutingResult:
         # Ensure diagnostics contains entries for all unrouted shipments
@@ -587,12 +625,16 @@ class DijkstraRouter:
             network._get_fixed_cost(arc) * active_vehicles[idx]
             for idx, arc in enumerate(network.all_arcs)
         )
-        total_var_cost = 0.0
-        for shipment in shipments:
-            if shipment.id in shipment_routes:
-                total_var_cost += sum(
-                    arc.cost * shipment.weight for arc in shipment_routes[shipment.id]
-                )
+        routed_shipments = [
+            shipment for shipment in shipments if shipment.id in shipment_routes
+        ]
+        variable_cost_by_shipment = {
+            shipment.id: sum(
+                arc.cost * shipment.weight for arc in shipment_routes[shipment.id]
+            )
+            for shipment in routed_shipments
+        }
+        total_var_cost = sum(variable_cost_by_shipment.values())
 
         total_cost = total_fixed_cost + total_var_cost
 
@@ -601,31 +643,49 @@ class DijkstraRouter:
             network._get_fixed_emissions(arc) * active_vehicles[idx]
             for idx, arc in enumerate(network.all_arcs)
         )
-        total_var_emissions = 0.0
-        for shipment in shipments:
-            if shipment.id in shipment_routes:
-                total_var_emissions += sum(
-                    arc.emissions * shipment.weight
-                    for arc in shipment_routes[shipment.id]
-                )
+        variable_emissions_by_shipment = {
+            shipment.id: sum(
+                arc.emissions * shipment.weight for arc in shipment_routes[shipment.id]
+            )
+            for shipment in routed_shipments
+        }
+        total_var_emissions = sum(variable_emissions_by_shipment.values())
 
         total_emissions = total_fixed_emissions + total_var_emissions
 
         # Time is the sum of durations of all routes
-        total_time = sum(
-            sum(arc.duration_min for arc in shipment_routes[s_id])
-            for s_id in shipment_routes
-        )
+        time_by_shipment = {
+            shipment.id: sum(arc.duration_min for arc in shipment_routes[shipment.id])
+            for shipment in routed_shipments
+        }
+        total_time = sum(time_by_shipment.values())
 
         # Objective value
-        cost_scaled = (total_cost - c_min) / c_diff
-        time_scaled = (total_time - t_min) / t_diff
-        emissions_scaled = (total_emissions - e_min) / e_diff
-        objective_value = (
-            self.objective_weights.cost * cost_scaled
-            + self.objective_weights.time * time_scaled
-            + self.objective_weights.emissions * emissions_scaled
+        (
+            fixed_cost_coefficient,
+            fixed_emissions_coefficient,
+        ) = network.shared_fixed_objective_coefficients(
+            routed_shipments, self.objective_weights
         )
+        objective_value = (
+            fixed_cost_coefficient * total_fixed_cost
+            + fixed_emissions_coefficient * total_fixed_emissions
+        )
+        for shipment in routed_shipments:
+            bounds = bounds_by_shipment[shipment.id]
+            ranges = network.normalization_ranges(shipment)
+            weights = network.objective_weights_for(shipment, self.objective_weights)
+            objective_value += (
+                weights.cost
+                * (variable_cost_by_shipment[shipment.id] - bounds["cost"][0])
+                / ranges["cost"]
+                + weights.time
+                * (time_by_shipment[shipment.id] - bounds["time"][0])
+                / ranges["time"]
+                + weights.emissions
+                * (variable_emissions_by_shipment[shipment.id] - bounds["emissions"][0])
+                / ranges["emissions"]
+            )
 
         status = "Optimal" if len(shipment_routes) == len(shipments) else "Feasible"
 
@@ -730,6 +790,8 @@ class AStarRouter(DijkstraRouter):
         c_diff: float,
         t_diff: float,
         e_diff: float,
+        fixed_cost_coefficient: float,
+        fixed_emissions_coefficient: float,
     ) -> list | None:
         if remaining_capacity is None:
             remaining_capacity = [0.0] * len(network.all_arcs)
@@ -753,7 +815,7 @@ class AStarRouter(DijkstraRouter):
             return None
 
         # 2. Get static heuristic values h(hub_id)
-        weights = getattr(shipment, "objective_weights", self.objective_weights)
+        weights = network.objective_weights_for(shipment, self.objective_weights)
         static_rev_adj = self._get_static_rev_adj(
             network.network_data, shipment.weight, weights, c_diff, t_diff, e_diff
         )
@@ -836,20 +898,20 @@ class AStarRouter(DijkstraRouter):
                     e_fixed = network._get_fixed_emissions(arc) * needed
 
                 c_var = arc.cost * shipment.weight
-                c_total = c_fixed + c_var
-                cost_scaled = c_total / c_diff
+                variable_cost_scaled = c_var / c_diff
 
                 t_total = arc.duration_min
                 time_scaled = t_total / t_diff
 
                 e_var = arc.emissions * shipment.weight
-                e_total = e_fixed + e_var
-                emissions_scaled = e_total / e_diff
+                variable_emissions_scaled = e_var / e_diff
 
                 score = (
-                    weights.cost * cost_scaled
+                    fixed_cost_coefficient * c_fixed
+                    + weights.cost * variable_cost_scaled
                     + weights.time * time_scaled
-                    + weights.emissions * emissions_scaled
+                    + fixed_emissions_coefficient * e_fixed
+                    + weights.emissions * variable_emissions_scaled
                 )
                 new_g = current_g + score
 

@@ -103,139 +103,198 @@ class TimeExpandedNetwork:
             return self.default_fixed_emissions.transfer
         return self.default_fixed_emissions.waiting
 
-    def estimate_normalization_bounds(self) -> dict[str, tuple[float, float]]:
-        total_weight = sum(s.weight for s in self.shipments)
+    @staticmethod
+    def objective_weights_for(
+        shipment: Shipment, fallback: ObjectiveWeights
+    ) -> ObjectiveWeights:
+        """Resolve and normalize one shipment's objective weights."""
+        return (shipment.objective_weights or fallback).normalized()
 
-        # Aerial distance (geodetic start-to-end distance) is always needed for minimum bounds
-        max_aerial_dist = 0.0
-        for s in self.shipments:
-            start_hub = self.network_data.hubs.get(s.start_hub)
-            end_hub = self.network_data.hubs.get(s.end_hub)
-            if (
-                start_hub
-                and end_hub
-                and start_hub.latitude is not None
-                and start_hub.longitude is not None
-                and end_hub.latitude is not None
-                and end_hub.longitude is not None
-            ):
-                # Haversine formula to calculate aerial distance in km
-                lat1, lon1 = start_hub.latitude, start_hub.longitude
-                lat2, lon2 = end_hub.latitude, end_hub.longitude
+    @staticmethod
+    def _required_vehicles(arc: _TimedArc, weight: float) -> int:
+        return max(1, math.ceil(weight / max(arc.capacity, 1e-9)))
 
-                phi1 = math.radians(lat1)
-                phi2 = math.radians(lat2)
-                delta_phi = math.radians(lat2 - lat1)
-                delta_lambda = math.radians(lon2 - lon1)
+    def estimate_normalization_bounds(
+        self, shipment: Shipment | None = None
+    ) -> dict[str, tuple[float, float]]:
+        """Return analytical normalization bounds for one shipment.
 
-                a = (
-                    math.sin(delta_phi / 2.0) ** 2
-                    + math.cos(phi1)
-                    * math.cos(phi2)
-                    * math.sin(delta_lambda / 2.0) ** 2
-                )
-                c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
-                dist_km = 6371.0 * c
+        Passing a shipment yields the bounds used by both the mathematical model
+        and the heuristics.  The no-argument form is retained for callers that
+        need aggregate reporting bounds.
+        """
+        if shipment is None:
+            if not self.shipments:
+                return {
+                    "cost": (0.0, 1.0),
+                    "time": (0.0, 1.0),
+                    "emissions": (0.0, 1.0),
+                }
+            if len(self.shipments) == 1:
+                shipment = self.shipments[0]
+            else:
+                shipment_bounds = [
+                    self.estimate_normalization_bounds(item) for item in self.shipments
+                ]
+                return {
+                    criterion: (
+                        sum(bounds[criterion][0] for bounds in shipment_bounds),
+                        sum(bounds[criterion][1] for bounds in shipment_bounds),
+                    )
+                    for criterion in ("cost", "time", "emissions")
+                }
 
-                if dist_km > max_aerial_dist:
-                    max_aerial_dist = dist_km
+        return self._analytical_normalization_bounds(shipment)
 
-        # Global mode factors loop (needed for minimum and maximum bounds)
-        min_cost_per_ton_km = float("inf")
-        max_cost_per_ton_km = 0.0
-        min_emissions_kg_per_ton_km = float("inf")
-        max_emissions_kg_per_ton_km = 0.0
+    def normalization_ranges(self, shipment: Shipment) -> dict[str, float]:
+        """Return protected normalization denominators for one shipment."""
+        bounds = self.estimate_normalization_bounds(shipment)
+        return {
+            criterion: max(upper - lower, 1e-9)
+            for criterion, (lower, upper) in bounds.items()
+        }
 
-        for factor in self.network_data.mode_factors.values():
-            if factor.cost_per_ton_km > max_cost_per_ton_km:
-                max_cost_per_ton_km = factor.cost_per_ton_km
-            if factor.cost_per_ton_km < min_cost_per_ton_km:
-                min_cost_per_ton_km = factor.cost_per_ton_km
-            if factor.emissions_kg_per_ton_km > max_emissions_kg_per_ton_km:
-                max_emissions_kg_per_ton_km = factor.emissions_kg_per_ton_km
-            if factor.emissions_kg_per_ton_km < min_emissions_kg_per_ton_km:
-                min_emissions_kg_per_ton_km = factor.emissions_kg_per_ton_km
-
-        if min_cost_per_ton_km == float("inf"):
-            min_cost_per_ton_km = 0.0
-        if min_emissions_kg_per_ton_km == float("inf"):
-            min_emissions_kg_per_ton_km = 0.0
-
-        # Calculate minimum bounds using max speed
-        max_speed = 0.0
-        for template in self.network_data.arc_templates:
-            if isinstance(template, TransportArcTemplate) and template.duration_min > 0:
-                speed = template.distance / template.duration_min
-                if speed > max_speed:
-                    max_speed = speed
-        if max_speed == 0.0:
-            max_speed = 1.0
-
-        min_time = max_aerial_dist / max_speed
-        min_cost = max_aerial_dist * min_cost_per_ton_km * total_weight
-        min_eco = max_aerial_dist * min_emissions_kg_per_ton_km * total_weight
-
-        max_time = float(self.max_time_min)
-
-        # Calculate maximum bounds using the analytical template estimation
-        min_duration = float("inf")
-        max_fixed_cost_single = 0.0
-        max_fixed_emissions_single = 0.0
-
-        for template in self.network_data.arc_templates:
-            if isinstance(template, TransportArcTemplate):
-                if template.duration_min > 0 and template.duration_min < min_duration:
-                    min_duration = template.duration_min
-
-            fc = template.fixed_cost
-            if fc is None:
-                if isinstance(template, TransportArcTemplate):
-                    fc = self.default_fixed_costs.transport.get(template.mode, 0.0)
-                elif isinstance(template, TransferArcTemplate):
-                    fc = self.default_fixed_costs.transfer
-            if fc is not None and fc > max_fixed_cost_single:
-                max_fixed_cost_single = fc
-
-            fe = template.fixed_emissions
-            if fe is None:
-                if isinstance(template, TransportArcTemplate):
-                    fe = self.default_fixed_emissions.transport.get(template.mode, 0.0)
-                elif isinstance(template, TransferArcTemplate):
-                    fe = self.default_fixed_emissions.transfer
-            if fe is not None and fe > max_fixed_emissions_single:
-                max_fixed_emissions_single = fe
-
-        if min_duration == float("inf") or min_duration <= 0:
-            min_duration = 30.0
-
-        max_segments = max(1.0, max_time / min_duration)
-        max_dist = max_speed * max_time
-
-        max_var_cost = max_dist * max_cost_per_ton_km * total_weight
-        max_fixed_cost_est = max_segments * max_fixed_cost_single + (
-            self.default_fixed_costs.waiting * len(self.event_times)
+    def shared_fixed_objective_coefficients(
+        self,
+        shipments: Iterable[Shipment],
+        fallback: ObjectiveWeights,
+    ) -> tuple[float, float]:
+        """Return common cost/emissions coefficients for shared vehicle impacts."""
+        shipment_list = list(shipments)
+        if not shipment_list:
+            return 0.0, 0.0
+        cost_coefficients = []
+        emissions_coefficients = []
+        for shipment in shipment_list:
+            weights = self.objective_weights_for(shipment, fallback)
+            ranges = self.normalization_ranges(shipment)
+            cost_coefficients.append(weights.cost / ranges["cost"])
+            emissions_coefficients.append(weights.emissions / ranges["emissions"])
+        return (
+            sum(cost_coefficients) / len(cost_coefficients),
+            sum(emissions_coefficients) / len(emissions_coefficients),
         )
-        max_cost = max_var_cost + max_fixed_cost_est
 
-        max_var_eco = max_dist * max_emissions_kg_per_ton_km * total_weight
-        max_fixed_eco_est = max_segments * max_fixed_emissions_single + (
-            self.default_fixed_emissions.waiting * len(self.event_times)
+    def _analytical_normalization_bounds(
+        self, shipment: Shipment
+    ) -> dict[str, tuple[float, float]]:
+        """Estimate shipment scales without traversing the expanded graph."""
+        available_time = float(
+            max(0, min(shipment.deadline, self.max_time_min) - shipment.start_time)
         )
-        max_eco = max_var_eco + max_fixed_eco_est
+        aerial_distance = self._aerial_distance_km(shipment)
 
-        # Division by zero/negative range protection
+        cost_rates = tuple(
+            factor.cost_per_ton_km for factor in self.network_data.mode_factors.values()
+        )
+        emissions_rates = tuple(
+            factor.emissions_kg_per_ton_km
+            for factor in self.network_data.mode_factors.values()
+        )
+        templates = self.network_data.arc_templates
+        transport_templates = tuple(
+            template
+            for template in templates
+            if isinstance(template, TransportArcTemplate)
+        )
+        max_speed = max(
+            1e-9,
+            max(
+                (
+                    template.distance / template.duration_min
+                    for template in transport_templates
+                ),
+                default=1.0,
+            ),
+        )
+        min_duration = min(
+            (float(template.duration_min) for template in templates), default=30.0
+        )
+        min_cost_rate = min(cost_rates, default=0.0)
+        max_cost_rate = max(cost_rates, default=0.0)
+        min_emissions_rate = min(emissions_rates, default=0.0)
+        max_emissions_rate = max(emissions_rates, default=0.0)
+
+        fixed_costs = (
+            *self.default_fixed_costs.transport.values(),
+            self.default_fixed_costs.transfer,
+            self.default_fixed_costs.waiting,
+            *(
+                template.fixed_cost
+                for template in templates
+                if template.fixed_cost is not None
+            ),
+        )
+        fixed_emissions = (
+            *self.default_fixed_emissions.transport.values(),
+            self.default_fixed_emissions.transfer,
+            self.default_fixed_emissions.waiting,
+            *(
+                template.fixed_emissions
+                for template in templates
+                if template.fixed_emissions is not None
+            ),
+        )
+        smallest_capacity = min(self.network_data.capacities.values(), default=1.0)
+        max_required_vehicles = max(1, math.ceil(shipment.weight / smallest_capacity))
+        max_fixed_cost = max(fixed_costs, default=0.0) * max_required_vehicles
+        max_fixed_emissions = max(fixed_emissions, default=0.0) * max_required_vehicles
+
+        min_time = aerial_distance / max_speed
+        max_time = available_time
+        max_distance = max_speed * available_time
+        max_segments = max(1.0, available_time / min_duration)
+
+        min_cost = aerial_distance * min_cost_rate * shipment.weight
+        max_cost = (
+            max_distance * max_cost_rate * shipment.weight
+            + max_segments * max_fixed_cost
+        )
+        min_emissions = aerial_distance * min_emissions_rate * shipment.weight
+        max_emissions = (
+            max_distance * max_emissions_rate * shipment.weight
+            + max_segments * max_fixed_emissions
+        )
+
         if max_cost <= min_cost:
             max_cost = min_cost + 1.0
         if max_time <= min_time:
             max_time = min_time + 1.0
-        if max_eco <= min_eco:
-            max_eco = min_eco + 1.0
+        if max_emissions <= min_emissions:
+            max_emissions = min_emissions + 1.0
 
         return {
             "cost": (min_cost, max_cost),
             "time": (min_time, max_time),
-            "emissions": (min_eco, max_eco),
+            "emissions": (min_emissions, max_emissions),
         }
+
+    def _aerial_distance_km(self, shipment: Shipment) -> float:
+        """Return the geodetic distance between a shipment's endpoints."""
+        start = self.network_data.hubs.get(shipment.start_hub)
+        end = self.network_data.hubs.get(shipment.end_hub)
+        if (
+            start is None
+            or end is None
+            or start.latitude is None
+            or start.longitude is None
+            or end.latitude is None
+            or end.longitude is None
+        ):
+            return 0.0
+
+        lat1 = math.radians(start.latitude)
+        lat2 = math.radians(end.latitude)
+        delta_lat = math.radians(end.latitude - start.latitude)
+        delta_lon = math.radians(end.longitude - start.longitude)
+        haversine = (
+            math.sin(delta_lat / 2.0) ** 2
+            + math.cos(lat1) * math.cos(lat2) * math.sin(delta_lon / 2.0) ** 2
+        )
+        central_angle = 2.0 * math.atan2(
+            math.sqrt(haversine), math.sqrt(1.0 - haversine)
+        )
+        return 6371.0 * central_angle
 
     def _build(self) -> None:
         # Populate event times based on templates
@@ -577,53 +636,100 @@ class TimeExpandedFreightRoutingModel:
         )
         total_cost = fixed_cost + var_cost
 
-        # Time Component
-        total_time = pulp.lpSum(
-            self.use_arc[(i, k)] * arc.duration_min
-            for i, arc in enumerate(self.all_arcs)
-            for k in range(len(shipments))
-        )
-
-        # Emissions Component (Fixed + Variable)
+        # Shared fixed emissions component
         fixed_emissions = pulp.lpSum(
             self.network._get_fixed_emissions(self.all_arcs[i]) * self.vehicle_count[i]
             for i in range(len(self.all_arcs))
         )
-        var_emissions = pulp.lpSum(
-            self.use_arc[(i, k)] * arc.emissions * shipment.weight
-            for i, arc in enumerate(self.all_arcs)
-            for k, shipment in enumerate(shipments)
+
+        # Shipment-specific min-max scales.  The exact model and heuristics both
+        # obtain these values from TimeExpandedNetwork, preventing scale drift.
+        bounds_by_shipment = [
+            self.network.estimate_normalization_bounds(shipment)
+            for shipment in shipments
+        ]
+        weights_by_shipment = [
+            self.network.objective_weights_for(shipment, self.objective_weights)
+            for shipment in shipments
+        ]
+        cost_ranges = [
+            max(bounds["cost"][1] - bounds["cost"][0], 1e-9)
+            for bounds in bounds_by_shipment
+        ]
+        time_ranges = [
+            max(bounds["time"][1] - bounds["time"][0], 1e-9)
+            for bounds in bounds_by_shipment
+        ]
+        emissions_ranges = [
+            max(bounds["emissions"][1] - bounds["emissions"][0], 1e-9)
+            for bounds in bounds_by_shipment
+        ]
+
+        variable_cost_by_shipment = [
+            pulp.lpSum(
+                self.use_arc[(i, k)] * arc.cost * shipments[k].weight
+                for i, arc in enumerate(self.all_arcs)
+            )
+            for k in shipment_indices
+        ]
+        time_by_shipment = [
+            pulp.lpSum(
+                self.use_arc[(i, k)] * arc.duration_min
+                for i, arc in enumerate(self.all_arcs)
+            )
+            for k in shipment_indices
+        ]
+        variable_emissions_by_shipment = [
+            pulp.lpSum(
+                self.use_arc[(i, k)] * arc.emissions * shipments[k].weight
+                for i, arc in enumerate(self.all_arcs)
+            )
+            for k in shipment_indices
+        ]
+
+        # Fixed vehicle impacts are shared by consolidated shipments.  Their
+        # coefficient is the mean shipment preference; for one shipment this
+        # reduces exactly to that shipment's normalized objective.
+        (
+            fixed_cost_coefficient,
+            fixed_emissions_coefficient,
+        ) = self.network.shared_fixed_objective_coefficients(
+            shipments, self.objective_weights
         )
-        total_emissions = fixed_emissions + var_emissions
-
-        # Combined Weighted Objective Function (Min-Max scaled dynamically)
-        bounds = self.network.estimate_normalization_bounds()
-        c_min, c_max = bounds["cost"]
-        t_min, t_max = bounds["time"]
-        e_min, e_max = bounds["emissions"]
-
-        cost_range = c_max - c_min
-        time_range = t_max - t_min
-        emissions_range = e_max - e_min
 
         routing_objective = (
-            self.objective_weights.cost * ((total_cost - c_min) / cost_range)
-            + self.objective_weights.time * ((total_time - t_min) / time_range)
-            + self.objective_weights.emissions
-            * ((total_emissions - e_min) / emissions_range)
+            fixed_cost_coefficient * fixed_cost
+            + fixed_emissions_coefficient * fixed_emissions
+            + pulp.lpSum(
+                weights_by_shipment[k].cost
+                * (variable_cost_by_shipment[k] - bounds_by_shipment[k]["cost"][0])
+                / cost_ranges[k]
+                + weights_by_shipment[k].time
+                * (time_by_shipment[k] - bounds_by_shipment[k]["time"][0])
+                / time_ranges[k]
+                + weights_by_shipment[k].emissions
+                * (
+                    variable_emissions_by_shipment[k]
+                    - bounds_by_shipment[k]["emissions"][0]
+                )
+                / emissions_ranges[k]
+                for k in shipment_indices
+            )
         )
 
         # Normalize soft-constraint violations to the same dimensionless scales
         # as the routing objective.
         normalized_constraint_violation = (
-            pulp.lpSum(self.slack_deadline[k] / time_range for k in shipment_indices)
-            + pulp.lpSum(self.slack_price[k] / cost_range for k in shipment_indices)
+            pulp.lpSum(
+                self.slack_deadline[k] / time_ranges[k] for k in shipment_indices
+            )
+            + pulp.lpSum(self.slack_price[k] / cost_ranges[k] for k in shipment_indices)
             + pulp.lpSum(
-                self.slack_emissions[k] / emissions_range
+                self.slack_emissions[k] / emissions_ranges[k]
                 for k in shipment_indices
                 if shipments[k].max_emissions is not None
             )
-            + self.slack_total_budget / cost_range
+            + self.slack_total_budget / sum(cost_ranges)
         )
 
         soft_constraint_penalty = 100.0
