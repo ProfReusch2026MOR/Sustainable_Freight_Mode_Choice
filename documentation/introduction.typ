@@ -26,7 +26,7 @@ Daraus leiten sich folgende konkrete Teilziele ab:
 - *Evaluierung:* Die Leistungsfähigkeit und Skalierbarkeit beider Lösungsansätze werden systematisch anhand von Testinstanzen unterschiedlicher Größe und Komplexität bewertet. Ein besonderer Fokus liegt dabei auf der Analyse des Zielkonflikts zwischen den ökonomischen und ökologischen Zielen.
 
 == Aufbau der Arbeit
-Die Arbeit gliedert sich wie folgt: in @ch:problem-description wird das mathematische Modell formal definiert. @ch:implementation beschreibt die softwareseitige Umsetzung. Die experimentellen Ergebnisse werden in @ch:results präsentiert, gefolgt von einer kritischen Diskussion in @ch:discussion. Die Arbeit schließt mit einem Fazit und Ausblick in @ch:conclusion.
+Die Arbeit gliedert sich wie folgt: @ch:theory erörtert die theoretischen Grundlagen des Netzwerkflusses und des Service Network Designs. In @ch:problem-description wird das mathematische Modell des multimodalen Gütertransports formal definiert. @ch:implementation beschreibt die softwareseitige Umsetzung. Die experimentellen Ergebnisse werden in @ch:results präsentiert, gefolgt von einer kritischen Diskussion in @ch:discussion. Die Arbeit schließt mit einem Fazit und Ausblick in @ch:conclusion.
 
 
 = Legacy 
