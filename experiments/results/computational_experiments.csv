@@ -1,4 +1,4 @@
 instance,method,shipment_count,route_count,time_limit_sec,status,is_optimal,runtime_sec,objective_value,total_cost_eur,total_emissions_kg,total_time_min,road_share_pct,rail_share_pct,air_share_pct,ship_share_pct
-small,HiGHS MILP,3,10,15,Optimal,True,2.351,0.009269,921.27,125.35,346.00,100.00,0.00,0.00,0.00
-medium,HiGHS MILP,5,20,15,Optimal,True,6.738,0.015088,1675.77,219.43,531.00,100.00,0.00,0.00,0.00
-large,HiGHS MILP,8,30,20,Optimal,True,15.690,0.025679,2644.14,348.31,866.00,100.00,0.00,0.00,0.00
+small,HiGHS MILP,3,10,15,Optimal,True,3.964,0.010539,1318.35,155.13,606.00,100.00,0.00,0.00,0.00
+medium,HiGHS MILP,5,20,15,Optimal,True,3.433,0.027627,2485.23,280.14,944.00,100.00,0.00,0.00,0.00
+large,HiGHS MILP,8,30,20,Optimal,True,5.096,0.045272,3500.67,375.05,1563.00,100.00,0.00,0.00,0.00

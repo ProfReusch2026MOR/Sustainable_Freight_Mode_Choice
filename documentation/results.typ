@@ -1,7 +1,7 @@
 = Numerische Ergebnisse & Evaluierung <ch:results>
 
 == Experimentelles Setup
-Die Rechenexperimente werden mit dem Skript `experiments/run_experiments.py` reproduzierbar erzeugt. Das Skript verwendet den Datensatz `dataset/multimodal_network.json`, extrahiert deterministische Teilnetzwerke und löst die resultierenden MILP-Instanzen mit PuLP und HiGHS. Für die Präsentationsauswertung wurde der Befehl `python experiments/run_experiments.py --profile presentation` ausgeführt.
+Die Rechenexperimente werden mit dem Skript `experiments/run_experiments.py` reproduzierbar erzeugt. Das Skript verwendet den Datensatz `dataset/medium_network.json`, extrahiert deterministische Teilnetzwerke und löst die resultierenden MILP-Instanzen mit PuLP und HiGHS. Für die Präsentationsauswertung wurde der Befehl `python experiments/run_experiments.py --profile presentation` ausgeführt.
 
 Die CSV-Ergebnisse und Diagramme werden unter `experiments/results/` abgelegt. Diese Auswertung bildet einen eigenständigen technischen Beitrag zur experimentellen Validierung, Sensitivitätsanalyse und Reproduzierbarkeit des Projekts.
 
@@ -14,9 +14,9 @@ Zur Evaluierung der Skalierbarkeit wurden drei Teilinstanzen aus dem multimodale
   inset: 8pt,
   align: center + horizon,
   [*Instanz*], [*Routen*], [*Sendungen*], [*Status*], [*Zeitlimit*], [*Laufzeit*], [*Kosten*], [*CO2*],
-  [small], [10], [3], [Optimal], [15 s], [1.587 s], [921.27 EUR], [125.35 kg],
-  [medium], [20], [5], [Optimal], [15 s], [7.913 s], [1675.77 EUR], [219.43 kg],
-  [large], [30], [8], [Optimal], [20 s], [17.355 s], [2644.14 EUR], [348.31 kg],
+  [small], [10], [3], [Optimal], [15 s], [3.964 s], [1318.35 EUR], [155.13 kg],
+  [medium], [20], [5], [Optimal], [15 s], [3.433 s], [2485.23 EUR], [280.14 kg],
+  [large], [30], [8], [Optimal], [20 s], [5.096 s], [3500.67 EUR], [375.05 kg],
 )
 ]
 
@@ -27,6 +27,8 @@ Für die Sensitivitätsanalyse wurde der Kosten-Emissions-Trade-off über einen 
 
 $ w_c = 1 / (1 + lambda), quad w_e = lambda / (1 + lambda), quad w_t = 0 $
 
+Damit lautet die bewertete Zielfunktion vereinfacht $w_c dot "normalized cost" + w_e dot "normalized emissions"$.
+
 Getestet wurden $lambda in {0, 0.1, 0.5, 1, 2, 5}$. Die small-Instanz bleibt in allen Läufen optimal und nutzt jeweils ausschließlich Straßentransport:
 
 #align(center)[
@@ -35,12 +37,12 @@ Getestet wurden $lambda in {0, 0.1, 0.5, 1, 2, 5}$. Die small-Instanz bleibt in 
   inset: 8pt,
   align: center + horizon,
   [*$lambda$*], [*$w_c$*], [*$w_e$*], [*Laufzeit*], [*Kosten*], [*CO2*], [*Road-Anteil*],
-  [0], [1.000], [0.000], [4.400 s], [921.27 EUR], [125.35 kg], [100.00%],
-  [0.1], [0.909], [0.091], [4.103 s], [921.27 EUR], [125.35 kg], [100.00%],
-  [0.5], [0.667], [0.333], [4.288 s], [921.27 EUR], [125.35 kg], [100.00%],
-  [1], [0.500], [0.500], [4.290 s], [921.27 EUR], [125.35 kg], [100.00%],
-  [2], [0.333], [0.667], [4.448 s], [921.27 EUR], [125.35 kg], [100.00%],
-  [5], [0.167], [0.833], [4.481 s], [921.27 EUR], [125.35 kg], [100.00%],
+  [0], [1.000], [0.000], [3.718 s], [1318.35 EUR], [155.13 kg], [100.00%],
+  [0.1], [0.909], [0.091], [3.640 s], [1318.35 EUR], [155.13 kg], [100.00%],
+  [0.5], [0.667], [0.333], [3.732 s], [1318.35 EUR], [155.13 kg], [100.00%],
+  [1], [0.500], [0.500], [3.687 s], [1318.35 EUR], [155.13 kg], [100.00%],
+  [2], [0.333], [0.667], [3.803 s], [1318.35 EUR], [155.13 kg], [100.00%],
+  [5], [0.167], [0.833], [3.949 s], [1318.35 EUR], [155.13 kg], [100.00%],
 )
 ]
 
@@ -54,10 +56,10 @@ Getestet wurden $lambda in {0, 0.1, 0.5, 1, 2, 5}$. Die small-Instanz bleibt in 
   caption: [Modusanteile in der $lambda$-Sensitivität.]
 )
 
-Die konstanten Kosten- und Emissionswerte zeigen, dass die aktuell gewählte Teilinstanz robust gegen die getestete Gewichtungsvariation ist. In dieser Datenkonfiguration dominieren die fixen Aktivierungskosten und Fixemissionen der alternativen Modi stark genug, sodass der LKW auf den kurzen Relationen trotz höherer variabler Emissionsfaktoren bevorzugt wird. Das ist kein Solverfehler, sondern ein wichtiges Ergebnis der Parametrisierung: Für einen sichtbaren Modal Shift müssten entweder längere Relationen, höhere Sendungsgewichte, CO2-Preise oder angepasste Fixkosten betrachtet werden.
+Die konstanten Kosten- und Emissionswerte zeigen, dass die aktuell gewählte Teilinstanz robust gegen die getestete Gewichtungsvariation ist. Die Gewichte ändern sich, aber die ausgewählte Route wechselt nicht. Deshalb liegen die Punkte im Kosten-Emissions-Diagramm übereinander. Das ist kein Solverfehler, sondern ein wichtiges Ergebnis der Parametrisierung: Für einen sichtbaren Modal Shift müssten entweder längere Relationen, höhere Sendungsgewichte, CO2-Preise oder angepasste Fixkosten betrachtet werden.
 
 == Erweiterte Modal-Shift-Sensitivität
-Um diese Parametrisierung gezielt zu prüfen, wurde zusätzlich ein schweres Langstrecken-Szenario mit 8.0 Tonnen pro Sendung erzeugt. In diesem Szenario wird der Schienentransport bereits bei kostenorientierter Optimierung relevant und dominiert bei höherem Emissionsgewicht vollständig.
+Um diese Parametrisierung gezielt zu prüfen, wurde zusätzlich ein schweres Langstrecken-Szenario mit 8.0 Tonnen pro Sendung erzeugt. In diesem Szenario wird der Schienentransport gegenüber der Baseline deutlich relevanter, die gewählte Modusmischung bleibt in den getesteten Lambda-Werten jedoch stabil.
 
 #align(center)[
 #table(
@@ -65,12 +67,12 @@ Um diese Parametrisierung gezielt zu prüfen, wurde zusätzlich ein schweres Lan
   inset: 8pt,
   align: center + horizon,
   [*$lambda$*], [*Kosten*], [*CO2*], [*Road-Anteil*], [*Rail-Anteil*], [*Laufzeit*],
-  [0], [4899.36 EUR], [352.28 kg], [24.26%], [75.74%], [4.455 s],
-  [0.1], [4899.36 EUR], [352.28 kg], [24.26%], [75.74%], [4.288 s],
-  [0.5], [4899.36 EUR], [352.28 kg], [24.26%], [75.74%], [4.865 s],
-  [1], [4899.36 EUR], [352.28 kg], [24.26%], [75.74%], [4.410 s],
-  [2], [4998.72 EUR], [339.24 kg], [0.00%], [100.00%], [4.382 s],
-  [5], [4998.72 EUR], [339.24 kg], [0.00%], [100.00%], [4.244 s],
+  [0], [8176.48 EUR], [553.80 kg], [37.35%], [62.65%], [3.498 s],
+  [0.1], [8176.48 EUR], [553.80 kg], [37.35%], [62.65%], [3.519 s],
+  [0.5], [8176.48 EUR], [553.80 kg], [37.35%], [62.65%], [3.657 s],
+  [1], [8176.48 EUR], [553.80 kg], [37.35%], [62.65%], [3.623 s],
+  [2], [8176.48 EUR], [553.80 kg], [37.35%], [62.65%], [3.479 s],
+  [5], [8176.48 EUR], [553.80 kg], [37.35%], [62.65%], [3.742 s],
 )
 ]
 
@@ -79,7 +81,7 @@ Um diese Parametrisierung gezielt zu prüfen, wurde zusätzlich ein schweres Lan
   caption: [Modal-Shift-Szenario mit schweren Sendungen.]
 )
 
-Die zusätzliche Analyse zeigt den erwarteten Zielkonflikt deutlicher: Bei steigendem Emissionsgewicht akzeptiert das Modell höhere Kosten, um die CO2-Emissionen durch vollständige Schienennutzung zu reduzieren.
+Die zusätzliche Analyse zeigt, dass schwerere Sendungen den Schienenanteil gegenüber der Baseline erhöhen können. Innerhalb der getesteten Lambda-Werte bleibt die konkrete Lösung jedoch stabil; auch hier ist die fehlende Bewegung im Diagramm daher als Sensitivitätsergebnis und nicht als Darstellungsfehler zu interpretieren.
 
 Die Rechenexperimente und Sensitivitätsanalysen wurden als reproduzierbarer Evaluationsbeitrag von Minglu Li entworfen, implementiert und dokumentiert.
 

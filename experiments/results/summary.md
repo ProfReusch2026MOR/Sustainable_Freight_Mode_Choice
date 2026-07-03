@@ -11,44 +11,77 @@ python experiments/run_experiments.py --profile modal-shift
 ## Baseline presentation profile
 
 The baseline presentation profile evaluates deterministic small, medium, and
-large subnetworks from `dataset/multimodal_network.json`.
+large subnetworks from `dataset/medium_network.json`.
 
 | Instance | Routes | Shipments | Runtime | Cost | CO2 | Dominant mode |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| small | 10 | 3 | 1.587 s | 921.27 EUR | 125.35 kg | Road |
-| medium | 20 | 5 | 7.913 s | 1,675.77 EUR | 219.43 kg | Road |
-| large | 30 | 8 | 17.355 s | 2,644.14 EUR | 348.31 kg | Road |
+| small | 10 | 3 | 3.964 s | 1,318.35 EUR | 155.13 kg | Road |
+| medium | 20 | 5 | 3.433 s | 2,485.23 EUR | 280.14 kg | Road |
+| large | 30 | 8 | 5.096 s | 3,500.67 EUR | 375.05 kg | Road |
 
-The baseline sensitivity sweep uses lambda values `0, 0.1, 0.5, 1, 2, 5` with
-`cost = 1 / (1 + lambda)`, `emissions = lambda / (1 + lambda)`, and
-`time = 0`. In this baseline setting, all lambda values keep a 100% road mode
-share.
+## Sensitivity weight mapping
 
-This road dominance is an important parameter finding: the selected short
-relations and fixed activation costs make road transport attractive despite
-higher variable emissions.
+The sensitivity sweep uses lambda values `0, 0.1, 0.5, 1, 2, 5` with:
+
+```text
+cost_weight = 1 / (1 + lambda)
+emissions_weight = lambda / (1 + lambda)
+time_weight = 0
+```
+
+The optimized scalar objective is:
+
+```text
+objective = cost_weight * normalized_cost
+          + emissions_weight * normalized_emissions
+```
+
+| Lambda | Cost weight | Emission weight | Interpretation |
+| ---: | ---: | ---: | --- |
+| 0 | 1.000 | 0.000 | cost only |
+| 0.1 | 0.909 | 0.091 | cost-dominated |
+| 0.5 | 0.667 | 0.333 | emissions included |
+| 1 | 0.500 | 0.500 | balanced |
+| 2 | 0.333 | 0.667 | emission-dominated |
+| 5 | 0.167 | 0.833 | strong emission focus |
+
+## Baseline sensitivity result
+
+| Lambda | Cost | CO2 | Road share | Rail share | Interpretation |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 0 | 1,318.35 EUR | 155.13 kg | 100.00% | 0.00% | no route switch |
+| 0.1 | 1,318.35 EUR | 155.13 kg | 100.00% | 0.00% | no route switch |
+| 0.5 | 1,318.35 EUR | 155.13 kg | 100.00% | 0.00% | no route switch |
+| 1 | 1,318.35 EUR | 155.13 kg | 100.00% | 0.00% | no route switch |
+| 2 | 1,318.35 EUR | 155.13 kg | 100.00% | 0.00% | no route switch |
+| 5 | 1,318.35 EUR | 155.13 kg | 100.00% | 0.00% | no route switch |
+
+The cost-emission chart has overlapping points because the selected route does
+not change across the tested lambda values. The weights change, but the final
+route, total cost, and total emissions remain constant. This is a sensitivity
+finding, not a charting bug.
 
 ## Modal-shift profile
 
-The modal-shift profile uses heavier shipments to test whether a stronger
-emission objective can change the selected mode.
+The modal-shift profile uses heavier shipments to test whether rail becomes
+more attractive.
 
 | Lambda | Road share | Rail share | Cost | CO2 | Interpretation |
 | ---: | ---: | ---: | ---: | ---: | --- |
-| 0 | 24.26% | 75.74% | 4,899.36 EUR | 352.28 kg | Mixed road/rail |
-| 0.1 | 24.26% | 75.74% | 4,899.36 EUR | 352.28 kg | Mixed road/rail |
-| 0.5 | 24.26% | 75.74% | 4,899.36 EUR | 352.28 kg | Mixed road/rail |
-| 1 | 24.26% | 75.74% | 4,899.36 EUR | 352.28 kg | Mixed road/rail |
-| 2 | 0.00% | 100.00% | 4,998.72 EUR | 339.24 kg | 100% Rail |
-| 5 | 0.00% | 100.00% | 4,998.72 EUR | 339.24 kg | 100% Rail |
+| 0 | 37.35% | 62.65% | 8,176.48 EUR | 553.80 kg | stable mixed road/rail |
+| 0.1 | 37.35% | 62.65% | 8,176.48 EUR | 553.80 kg | stable mixed road/rail |
+| 0.5 | 37.35% | 62.65% | 8,176.48 EUR | 553.80 kg | stable mixed road/rail |
+| 1 | 37.35% | 62.65% | 8,176.48 EUR | 553.80 kg | stable mixed road/rail |
+| 2 | 37.35% | 62.65% | 8,176.48 EUR | 553.80 kg | stable mixed road/rail |
+| 5 | 37.35% | 62.65% | 8,176.48 EUR | 553.80 kg | stable mixed road/rail |
 
-The modal-shift result shows that the model can move ton-kilometers to rail
-when emissions are weighted strongly enough. It should not be presented as a
-general policy conclusion; it is a reproducible sensitivity scenario that
-demonstrates model behavior under changed shipment and objective parameters.
+The heavier scenario increases rail usage compared with the baseline, but the
+selected mode mix remains stable across the tested lambda values in the current
+network and cost parameterization.
 
 ## Contribution
 
 The computational experiment runner, output schema, CSV/SVG artifacts,
-sensitivity profiles, and this reproducibility summary were designed and
-implemented as Minglu Li's evaluation contribution.
+sensitivity profiles, regression test for mode-share chart scaling, and this
+reproducibility summary were designed and implemented as Minglu Li's evaluation
+contribution.

@@ -25,7 +25,7 @@ from freight_routing.data_models import (  # noqa: E402
 )
 from freight_routing.model import TimeExpandedFreightRoutingModel, TimeExpandedNetwork  # noqa: E402
 
-DATASET_PATH = ROOT / "dataset" / "multimodal_network.json"
+DATASET_PATH = ROOT / "dataset" / "medium_network.json"
 DEFAULT_OUTPUT_DIR = ROOT / "experiments" / "results"
 DEFAULT_PLANNING_DAYS = 7
 MODES = ("road", "rail", "air", "ship")
@@ -421,6 +421,24 @@ def _scale(values: list[float], size: int, reverse: bool = False) -> list[float]
     return scaled
 
 
+def _scale_fixed_domain(
+    values: list[float],
+    size: int,
+    minimum: float,
+    maximum: float,
+    reverse: bool = False,
+) -> list[float]:
+    if maximum <= minimum:
+        raise ValueError("maximum must be greater than minimum.")
+
+    scaled = []
+    for value in values:
+        bounded_value = min(max(value, minimum), maximum)
+        scaled_value = ((bounded_value - minimum) / (maximum - minimum)) * size
+        scaled.append(size - scaled_value if reverse else scaled_value)
+    return scaled
+
+
 def _clustered_point_annotations(
     xs: list[float],
     ys: list[float],
@@ -478,8 +496,14 @@ def write_lambda_mode_share_svg(path: Path, rows: list[dict[str, str]]) -> None:
     road = [float(row["road_share_pct"]) for row in rows]
     rail = [float(row["rail_share_pct"]) for row in rows]
     xs = [margin + value for value in _scale(lambdas, plot_w)]
-    road_ys = [margin + value for value in _scale(road, plot_h, reverse=True)]
-    rail_ys = [margin + value for value in _scale(rail, plot_h, reverse=True)]
+    road_ys = [
+        margin + value
+        for value in _scale_fixed_domain(road, plot_h, 0.0, 100.0, reverse=True)
+    ]
+    rail_ys = [
+        margin + value
+        for value in _scale_fixed_domain(rail, plot_h, 0.0, 100.0, reverse=True)
+    ]
     road_points = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, road_ys))
     rail_points = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, rail_ys))
     labels = "\n".join(
