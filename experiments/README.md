@@ -1,7 +1,7 @@
 # Reproducible Experiment Guide
 
 This folder contains the reproducible evaluation work for the final report and
-presentation. The experiments use `dataset/multimodal_network.json`, build
+presentation. The experiments use `dataset/medium_network.json`, build
 deterministic subnetworks, and solve the resulting MILP instances with PuLP and
 HiGHS.
 
@@ -44,11 +44,22 @@ values. This is a parameter finding rather than a solver error: the selected
 short relations and fixed activation costs make road transport attractive even
 when emissions are weighted more strongly.
 
-The modal-shift profile increases shipment weight and uses a setting where the
-emissions objective can become decisive. In the current generated outputs,
-lambda values of `2` and `5` produce a 100% rail solution. This gives the
-presentation a reproducible example of how the model can react when emissions
-receive higher priority.
+The sensitivity weight mapping is:
+
+```text
+cost_weight = 1 / (1 + lambda)
+emissions_weight = lambda / (1 + lambda)
+time_weight = 0
+```
+
+Therefore, overlapping cost-emission points mean that the route selected by the
+MILP did not change under the tested weight settings. The weights changed, but
+the final route, cost, and emissions remained stable.
+
+The modal-shift profile increases shipment weight and tests whether rail
+becomes more attractive. In the current generated outputs it produces a stable
+mixed road/rail solution across all tested lambda values. This should be
+presented as scenario evidence, not as a general policy conclusion.
 
 ## Validation
 
@@ -56,6 +67,7 @@ Before using the outputs in the final presentation, run:
 
 ```bash
 python -m unittest tests.test_experiments
+python -m unittest tests.test_run_experiments
 python -m compileall freight_routing experiments
 python -m ruff format --check .
 python -m ruff check experiments tests freight_routing
