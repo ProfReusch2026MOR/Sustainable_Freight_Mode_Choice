@@ -568,6 +568,10 @@ class TimeExpandedFreightRoutingModel:
 
         arc_indices = list(range(len(self.all_arcs)))
         shipment_indices = list(range(len(shipments)))
+        price_limited_indices = [
+            k for k, shipment in enumerate(shipments) if shipment.max_price is not None
+        ]
+        has_total_budget = all(shipment.max_price is not None for shipment in shipments)
 
         # Decision variables: use_arc[(i, k)] = 1 if shipment k uses arc i
         self.use_arc = pulp.LpVariable.dicts(
@@ -585,7 +589,7 @@ class TimeExpandedFreightRoutingModel:
         )
         self.slack_price = pulp.LpVariable.dicts(
             "SlackPrice",
-            shipment_indices,
+            price_limited_indices,
             lowBound=0,
             cat=pulp.LpContinuous,
         )
@@ -595,10 +599,14 @@ class TimeExpandedFreightRoutingModel:
             lowBound=0,
             cat=pulp.LpContinuous,
         )
-        self.slack_total_budget = pulp.LpVariable(
-            "SlackTotalBudget",
-            lowBound=0,
-            cat=pulp.LpContinuous,
+        self.slack_total_budget = (
+            pulp.LpVariable(
+                "SlackTotalBudget",
+                lowBound=0,
+                cat=pulp.LpContinuous,
+            )
+            if has_total_budget
+            else None
         )
 
         # Dynamic vehicle count variables
@@ -719,17 +727,24 @@ class TimeExpandedFreightRoutingModel:
 
         # Normalize soft-constraint violations to the same dimensionless scales
         # as the routing objective.
+        total_budget_violation = (
+            self.slack_total_budget / sum(cost_ranges)
+            if self.slack_total_budget is not None
+            else 0.0
+        )
         normalized_constraint_violation = (
             pulp.lpSum(
                 self.slack_deadline[k] / time_ranges[k] for k in shipment_indices
             )
-            + pulp.lpSum(self.slack_price[k] / cost_ranges[k] for k in shipment_indices)
+            + pulp.lpSum(
+                self.slack_price[k] / cost_ranges[k] for k in price_limited_indices
+            )
             + pulp.lpSum(
                 self.slack_emissions[k] / emissions_ranges[k]
                 for k in shipment_indices
                 if shipments[k].max_emissions is not None
             )
-            + self.slack_total_budget / sum(cost_ranges)
+            + total_budget_violation
         )
 
         soft_constraint_penalty = 100.0
@@ -827,15 +842,16 @@ class TimeExpandedFreightRoutingModel:
         #   budget and emission constraints    #
         ########################################
         for k, shipment in enumerate(shipments):
-            # Soft price budget constraint
-            self.prob += (
-                pulp.lpSum(
-                    self.use_arc[(i, k)] * arc.cost * shipment.weight
-                    for i, arc in enumerate(self.all_arcs)
+            if shipment.max_price is not None:
+                # Soft price budget constraint
+                self.prob += (
+                    pulp.lpSum(
+                        self.use_arc[(i, k)] * arc.cost * shipment.weight
+                        for i, arc in enumerate(self.all_arcs)
+                    )
+                    - self.slack_price[k]
+                    <= shipment.max_price
                 )
-                - self.slack_price[k]
-                <= shipment.max_price
-            )
 
             if shipment.max_emissions is not None:
                 # Soft emissions budget constraint
@@ -848,9 +864,16 @@ class TimeExpandedFreightRoutingModel:
                     <= shipment.max_emissions
                 )
 
-        # Soft total combined budget limit across all shipments (including fixed costs)
-        total_budget = sum(shipment.max_price for shipment in shipments)
-        self.prob += total_cost - self.slack_total_budget <= total_budget
+        # Shared fixed costs cannot be assigned unambiguously when only some
+        # shipments have price limits. Apply the combined budget only if every
+        # shipment defines one.
+        if self.slack_total_budget is not None:
+            total_budget = sum(
+                shipment.max_price
+                for shipment in shipments
+                if shipment.max_price is not None
+            )
+            self.prob += total_cost - self.slack_total_budget <= total_budget
 
         ########################################
         #           solver execution           #
@@ -858,7 +881,6 @@ class TimeExpandedFreightRoutingModel:
         highs_py = pulp.HiGHS(
             msg=show_progress,
             timeLimit=time_limit_sec,
-            user_objective_scale=10,
         )
         status = self.prob.solve(highs_py)
 
@@ -871,7 +893,11 @@ class TimeExpandedFreightRoutingModel:
             # Check for soft constraint violations
             for k, shipment in enumerate(shipments):
                 slack_dl = pulp.value(self.slack_deadline[k])
-                slack_pr = pulp.value(self.slack_price[k])
+                slack_pr = (
+                    pulp.value(self.slack_price[k])
+                    if shipment.max_price is not None
+                    else 0.0
+                )
                 slack_em = (
                     pulp.value(self.slack_emissions[k])
                     if shipment.max_emissions is not None
@@ -897,7 +923,11 @@ class TimeExpandedFreightRoutingModel:
                     )
                     is_optimal = False
 
-            slack_tot = pulp.value(self.slack_total_budget)
+            slack_tot = (
+                pulp.value(self.slack_total_budget)
+                if self.slack_total_budget is not None
+                else 0.0
+            )
             if slack_tot and slack_tot > 1e-3:
                 diagnostics.append(
                     f"Global: Combined price budget is too low. "

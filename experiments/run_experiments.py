@@ -277,7 +277,7 @@ def generate_shipments(
                 end_hub=end_hub,
                 start_time=0,
                 deadline=deadline,
-                max_price=1_000_000.0,
+                max_price=None,
                 max_emissions=1_000_000.0,
                 weight=weight,
             )

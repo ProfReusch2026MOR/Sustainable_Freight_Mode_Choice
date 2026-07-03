@@ -155,7 +155,7 @@ class Shipment:
     end_hub: str
     start_time: int
     deadline: int
-    max_price: float
+    max_price: float | None
     max_emissions: float | None
     weight: float
     objective_weights: ObjectiveWeights | None = None
@@ -175,7 +175,7 @@ class Shipment:
             raise ValueError("start_time must not be negative.")
         if self.deadline < self.start_time:
             raise ValueError("deadline must be greater than or equal to start_time.")
-        if self.max_price < 0:
+        if self.max_price is not None and self.max_price < 0:
             raise ValueError("max_price must not be negative.")
         if self.max_emissions is not None and self.max_emissions < 0:
             raise ValueError("max_emissions must not be negative.")
