@@ -116,24 +116,7 @@ Die Datenbeschaffung gliedert sich in fünf aufeinanderfolgende Schritte:
 + *Kantenberechnung*: Erzeugung der Verbindungen je Transportmodus
 + *Transfer-Kanten*: Moduswechsel-Verbindungen innerhalb multimodaler Hubs
 + *JSON-Export*: Zusammenführung und Serialisierung des Gesamtdatensatzes
-Der Einstiegspunkt des Skripts orchestriert diese Schritte sequentiell:
-```python
-def main():
-    # Step 1: Download
-    cities_df, airports_df, ports_df = download_data()
-    # Step 2: Select Hubs
-    hubs = select_hubs(cities_df, airports_df, ports_df)
-    # Step 3: Calculate Arcs
-    road_arcs = calculate_road_arcs(hubs)
-    rail_arcs = calculate_rail_arcs(hubs)
-    ship_arcs = calculate_maritime_arcs(hubs)
-    air_arcs = calculate_aviation_arcs(hubs)
-    # Step 4: Transfer Arcs
-    transfer_arcs = generate_transfer_arcs(hubs)
-    # Step 5: JSON Export
-    all_arcs = road_arcs + rail_arcs + ship_arcs + air_arcs + transfer_arcs
-    ...
-```
+
 === Datenquellen
 Die Rohdaten stammen aus drei externen, quelloffenen Datensätzen:
 #figure(
@@ -142,9 +125,9 @@ Die Rohdaten stammen aus drei externen, quelloffenen Datensätzen:
     align: (left, left, left),
     stroke: 0.5pt,
     [*Datensatz*], [*Quelle*], [*Inhalt*],
-    [World Cities], [GitHub (bahar)], [Globales Städteverzeichnis mit Koordinaten],
-    [OpenFlights], [GitHub (jpatokal)], [Flughafendaten mit IATA-Codes und Positionen],
-    [LINERLIB], [GitHub (blof)], [Seehafen-Verzeichnis mit UN/LOCODE],
+    [World Cities], [#link("https://github.com/bahar/WorldCityLocations")[GitHub (bahar)] @worldcitylocations], [Globales Städteverzeichnis mit Koordinaten],
+    [OpenFlights], [#link("https://github.com/jpatokal/openflights")[GitHub (jpatokal)] @openflights], [Flughafendaten mit IATA-Codes und Positionen],
+    [LINERLIB], [#link("https://github.com/blof/LINERLIB")[GitHub (blof)] @linerlib], [Seehafen-Verzeichnis mit UN/LOCODE],
   ),
   caption: [Verwendete externe Datenquellen],
 ) <tab:data-sources>
