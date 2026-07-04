@@ -46,6 +46,8 @@ class DijkstraRouter:
         self.objective_weights = objective_weights
         self._cached_network: TimeExpandedNetwork | None = None
         self._network_index: _NetworkIndex | None = None
+        self._min_time_cache: dict[str, dict[str, float]] = {}
+        self._min_time_network_data: NetworkData | None = None
 
     def _normalization_context(
         self,
@@ -95,6 +97,44 @@ class DijkstraRouter:
             )
         return self._network_index
 
+    def _min_time_by_hub(
+        self,
+        network: TimeExpandedNetwork,
+        shipment: Shipment,
+    ) -> dict[str, float]:
+        network_data = network.network_data
+        if self._min_time_network_data is not network_data:
+            self._min_time_cache.clear()
+            self._min_time_network_data = network_data
+        
+        cache_key = shipment.end_hub
+        cached = self._min_time_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        reverse_graph = defaultdict(list)
+        for template in network_data.arc_templates:
+            if isinstance(template, TransportArcTemplate):
+                reverse_graph[template.to_hub].append(
+                    (template.from_hub, template.duration_min)
+                )
+
+        distance = {shipment.end_hub: 0.0}
+        queue = [(0.0, shipment.end_hub)]
+        while queue:
+            current_distance, hub = heapq.heappop(queue)
+            if current_distance > distance.get(hub, math.inf):
+                continue
+            for previous_hub, duration in reverse_graph.get(hub, []):
+                candidate = current_distance + duration
+                if candidate >= distance.get(previous_hub, math.inf):
+                    continue
+                distance[previous_hub] = candidate
+                heapq.heappush(queue, (candidate, previous_hub))
+
+        self._min_time_cache[cache_key] = distance
+        return distance
+
     def _find_shortest_path(
         self,
         network: TimeExpandedNetwork,
@@ -124,6 +164,7 @@ class DijkstraRouter:
             weights=weights,
             ranges=ranges,
         )
+        min_time = self._min_time_by_hub(network, shipment)
 
         def estimate(node: NetworkNode) -> float:
             if heuristic is None:
@@ -134,9 +175,13 @@ class DijkstraRouter:
         distance: dict[NetworkNode, float] = {}
         parent: dict[NetworkNode, tuple[NetworkNode | None, _TimedArc | None]] = {}
         counter = 0
+        best_feasible_score = math.inf
+
         for node in start_nodes:
             estimate_to_goal = estimate(node)
             if math.isinf(estimate_to_goal):
+                continue
+            if node.time_min + min_time.get(node.hub_id, math.inf) > shipment.deadline:
                 continue
             distance[node] = 0.0
             parent[node] = (None, None)
@@ -144,7 +189,9 @@ class DijkstraRouter:
             counter += 1
 
         while queue:
-            _, current_distance, _, node = heapq.heappop(queue)
+            priority, current_distance, _, node = heapq.heappop(queue)
+            if priority >= best_feasible_score:
+                break
             if current_distance > distance.get(node, math.inf):
                 continue
             if node in end_nodes:
@@ -152,7 +199,7 @@ class DijkstraRouter:
 
             for arc in index.outgoing.get(node, []):
                 next_node = arc.to_node
-                if next_node.time_min > shipment.deadline:
+                if next_node.time_min + min_time.get(next_node.hub_id, math.inf) > shipment.deadline:
                     continue
                 estimate_to_goal = estimate(next_node)
                 if math.isinf(estimate_to_goal):
@@ -174,6 +221,11 @@ class DijkstraRouter:
                 candidate = current_distance + arc_score
                 if candidate >= distance.get(next_node, math.inf):
                     continue
+
+                if next_node in end_nodes:
+                    if candidate < best_feasible_score:
+                        best_feasible_score = candidate
+
                 distance[next_node] = candidate
                 parent[next_node] = (node, arc)
                 heapq.heappush(
