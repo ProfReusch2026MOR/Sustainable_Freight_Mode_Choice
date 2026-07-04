@@ -561,7 +561,7 @@ Pfade nicht und die Optimalität des kürzesten Weges bleibt erhalten.
 === Kürzeste-Weg-Suche (Dijkstra) <sec:dijkstra-formulation>
 
 Für eine Einzelsendung $k$ wird der optimale Pfad als klassisches
-Kürzeste-Weg-Problem auf dem zeitexpandierten Graphen formuliert:
+Kürzeste-Weg-Problem auf dem zeitexpandierten Graphen formuliert (vgl. @ahuja1993networkflows[S. 94]):
 
 $
   min_(P in cal(P)_k) sum_(a in P) sigma(a, k)
@@ -570,14 +570,14 @@ $ <eq:shortest-path>
 wobei $cal(P)_k$ die Menge aller zulässigen Pfade von den Startknoten
 $N_k^"S"$ zu den Zielknoten $N_k^"Z"$ mit $t(n) <= D_k$ bezeichnet.
 
-Für eine einzelne Sendung entspricht das Problem einem klassischen Kürzeste-Weg-Problem, welches durch den Dijkstra-Router nachweislich global optimal gelöst wird. Für mehrere Sendungen ist dies aufgrund der geteilten Fixkosten bei Konsolidierungen (vgl. @eq:fixed) nicht mehr der Fall.
+Für eine einzelne Sendung entspricht das Problem einem klassischen Kürzeste-Weg-Problem, welches durch den Dijkstra-Router @Dijkstra1959 nachweislich global optimal gelöst wird. Für mehrere Sendungen ist dies aufgrund der geteilten Fixkosten bei Konsolidierungen (vgl. @eq:fixed) nicht mehr der Fall.
 
 Zur Beschleunigung der Suche bei Einzelsendungen kann der Dijkstra-Router durch eine Heuristik $h(n)$ zum A\*-Router erweitert werden.
 
 
 === A\*-Heuristikfunktion <sec:astar-heuristic>
 
-Der A\*-Router erweitert den Dijkstra-Router um eine Heuristikfunktion $h$, die für jeden Knoten eine untere Schranke der verbleibenden Kosten zum Ziel liefert.
+Der A\*-Router @hart1968formal erweitert den Dijkstra-Router um eine Heuristikfunktion $h$, die für jeden Knoten eine untere Schranke der verbleibenden Kosten zum Ziel liefert.
 
 In geografischen Anwendungen wird üblicherweise die Luftliniendistanz (z. B. per Haversine-Formel) als Heuristik verwendet. In einem multimodalen Netzwerk stößt dieser Ansatz jedoch an Grenzen: Zum einen ist die Kantenbewertung (Arc Score) ein gewichteter Wert aus Kosten, Zeit und Emissionen, der sich nicht direkt proportional zur Luftlinie verhält. Zum anderen vernachlässigt die Luftlinie die tatsächliche Konnektivität des Netzwerks. Sie würde Sackgassen oder spärlich verbundene Hubs übersehen, was A\* dazu zwingen würde, weite Teile des zeitexpandierten Suchraums unnötig zu explorieren.
 
@@ -646,7 +646,7 @@ zusätzlichen Fixkosten verursacht ($n_a = 0$), und die Sendung
 
 Das sequentielle Verfahren aus @sec:capacity-tracking ist aufgrund
 der festen Reihenfolge nicht global optimal. Zur Verbesserung wird
-eine Large Neighbourhood Search (LNS) nach dem Ruin-and-Recreate-Prinzip
+eine Large Neighbourhood Search (LNS) nach dem Ruin-and-Recreate-Prinzip @SCHRIMPF2000139
 eingesetzt.
 
 Gegeben sei eine initiale Lösung $cal(S)$ mit Routen

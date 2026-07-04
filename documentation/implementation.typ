@@ -2,7 +2,7 @@
 Dieses Kapitel beschreibt die softwaretechnische Umsetzung des in @ch:mathematical-model formulierten Optimierungsmodells. Die Implementierung gliedert sich in vier Bereiche: zunächst die Spezifikation des Datensatzes (@sec:dataset), dann die automatisierte Datenbeschaffung (@sec:data-collection), anschließend die exakte Lösung mittels MILP-Solver (@sec:solver-implementation) und schließlich die heuristische Lösung (@sec:heuristic-implementation). Sämtlicher Quellcode ist in Python umgesetzt.
 == Datensatz und Datenmodell <sec:dataset>
 === JSON-Datenformat
-Das multimodale Transportnetzwerk wird in einer zentralen JSON-Datei (`multimodal_network.json`) gespeichert. Dieses Format wurde gewählt, da es sowohl für Menschen lesbar als auch maschinell einfach zu verarbeiten ist. Die Datei beschreibt die vollständige physische Infrastruktur – Hubs, Verbindungen, Fahrpläne und Kostenparameter – und dient als einzige Datenquelle für Solver und Heuristiken.
+Das multimodale Transportnetzwerk wird in einer zentralen JSON-Datei gespeichert. Die Datei beschreibt die vollständige physische Infrastruktur – Hubs, Verbindungen, Fahrpläne und Kostenparameter – und dient als einzige Datenquelle für Solver und Heuristiken.
 Die JSON-Datei enthält die folgenden Toplevel-Schlüssel:
 #figure(
   table(
@@ -31,7 +31,7 @@ Jeder Hub repräsentiert einen physischen Knotenpunkt im Netzwerk – beispielsw
     "longitude": 13.4050
 }
 ```
-Das Feld `supported_modes` steuert dabei, welche Kanten an diesem Hub angebunden werden können. Ein Hub ohne den Modus `"ship"` kann beispielsweise keine maritimen Verbindungen nutzen, was die reale Netzwerktopologie widerspiegelt.
+Das Feld `supported_modes` steuert dabei, welche Kanten an diesem Hub angebunden werden können.
 === Verbindungsvorlagen (Arc Templates)
 Die Verbindungen im Netzwerk werden über sogenannte Arc Templates definiert. Es existieren zwei grundlegende Typen:
 *Transport-Arcs* beschreiben den physischen Transport zwischen zwei verschiedenen Hubs. Sie enthalten den Transportmodus, die Distanz in Kilometern, die Fahrtdauer sowie einen täglichen Fahrplan in Form von Abfahrtsminuten ab Mitternacht:
@@ -60,21 +60,38 @@ Die Verbindungen im Netzwerk werden über sogenannte Arc Templates definiert. Es
 }
 ```
 === Kostenfaktoren und Kapazitäten
-Variable Kosten und Emissionen werden über modusspezifische Faktoren pro Tonnenkilometer definiert. @tab:mode-factors zeigt die im Datensatz verwendeten Standardwerte.
+
+Die ökonomischen und ökologischen Parameter sowie Kapazitätsgrenzen des Netzwerks sind als Standardwerte im JSON-Datensatz hinterlegt. @tab:json-parameters gibt eine Übersicht der verschiedenen Parameterarten und deren Abbildung im JSON-Schema über entsprechende Schlüssel und Pfade:
+
 #figure(
   table(
-    columns: (auto, auto, auto),
-    align: (left, right, right),
+    columns: (auto, auto),
+    align: (left, left),
     stroke: 0.5pt,
-    [*Modus*], [*Kosten (€/tkm)*], [*Emissionen (kg CO₂/tkm)*],
-    [Straße (LKW)], [1,20], [0,090],
-    [Schiene], [0,70], [0,025],
-    [Luft], [3,50], [0,600],
-    [Schiff], [0,40], [0,015],
+    [*Parameterbeschreibung*], [*Schlüssel / Pfad im JSON-Datensatz*],
+    // Transport
+    [Variable Kosten (Transport)], [`mode_factors.[modus].cost_per_ton_km`],
+    [Variable Emissionen (Transport)], [`mode_factors.[modus].emissions_kg_per_ton_km`],
+    [Fahrzeugkapazität], [`capacities.[modus]`],
+    [Fixkosten pro Fahrzeugdispatch], [`default_fixed_costs.transport.[modus]`],
+    [Fixemissionen pro Fahrzeugdispatch], [`default_fixed_emissions.transport.[modus]`],
+    // Warten
+    [Wartekapazität am Hub], [`capacities.waiting`],
+    [Variable Wartekosten (pro Stunde)], [`default_variable_factors.waiting_cost_per_hour`],
+    [Variable Wartemissionen (pro Stunde)], [`default_variable_factors.waiting_emissions_per_hour`],
+    [Fixkosten für Wartevorgang], [`default_fixed_costs.waiting`],
+    [Fixemissionen für Wartevorgang], [`default_fixed_emissions.waiting`],
+    // Umschlag
+    [Transferkapazität (Moduswechsel)], [`capacities.transfer`],
+    [Variable Transferkosten (pro Tonne)], [`default_variable_factors.transfer_cost_per_ton`],
+    [Variable Transferemissionen (pro Tonne)], [`default_variable_factors.transfer_emissions_per_ton`],
+    [Fixkosten für Transfervorgang], [`default_fixed_costs.transfer`],
+    [Fixemissionen für Transfervorgang], [`default_fixed_emissions.transfer`],
   ),
-  caption: [Variable Kosten- und Emissionsfaktoren nach Transportmodus],
-) <tab:mode-factors>
-Zusätzlich werden für jeden Modus Fixkosten pro Fahrzeugdispatch, Fahrzeugkapazitäten (in Tonnen) sowie Standardkosten für Warte- und Umschlagvorgänge definiert. Diese Werte können auf Ebene einzelner Arc Templates überschrieben werden, was eine flexible Modellierung unterschiedlicher Infrastrukturstandorte ermöglicht.
+  caption: [Übersicht der Netzwerk- und Kostenparameter im JSON-Schema],
+) <tab:json-parameters>
+
+Diese globalen Faktoren dienen als Standardwerte für das gesamte Netzwerk. Sie können auf Ebene einzelner Verbindungen in den `arc_templates` überschrieben werden (beispielsweise durch Angabe spezifischer `capacity` oder `fixed_cost` Werte), was eine flexible Modellierung unterschiedlicher Infrastrukturen ermöglicht.
 === Datensatzgrößen
 Um die Skalierbarkeit der Lösungsverfahren zu evaluieren, werden drei Datensatzgrößen bereitgestellt:
 #figure(
