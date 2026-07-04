@@ -186,7 +186,7 @@
   }
 
   show heading.where(level: 1): it => {
-    colbreak()
+    pagebreak(weak: true)
     v(1em) + it + v(1em)
   }
   show heading.where(level: 2): it => v(1em) + it + v(0.5em)
