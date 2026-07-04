@@ -71,8 +71,9 @@
 // ////////////////////////////////////////////////////////////////////////
 
 #include "introduction.typ"
-#include "theoretischer_hintergrund.typ"
 #include "problem_description.typ"
+#include "theoretischer_hintergrund.typ"
+#include "mathematical_model.typ"
 #include "implementation.typ"
 #include "results.typ"
 #include "discussion.typ"
@@ -82,4 +83,3 @@
 #let mainSolverNotebook = json("../notebooks/main.ipynb")
 
 #callisto.render(nb: mainSolverNotebook)
-
