@@ -231,7 +231,8 @@ Die *Kapazitätsvariable* $v_a$ repräsentiert die Anzahl der auf Kante $a$ eing
 
 $ v_a in bb(N)_0 quad forall a in A^T $
 
-Diese Variable ist somit allgemein ganzzahlig. Sie kann durch die maximal verfügbare Flottengröße $overline(v)_a$ auf der Kante beschränkt werden ($v_a <= overline(v)_a$).
+Sie kann durch die maximal verfügbare Flottengröße $overline(v)_a$ auf der Kante beschränkt werden ($v_a <= overline(v)_a$).
+// TODO: Verweis auf nebenbedingung
 
 
 ==== Schlupfvariablen
@@ -300,9 +301,9 @@ $
   Z^"route" =
   alpha_C C^"fix" + alpha_E E^"fix"
   + sum_(k in K) (
-    lambda_k^C (C_k^"var" - C_k^-) / Delta C_k
-    + lambda_k^T (T_k - T_k^-) / Delta T_k
-    + lambda_k^E (E_k^"var" - E_k^-) / Delta E_k
+    lambda_k^C (C_k^"var" - C_k^-) / (Delta C_k)
+    + lambda_k^T (T_k - T_k^-) / (Delta T_k)
+    + lambda_k^E (E_k^"var" - E_k^-) / (Delta E_k)
   )
 $ <eq:routing>
 
@@ -310,12 +311,11 @@ und dem Strafterm
 
 $
   Z^"slack" =
-  sum_(k in K) s_k^D / Delta T_k
-  + sum_(k in K_B) s_k^B / Delta C_k
-  + sum_(k in K_E) s_k^E / Delta E_k
+  sum_(k in K) s_k^D / (Delta T_k)
+  + sum_(k in K_B) s_k^B / (Delta C_k)
+  + sum_(k in K_E) s_k^E / (Delta E_k)
 $ <eq:slack>
 
-wobei $rho = 100$.
 
 ==== Nebenbedingungen
 
@@ -557,8 +557,8 @@ werden. Ihre Zielfunktionskoeffizienten werden deshalb als Mittelwerte über
 alle Sendungen gebildet:
 
 $
-  alpha_C = 1 / |K| sum_(k in K) lambda_k^C / Delta C_k, quad
-  alpha_E = 1 / |K| sum_(k in K) lambda_k^E / Delta E_k.
+  alpha_C = 1 / |K| sum_(k in K) lambda_k^C / (Delta C_k), quad
+  alpha_E = 1 / |K| sum_(k in K) lambda_k^E / (Delta E_k).
 $
 
 
