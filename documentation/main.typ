@@ -78,9 +78,3 @@
 #include "results.typ"
 #include "discussion.typ"
 #include "conclusion.typ"
-
-= Jupyter Notebook
-// #let mainSolverNotebook = json("../notebooks/main.ipynb")
-
-// #callisto.render(nb: mainSolverNotebook)
-

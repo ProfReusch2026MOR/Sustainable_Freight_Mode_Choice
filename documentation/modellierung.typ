@@ -593,3 +593,172 @@ Im Ergebnis liefert das Modell auch bei unlösbaren Vorgaben eine
 auswertbare Lösung: Die positiven Schlupfwerte zeigen dem Anwender
 präzise, welche Restriktion um welchen Betrag verletzt wurde und
 ermöglichen eine gezielte Anpassung der Eingabeparameter.
+
+
+== Heuristischer Ansatz <ch:heuristic-approach>
+
+Neben dem exakten MILP-Solver werden zwei graphbasierte Heuristiken formuliert,
+die auf demselben zeitexpandierten Netzwerk $G^T = (N^T, A^T)$ operieren:
+ein Dijkstra-Router und ein A\*-Router. Für Einzelsendungen liefern beide
+das global optimale Ergebnis; für Mehrfachsendungen wird ein sequentielles
+Verfahren mit anschließender LNS-Optimierung eingesetzt.
+
+=== Kantenbewertungsfunktion (Arc Score) <sec:arc-score>
+
+Für eine Sendung $k$ mit Gewicht $q_k$ wird jeder Kante $a in A^T$ ein
+skalares Gewicht $sigma(a, k)$ zugewiesen, das die normierte gewichtete
+Summe der drei Zielkriterien abbildet. Seien $lambda_k^C$, $lambda_k^T$,
+$lambda_k^E$ die normierten Zielgewichte der Sendung und
+$Delta C_k$, $Delta T_k$, $Delta E_k$ die Normalisierungsbereiche aus
+@sec:normalization. Die Arc-Score-Funktion ist definiert als:
+
+$
+  sigma(a, k) =
+  alpha_C dot F_a dot n_a
+  + lambda_k^C dot (c_a dot q_k) / (Delta C_k)
+  + lambda_k^T dot tau_a / (Delta T_k)
+  + alpha_E dot G_a dot n_a
+  + lambda_k^E dot (e_a dot q_k) / (Delta E_k)
+$ <eq:arc-score>
+
+wobei $n_a$ die Anzahl der zusätzlich benötigten Fahrzeuge auf Kante $a$
+darstellt, die sich aus dem Kapazitätszustand ergibt (siehe @sec:capacity-tracking).
+Die Koeffizienten $alpha_C$ und $alpha_E$ sind die in @sec:normalization
+definierten gemittelten Fixkosten-Koeffizienten.
+
+Dieser Score ist konstruktionsgleich zur Zielfunktion des MILP (@eq:routing),
+wobei die konstanten Offset-Terme $C_k^-$, $T_k^-$, $E_k^-$ weggelassen werden.
+Da diese Terme für alle Kanten konstant sind, verändern sie die Rangfolge der
+Pfade nicht und die Optimalität des kürzesten Weges bleibt erhalten.
+
+=== Kürzeste-Weg-Suche (Dijkstra) <sec:dijkstra-formulation>
+
+Für eine Einzelsendung $k$ wird der optimale Pfad als klassisches
+Kürzeste-Weg-Problem auf dem zeitexpandierten Graphen formuliert:
+
+$
+  min_(P in cal(P)_k) sum_(a in P) sigma(a, k)
+$ <eq:shortest-path>
+
+wobei $cal(P)_k$ die Menge aller zulässigen Pfade von den Startknoten
+$N_k^"S"$ zu den Zielknoten $N_k^"Z"$ mit $t(n) <= D_k$ bezeichnet.
+
+Die Suche verwendet einen Min-Heap mit Einträgen $(f, g, "counter", n)$,
+wobei $g$ die kumulative Arc-Score-Distanz vom Start und $f = g + h(n)$
+die Priorität darstellt. Beim Dijkstra-Router gilt $h(n) = 0$; beim
+A\*-Router wird eine zulässige Heuristik $h(n)$ verwendet
+(siehe @sec:astar-heuristic).
+
+Zusätzlich wird ein zeitbasiertes Pruning eingesetzt: Ein Knoten $n$
+wird nur expandiert, wenn seine Ankunftszeit plus die minimale
+Restfahrzeit zum Zielhub die Deadline nicht überschreitet:
+
+$ t(n) + t_"min"(h_n, h_k^"Z") <= D_k $
+
+wobei $t_"min"(h, h')$ die minimale Fahrtdauer von Hub $h$ zum Zielhub
+$h'$ auf dem statischen Graphen bezeichnet, die per Rückwärts-Dijkstra
+vorberechnet wird.
+
+Da der zeitexpandierte Graph kreisfrei ist (jede Kante führt strikt
+vorwärts in der Zeit) und keine Suchraumbegrenzung vorgenommen wird,
+garantiert der Dijkstra-Router die global optimale Lösung für eine
+Einzelsendung.
+
+=== A\*-Heuristikfunktion <sec:astar-heuristic>
+
+Der A\*-Router erweitert den Dijkstra-Router um eine zulässige und
+konsistente Heuristikfunktion $h: N^T -> bb(R)_(>=0)$, die für jeden
+Knoten eine untere Schranke der verbleibenden Kosten zum Ziel liefert.
+
+Die Berechnung erfolgt durch einen Rückwärts-Dijkstra auf dem
+statischen Netzwerk, der für jeden Hub $h in H$ den minimalen
+gewichteten Score zum Zielhub $h_k^"Z"$ ermittelt. Sei $overline(A)$
+die Menge der statischen Transportkanten-Templates mit dem Score
+
+$
+  overline(sigma)(a, k) =
+  lambda_k^C dot (c_a dot q_k) / (Delta C_k)
+  + lambda_k^T dot tau_a / (Delta T_k)
+  + lambda_k^E dot (e_a dot q_k) / (Delta E_k)
+$
+
+Dann berechnet der Rückwärts-Dijkstra:
+
+$
+  h(n) = min_(P: h_n -> h_k^"Z" "in" overline(A)) sum_(a in P) overline(sigma)(a, k)
+$ <eq:astar-heuristic>
+
+Da $overline(sigma)$ die Fixkosten sowie Warte- und Transferkanten
+nicht berücksichtigt, unterschätzt $h$ die tatsächlichen Restkosten
+auf dem zeitexpandierten Graphen stets. Damit ist die Heuristik
+*zulässig* (admissible) und *konsistent* (monoton), sodass A\* die
+Optimalitätsgarantie des Dijkstra-Algorithmus beibehält und gleichzeitig
+die Anzahl der expandierten Knoten reduziert.
+
+=== Sequentielles Routing mehrerer Sendungen <sec:capacity-tracking>
+
+Für mehrere Sendungen $K = {k_1, ..., k_n}$ wird ein sequentielles
+Greedy-Verfahren eingesetzt. Die Sendungen werden absteigend nach
+Gewicht sortiert und nacheinander auf dem zeitexpandierten Graphen
+geroutet. Nach jeder erfolgreichen Routung wird der Kapazitätszustand
+aktualisiert:
+
+Sei $r_a^"rem"$ die verbleibende Kapazität und $v_a^"act"$ die Anzahl
+aktiver Fahrzeuge auf Kante $a$. Die Anzahl zusätzlich benötigter
+Fahrzeuge für Sendung $k$ ist:
+
+$
+  n_a(k) = cases(
+    0 & "falls" r_a^"rem" >= q_k,
+    ceil((q_k - r_a^"rem") / u_a) & "sonst"
+  )
+$ <eq:additional-vehicles>
+
+Eine Kante ist nur begehbar, wenn die resultierende Fahrzeuganzahl
+das Limit nicht überschreitet:
+
+$ v_a^"act" + n_a(k) <= overline(v)_a $
+
+Nach dem Routing der Sendung $k$ über Pfad $P_k$ wird für jede Kante
+$a in P_k$ aktualisiert:
+
+$
+  v_a^"act" <- v_a^"act" + n_a(k), quad
+  r_a^"rem" <- r_a^"rem" + n_a(k) dot u_a - q_k
+$
+
+Dieser Mechanismus erlaubt die Konsolidierung: Wenn auf einer Kante
+noch Restkapazität vorhanden ist ($r_a^"rem" >= q_k$), werden keine
+zusätzlichen Fixkosten verursacht ($n_a = 0$), und die Sendung
+"teilt" sich das Fahrzeug mit bereits gerouteten Sendungen.
+
+=== Ruin-and-Recreate-Optimierung (LNS) <sec:lns>
+
+Das sequentielle Verfahren aus @sec:capacity-tracking ist aufgrund
+der festen Reihenfolge nicht global optimal. Zur Verbesserung wird
+eine Large Neighbourhood Search (LNS) nach dem Ruin-and-Recreate-Prinzip
+eingesetzt.
+
+Gegeben sei eine initiale Lösung $cal(S)$ mit Routen
+$P = {P_{k_1}, ..., P_{k_n}}$ und Zielfunktionswert $Z(cal(S))$.
+In jeder Iteration $t = 1, ..., I$ werden folgende Schritte ausgeführt:
+
++ *Ruin:* Eine zufällige Teilmenge $R subset.eq K$ mit
+  $|R| = max(1, floor(rho dot |K|))$ Sendungen wird aus der Lösung
+  entfernt, wobei $rho in (0, 1]$ der Ruin-Anteil ist. Der
+  Kapazitätszustand wird auf die verbleibenden Sendungen $K backslash R$
+  zurückgesetzt.
+
++ *Recreate:* Die entfernten Sendungen werden absteigend nach Gewicht
+  sequentiell neu geroutet (analog zu @sec:capacity-tracking), wobei
+  sie von den bereits reservierten Kapazitäten der verbleibenden
+  Sendungen profitieren können.
+
++ *Akzeptanzkriterium:* Die Kandidatenlösung $cal(S)'$ wird akzeptiert,
+  falls $Z(cal(S)') < Z(cal(S)^*)$ und mindestens ebenso viele
+  Sendungen geroutet wurden wie in der bisher besten Lösung
+  $cal(S)^*$.
+
+Das Verfahren terminiert nach $I$ Iterationen und gibt die beste
+gefundene Lösung $cal(S)^*$ zurück.
+
