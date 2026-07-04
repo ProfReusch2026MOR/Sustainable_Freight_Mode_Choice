@@ -1,4 +1,4 @@
-= Implementierung & Lösungsansätze <ch:implementation>
+= Umsetzung <ch:implementation>
 
 == Datengrundlage und Datenmodell
 Die Struktur der Eingabedaten lehnt sich an reale logistische Netzwerke an. Es wird eine Netzwerkinfrastruktur mit vier großen deutschen Hubs (Berlin, Hamburg, Frankfurt, München) abgebildet. Jede Transportkante besitzt einen täglichen Abfahrtsfahrplan.
@@ -11,7 +11,7 @@ Das Datenmodell umfasst:
 Für größere Instanzen werden die Daten aus CSV-Dateien (`road_arcs.csv`, `air_arcs.csv`, `sea_routes_updated_18kts.csv` etc.) eingelesen, was eine flexible Skalierung des Netzwerks ermöglicht.
 
 == Exakte Lösung mit Python PuLP
-Das in @ch:mathematical-model formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Kantenvariablen $x_(a,k)$ sowie die Bündelungsvariablen $y_a$ und $z_a$ werden als `LpBinary` bzw. `LpInteger` deklariert.
+Das in formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Kantenvariablen $x_(a,k)$ sowie die Bündelungsvariablen $y_a$ und $z_a$ werden als `LpBinary` bzw. `LpInteger` deklariert.
 Als zugrundeliegender Solver wird *HiGHS* über die PuLP-Schnittstelle verwendet. HiGHS löst das MILP mit Branch-and-Bound- und Presolve-Verfahren und unterstützt zusätzlich Zeitlimits für größere Instanzen. Dadurch können die Rechenexperimente reproduzierbar mit festen Instanzgrößen und Solver-Zeitgrenzen durchgeführt werden.
 
 = Heuristische Verfahren zur multimodalen Routenplanung

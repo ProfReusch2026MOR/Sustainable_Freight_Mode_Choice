@@ -500,7 +500,7 @@ Budgets zu gering oder Emissionslimits zu restriktiv gesetzt, meldet der
 Solver lediglich, dass keine zulässige Lösung existiert (_Infeasible_),
 ohne anzugeben, welche Bedingung verletzt wurde und um wie viel.
 
-Das vorliegende Modell unterscheidet daher zwischen zwei Klassen von
+Das Modell unterscheidet daher zwischen zwei Klassen von
 Nebenbedingungen:
 
 - *Harte Restriktionen* (Flusserhaltung, Kapazitätsgrenzen) beschreiben
