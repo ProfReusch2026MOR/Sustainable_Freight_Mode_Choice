@@ -1,66 +1,141 @@
-= Problembeschreibung & Mathematisches Modell <ch:problem-description>
+= Problembeschreibung <ch:problem-description>
 
-== Das Multimodale Transportnetzwerk
-Das logistische Netzwerk wird als gerichteter, zeitexpandierter Graph $G = (N, A)$ modelliert. 
-Ein Zeitknoten $n = (h, m, t) in N$ repräsentiert einen Zustand, in dem sich eine Sendung an einem bestimmten Hub $h in H$, in einem bestimmten Modus $m in M_h$ und zu einem bestimmten Zeitpunkt $t in T = {0, ..., T_"max"}$ befindet.
+Dieses Kapitel beschreibt das betrachtete Planungsproblem und die zugrunde
+liegende Netzwerkstruktur. Die formale mathematische Modellierung folgt
+anschließend in @ch:mathematical-model.
 
-Die Kantenmenge $A$ setzt sich aus drei disjunkten Teilmengen zusammen:
-$ A = A_"trans" union A_"wait" union A_"transfer" $
+== Planungsproblem
 
-- *Transportkanten ($A_"trans"$):* Stellen die physische Fahrt zwischen zwei Hubs $h_1$ und $h_2$ unter Nutzung des Modus $m$ dar. Fahrzeiten werden auf volle Stunden aufgerundet:
-  $ Delta t_l = |~ d_l / v_m ~| $
-- *Wartekanten ($A_"wait"$):* Modellieren das Warten oder die Lagerung von Gütern an einem Hub $h$ im selben Modus $m$ von Zeitpunkt $t$ auf $t+1$:
-  $ A_"wait" = { ((h, m, t), (h, m, t+1)) | h in H, m in M_h, t < T_"max" } $
-- *Transferkanten ($A_"transfer"$):* Bilden das Umladen von Modus $m_1$ auf Modus $m_2$ am selben Hub $h$ ab. Dies benötigt eine feste Transferzeit $tau^"tr" = 2$ Stunden und ist an zeitliche Transferfenster $Theta_(h, m_1, m_2)$ gebunden:
-  $ A_"transfer" = { ((h, m_1, t), (h, m_2, t + tau^"tr")) | h in H, m_1, m_2 in M_h, t in D^"tr"_(h, m_1, m_2), t + tau^"tr" <= T_"max" } $
+Gegenstand dieser Arbeit ist die gemeinsame Routenplanung mehrerer
+Gütersendungen in einem multimodalen Transportnetzwerk. Jede Sendung wird durch
+einen Starthub, einen Zielhub, einen frühestmöglichen Freigabezeitpunkt, eine
+gewünschte Lieferfrist sowie ein Frachtgewicht in Tonnen charakterisiert.
+Optional können darüber hinaus eine Preisobergrenze, eine maximale
+CO₂-Emissionsgrenze und individuelle Präferenzgewichte für Kosten, Transportzeit
+und Emissionen angegeben werden.
 
-== Mathematische Formulierung (MILP)
+Das zentrale Ziel besteht darin, für jede Sendung eine Route durch das
+Transportnetzwerk zu bestimmen, die eine gewichtete Kombination aus
+Transportkosten, Transportzeit und CO₂-Emissionen minimiert und dabei
+gleichzeitig die gegebenen Kapazitäts- und Zeitrestriktionen einhält. Da mehrere
+Sendungen gemeinsam betrachtet werden, ergeben sich zusätzliche
+Bündelungsmöglichkeiten: Sendungen, die zur gleichen Zeit dieselbe Verbindung
+nutzen, können sich die bereitgestellte Transportkapazität und damit auch die
+anfallenden Fixkosten und Fixemissionen teilen. Diese Konsolidierung ist ein
+wesentlicher Bestandteil des Planungsproblems.
 
-=== Mengen und Indizes
-- $H$: Menge der Hubs (Knoten)
-- $M$: Menge der Transportmodi ($M = {"road", "rail", "air", "ship"}$)
-- $M_h$: Unterstützte Modi am Hub $h in H$
-- $T$: Diskreter Planungshorizont ${0, ..., T_"max"}$
-- $A$: Kanten im zeitexpandierten Netz
-- $K$: Menge der zu transportierenden Sendungen
+== Das multimodale Transportnetzwerk
 
-=== Parameter
-- $w_k$: Gewicht der Sendung $k in K$ in Tonnen
-- $d_l$: Distanz einer Verbindung $l$ in km
-- $c_(a,k)$: Sendungsspezifische variable Kosten der Kante $a in A$ für Sendung $k$ (Kosten pro t-km $times$ Distanz $times$ Gewicht)
-- $e_(a,k)$: Sendungsspezifische variable CO₂-Emissionen der Kante $a in A$ für Sendung $k$
-- $tau_a$: Transport- bzw. Transferdauer der Kante $a in A$ in Stunden
-- $B_k$: Maximales Budget der Sendung $k in K$
-- $D_k$: Späteste Ankunftszeit (Deadline) der Sendung $k in K$
-- $U_a$: Kapazität der Nicht-Road-Kante $a in A$ in Tonnen
-- $Q_a$: Kapazität eines LKWs auf einer Road-Kante $a in A^"road"$
-- $F_a$: Fixkosten für die Aktivierung der Kante $a in A$
-- $G_a$: Fix-Emissionen bei Aktivierung der Kante $a in A$
-- $w_c, w_t, w_e$: Gewichtungsfaktoren für Kosten, Zeit und Emissionen in der Zielfunktion ($w_c + w_t + w_e = 1$)
-- $C_("max"), T_("max"), E_("max")$: Normalisierungsfaktoren zur Skalierung der Zielfunktionsanteile
+Das Transportnetzwerk setzt sich aus Logistikknoten (Hubs) und den
+Verbindungen zwischen ihnen zusammen. Jeder Hub repräsentiert einen
+physischen Standort -- etwa ein Logistikzentrum, einen Bahnhof, einen
+Seehafen oder einen Flughafen -- und unterstützt eine oder mehrere
+Transportmodi.
 
-=== Entscheidungsvariablen
-$ x_(a,k) = cases(1 quad "wenn Sendung " k " die Kante " a " nutzt", 0 quad "sonst") $
-$ y_a = cases(1 quad "wenn Nicht-Road-Kante " a " aktiviert wird", 0 quad "sonst") $
-$ z_a in {0, 1, 2, ...} quad "Anzahl eingesetzter LKWs auf Road-Kante " a in A^"road" $
+=== Verkehrsträger und ihre Charakteristika
 
-=== Zielfunktion
-Das Modell minimiert die gewichteten, normalisierten Fixkosten, variablen Kosten, Transportzeiten und Emissionen über alle Sendungen und aktivierten Kanten:
+Die betrachteten Verkehrsträger unterscheiden sich grundlegend in ihren
+betrieblichen Eigenschaften, was unmittelbare Auswirkungen auf die
+Modellierungsentscheidungen hat:
 
-$ min_x sum_(a in A backslash A^"road") F_a y_a + sum_(a in A^"road") F_a z_a + sum_(k in K) sum_(a in A) x_(a,k) ( w_c (c_(a,k) / C_("max")) + w_t (tau_a / T_("max")) + w_e (e_(a,k) / E_("max")) ) $
+- *Straßentransport (LKW)* bietet maximale Flexibilität. Wenn das
+  Frachtvolumen die Kapazität eines einzelnen Fahrzeugs übersteigt, können
+  zusätzliche Fahrzeuge ohne infrastrukturelle Einschränkungen eingesetzt
+  werden. Die Kapazität skaliert nahezu linear, entsprechend der Praxis
+  im Charter- und Spotmarkt. Im Gegenzug verursacht der Straßentransport
+  vergleichsweise hohe variable Emissionen pro Tonnenkilometer.
 
-=== Nebenbedingungen
-- *Flusserhaltung:* Stellt sicher, dass jede Sendung einen zusammenhängenden Pfad vom Start zum Ziel wählt:
-  $ sum_(a in A^"in"(n)) x_(a,k) - sum_(a in A^"out"(n)) x_(a,k) = 0 quad forall k in K, forall n in N backslash (N_k^"start" union N_k^"end") $
-- *Start- und Zielbedingungen:* Jede Sendung beginnt genau am Startknoten und kommt am Zielknoten an:
-  $ sum_(n in N_k^"start") sum_(a in A^"out"(n)) x_(a,k) = 1 quad forall k in K $
-  $ sum_(n in N_k^"end") sum_(a in A^"in"(n)) x_(a,k) = 1 quad forall k in K $
-- *Lieferfristen (Deadlines):*
-  $ sum_(n in N_k^"end") sum_(a in A^"in"(n)) t(n) x_(a,k) <= D_k quad forall k in K $
-- *Sendungsbudget:*
-  $ sum_(a in A) x_(a,k) c_(a,k) <= B_k quad forall k in K $
-- *Kapazitäten und Konsolidierung:*
-  - Für Schiene, Luft und See ($a in A backslash A^"road"$):
-    $ sum_(k in K) w_k x_(a,k) <= U_a y_a $
-  - Für Straßentransport ($a in A^"road"$):
-    $ sum_(k in K) w_k x_(a,k) <= Q_a z_a $
+- *Schienentransport* vereint hohe Ladekapazität mit niedrigen variablen
+  Kosten und Emissionen, ist jedoch an feste Fahrpläne und bestehende
+  Infrastruktur gebunden. Je nach Betriebsmodell -- Charterverkehr mit
+  flexibler Waggonanzahl oder Stellplatzbuchung in einem
+  Liniengüterzug -- kann die verfügbare Kapazität teil-elastisch oder
+  starr sein.
+
+- *Seefracht* eignet sich besonders für große Volumina auf internationalen
+  Verbindungen, ist allerdings mit deutlich längeren Transportzeiten
+  verbunden. Die Kapazität ist durch den Linienfahrplan und die
+  Schiffsgrößen fest vorgegeben.
+
+- *Luftfracht* erzielt die kürzesten Lieferzeiten, verursacht jedoch die
+  höchsten Kosten und Emissionen. Wie bei der Seefracht ist die Kapazität
+  eines einzelnen Slots hart limitiert; zusätzliche Flugzeuge können nicht
+  kurzfristig auf eine Route geschickt werden.
+
+Diese verkehrsträgerspezifischen Unterschiede in der Kapazitätsflexibilität
+beeinflussen die Modellierung unmittelbar: Während bei Straßenkanten die
+Anzahl einsetzbarer Fahrzeuge als freie ganzzahlige Variable modelliert wird,
+beschränkt sich die Aktivierungsentscheidung bei fahrplangebundenen
+Verkehrsträgern auf eine binäre Wahl (Nutzung oder Nicht-Nutzung der
+vorhandenen Kapazität).
+
+=== Transferprozesse an Hubs
+
+Beim Wechsel zwischen zwei Verkehrsträgern an einem Hub -- etwa beim Umladen
+von der Schiene auf die Straße -- fallen Transferkosten, Transferemissionen
+und eine zeitliche Verzögerung an. Diese Umschlagprozesse bilden eine
+wesentliche Restriktion der multimodalen Transportplanung: Ein Moduswechsel
+lohnt sich nur dann, wenn die Einsparungen auf der nachfolgenden
+Transportstrecke die zusätzlichen Umschlagkosten und -zeiten kompensieren.
+
+=== Wartezeiten an Hubs
+
+Sendungen können an einem Hub verweilen, etwa um eine spätere Abfahrt
+abzuwarten. Auch das Warten ist mit Kosten verbunden -- beispielsweise durch
+Lagergebühren -- und kann gegebenenfalls Emissionen verursachen.
+
+== Konsolidierung als Kernmechanismus
+
+Ein zentrales Merkmal des Modells ist die Fähigkeit zur Frachtbündelung
+(Konsolidierung). Nutzen mehrere Sendungen gleichzeitig dieselbe zeitlich
+konkrete Transportverbindung, teilen sie sich die aktivierte
+Fahrzeugkapazität. Die Fixkosten und Fixemissionen der Bereitstellung --
+beispielsweise Trassengebühren, Fahrzeugmiete oder Hafengebühren -- fallen
+dadurch nur einmal an, unabhängig davon, wie viele Sendungen das Fahrzeug
+nutzen.
+
+Dieser Mechanismus erzeugt einen Anreiz, Sendungen auf gemeinsame
+Verbindungen zu bündeln, selbst wenn die resultierende Route für eine
+einzelne Sendung isoliert betrachtet nicht optimal wäre. Die Entscheidung,
+ob sich eine Konsolidierung lohnt, hängt dabei vom Zusammenspiel der
+Sendungsgewichte, der Fahrzeugkapazitäten und der Fixkosten ab. Für leichte
+Sendungen auf kurzen Strecken dominiert häufig der direkte
+Einzeltransport per LKW. Bei schweren Sendungen auf langen Relationen kann
+dagegen ein gemeinsamer Schienentransport trotz höherer Fixkosten pro
+Aktivierung insgesamt günstiger und emissionsärmer sein.
+
+== Zielkonflikte und Abwägungen
+
+Die drei Optimierungsziele -- Kosten, Zeit und Emissionen -- stehen in einem
+inhärenten Spannungsverhältnis:
+
+- Die *kostengünstigste* Route nutzt häufig den Straßentransport, da hier
+  keine hohen Fixkosten für die Fahrzeugbereitstellung anfallen und die
+  direkte Zustellung Umschlagprozesse vermeidet.
+- Die *schnellste* Route bevorzugt Verkehrsträger mit kurzen Laufzeiten,
+  schließt aber potenziell günstigere oder emissionsärmere Alternativen
+  aus.
+- Die *nachhaltigste* Route verlagert Transporte auf die Schiene oder das
+  Schiff, was die CO₂-Emissionen pro Tonnenkilometer deutlich senkt,
+  jedoch längere Transportzeiten und zusätzliche Umschlagprozesse
+  verursacht.
+
+Das Modell ermöglicht es, diese Zielkonflikte über sendungsspezifische
+Gewichtungsfaktoren transparent abzuwägen. Durch Variation der Gewichte
+lassen sich Pareto-optimale Transportstrategien identifizieren und die
+Auswirkungen einer stärkeren Nachhaltigkeitsorientierung auf Kosten und
+Lieferzeiten quantifizieren.
+
+== Einordnung in die Problemklasse
+
+Das beschriebene Planungsproblem lässt sich der Klasse des *Service Network
+Design* zuordnen, die in @ch:theory eingeführt wurde. Im Unterschied zu
+reinen Netzwerkflussproblemen, bei denen die Infrastruktur als gegeben
+betrachtet wird, umfasst die Entscheidung hier sowohl die Aktivierung von
+Transportverbindungen (Fahrzeugbereitstellung) als auch die Zuweisung der
+Sendungsflüsse auf diese Verbindungen. Die Fixkosten der Aktivierung und
+die variablen Transportkosten bilden zusammen die ökonomische Zielfunktion.
+Darüber hinaus erweitert das Modell die klassische CMND-Formulierung um
+eine zeitliche Dimension (zeitexpandiertes Netzwerk), eine
+Mehrzieloptimierung (Kosten, Zeit, Emissionen) sowie weiche Restriktionen
+für Lieferfristen und Budgets.
