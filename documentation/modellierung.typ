@@ -528,7 +528,7 @@ Neben dem exakten MILP-Solver werden zwei graphbasierte Heuristiken formuliert,
 die auf demselben zeitexpandierten Netzwerk $G^T = (N^T, A^T)$ operieren:
 ein Dijkstra-Router und ein A\*-Router. Für Einzelsendungen liefern beide
 das global optimale Ergebnis; für Mehrfachsendungen wird ein sequentielles
-Verfahren mit anschließender LNS-Optimierung eingesetzt.
+Verfahren mit anschließender Large-Neighborhood-Search-Optimierung (LNS) eingesetzt.
 
 === Kantenbewertungsfunktion (Arc Score) <sec:arc-score>
 
@@ -553,7 +553,7 @@ darstellt, die sich aus dem Kapazitätszustand ergibt (siehe @sec:capacity-track
 Die Koeffizienten $alpha_C$ und $alpha_E$ sind die in @sec:normalization
 definierten gemittelten Fixkosten-Koeffizienten.
 
-Dieser Score ist konstruktionsgleich zur Zielfunktion des MILP (@eq:routing),
+Dieser Score entspricht im Aufbau der Zielfunktion des MILP (@eq:routing),
 wobei die konstanten Offset-Terme $C_k^-$, $T_k^-$, $E_k^-$ weggelassen werden.
 Da diese Terme für alle Kanten konstant sind, verändern sie die Rangfolge der
 Pfade nicht und die Optimalität des kürzesten Weges bleibt erhalten.
