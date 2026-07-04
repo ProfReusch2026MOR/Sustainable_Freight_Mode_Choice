@@ -188,8 +188,9 @@ vollständig definiert.
     [$tau_a$], [min], [Dauer der Kante $a$ $(tau_a > 0)$],
     [$d_a$], [km], [Streckenlänge der Kante $a$ (nur für $a in A^T_"trans"$)],
     [$t(n)$], [min], [Zeitpunkt des Knotens $n$],
-    [$overline(v)_a$], [--], [Optionale Obergrenze verfügbarer Einheiten auf Kante $a$],
+    [$overline(v)_a$], [--], [Maximale Flottengröße / Obergrenze verfügbarer Fahrzeuge auf Kante $a$],
     [$lambda_k^C, lambda_k^T, lambda_k^E$], [--], [Sendungsspezifische Gewichte für Kosten, Zeit und Emissionen],
+    [$rho$], [--], [Strafkoeffizient für verletzte weiche Restriktionen ($rho > 0$)],
   ),
   caption: [Parameter des Optimierungsmodells.],
 ) <tab:parameters>
@@ -231,8 +232,7 @@ Die *Kapazitätsvariable* $v_a$ repräsentiert die Anzahl der auf Kante $a$ eing
 
 $ v_a in bb(N)_0 quad forall a in A^T $
 
-Sie kann durch die maximal verfügbare Flottengröße $overline(v)_a$ auf der Kante beschränkt werden ($v_a <= overline(v)_a$).
-// TODO: Verweis auf nebenbedingung
+Sie kann durch die maximal verfügbare Flottengröße $overline(v)_a$ auf der Kante beschränkt werden (siehe @eq:coupling).
 
 
 ==== Schlupfvariablen
@@ -278,25 +278,30 @@ Restriktionen wird in @sec:soft-constraints erläutert.
 
 ==== Hilfsausdrücke
 
+Die fixen Kosten und Fixemissionen aller genutzten Kanten werden definiert über:
 $
   C^"fix" = sum_(a in A^T) F_a v_a, quad
   E^"fix" = sum_(a in A^T) G_a v_a
 $ <eq:fixed>
 
+Die variablen Kosten einer Sendung berechnen sich wie folgt:
 $ C_k^"var" = sum_(a in A^T) c_a q_k x_(a,k) quad forall k in K $ <eq:var-cost>
 
+Die gesamte Transportzeit einer Sendung lautet:
 $ T_k = sum_(a in A^T) tau_a x_(a,k) quad forall k in K $ <eq:time>
 
+Die variablen Emissionen einer Sendung ergeben sich aus:
 $ E_k^"var" = sum_(a in A^T) e_a q_k x_(a,k) quad forall k in K $ <eq:var-emissions>
 
+Die monetären Gesamtkosten des Netzwerks setzen sich zusammen aus:
 $ C^"total" = C^"fix" + sum_(k in K) C_k^"var" $ <eq:total-cost>
 
 ==== Zielfunktion
 
+Die Zielfunktion minimiert die Summe aus Routenbewertung und Straftermen:
 $ min quad Z = Z^"route" + rho Z^"slack" $ <eq:objective>
 
-mit dem Routinganteil
-
+Der Routinganteil bewertet die gewichteten und normierten Kriterien jeder Sendung:
 $
   Z^"route" =
   alpha_C C^"fix" + alpha_E E^"fix"
@@ -307,8 +312,7 @@ $
   )
 $ <eq:routing>
 
-und dem Strafterm
-
+Der Strafterm bestraft Überschreitungen der weichen Restriktionen:
 $
   Z^"slack" =
   sum_(k in K) s_k^D / (Delta T_k)
@@ -319,16 +323,19 @@ $ <eq:slack>
 
 ==== Nebenbedingungen
 
+Die Einhaltung des Startzeitpunkts am Ursprungshub wird erzwungen durch:
 $
   sum_(n in N_k^"S") sum_(a in delta^+(n)) x_(a,k) = 1
   quad forall k in K
 $ <eq:start>
 
+Die erfolgreiche Ankunft am Zielhub wird sichergestellt durch:
 $
   sum_(n in N_k^"Z") sum_(a in delta^-(n)) x_(a,k) = 1
   quad forall k in K
 $ <eq:end>
 
+Die Flusserhaltung an allen transienten Zwischenknoten lautet:
 $
   sum_(a in delta^-(n)) x_(a,k)
   = sum_(a in delta^+(n)) x_(a,k)
@@ -336,118 +343,37 @@ $
   forall n in N^T backslash (N_k^"S" union N_k^"Z")
 $ <eq:flow>
 
+Die Lieferfrist jeder Sendung wird abgebildet über:
 $
   sum_(n in N_k^"Z") sum_(a in delta^-(n)) t(n) x_(a,k)
   - s_k^D <= D_k
   quad forall k in K
 $ <eq:deadline>
 
+Die Kapazitätsgrenzen der aktivierten Fahrzeuge auf den Kanten lauten:
 $
   sum_(k in K) q_k x_(a,k) <= u_a v_a
   quad forall a in A^T
 $ <eq:capacity>
 
+Die Kopplung von Fahrzeug- und Routingvariablen wird erzwungen durch:
 $
-  v_a <= V_a^"road" sum_(k in K) x_(a,k)
-  quad forall a in A^T_"trans" "mit Modus Straße"
-$ <eq:coupling-road>
+  v_a <= overline(v)_a sum_(k in K) x_(a,k)
+  quad forall a in A^T
+$ <eq:coupling>
 
-$
-  v_a <= sum_(k in K) x_(a,k)
-  quad forall a in A^T backslash A^T_"road"
-$ <eq:coupling-other>
-
+Das sendungsspezifische Preisbudget wird eingehalten über:
 $ C_k^"var" - s_k^B <= B_k quad forall k in K_B $ <eq:budget>
 
+Die sendungsspezifischen Emissionsgrenzen lauten:
 $ E_k^"var" - s_k^E <= E_k^"lim" quad forall k in K_E $ <eq:emissions-limit>
 
+Das gemeinsame Gesamtbudget für alle konsolidierten Lieferungen lautet:
 $
   C^"total" - s^"sum" <= sum_(k in K) B_k quad
   "(nur falls" forall k in K: B_k "definiert)"
 $ <eq:total-budget>
 
-
-=== Erläuterung des Modells
-
-Dieser Abschnitt erläutert die einzelnen Komponenten des in
-@sec:compact-model dargestellten Modells.
-
-==== Hilfsausdrücke
-
-Die in @eq:fixed bis @eq:total-cost definieren die zentralen
-Bewertungsgrößen als lineare Ausdrücke der Entscheidungsvariablen.
-@eq:fixed erfasst die gemeinsamen Fixkosten $C^"fix"$ und
-Fixemissionen $E^"fix"$ aller aktivierten Kapazitätseinheiten, die bei
-Konsolidierung mehrerer Sendungen geteilt werden. Die Gleichungen
-@eq:var-cost, @eq:time und @eq:var-emissions berechnen für jede Sendung $k$
-die individuellen variablen Kosten, die Transportzeit und die variablen
-Emissionen. @eq:total-cost aggregiert fixe und variable Kostenanteile zu
-den monetären Gesamtkosten.
-
-==== Zielfunktion
-
-Die Zielfunktion @eq:objective minimiert die Summe aus dem normierten
-Routinganteil $Z^"route"$ (@eq:routing) und dem mit $rho = 100$
-gewichteten Strafterm $Z^"slack"$ (@eq:slack) für verletzte weiche Grenzen.
-
-In $Z^"route"$ werden die sendungsspezifischen variablen Größen durch die
-Normalisierungsbereiche $Delta C_k$, $Delta T_k$ und $Delta E_k$ dividiert,
-sodass alle Zielkriterien auf eine vergleichbare dimensionslose Skala
-abgebildet werden. Die Subtraktion der unteren Grenzen $C_k^-$, $T_k^-$
-und $E_k^-$ fügt lediglich konstante Terme hinzu und verändert die Rangfolge
-zulässiger Lösungen nicht. Sie bewirkt jedoch, dass der normierte Ausdruck
-für eine sendungsoptimale Lösung nahe null liegt, was die numerische
-Stabilität verbessert.
-
-Fixe Größen ($C^"fix"$, $E^"fix"$) werden separat über die
-Koeffizienten $alpha_C$ und $alpha_E$ bewertet. Da Fixkosten bei
-Konsolidierung von mehreren Sendungen geteilt werden und somit keiner
-Sendung eindeutig zugeordnet werden können, werden diese Koeffizienten als
-Mittelwerte über alle Sendungen gebildet (siehe @sec:normalization).
-
-Der Strafterm $Z^"slack"$ skaliert auch die Schlupfvariablen durch die
-jeweiligen Normalisierungsbereiche dimensionslos, sodass eine Verletzung
-der Lieferfrist um eine Minute denselben Strafbeitrag erzeugt wie eine
-proportional äquivalente Budgetüberschreitung. Falls für alle Sendungen
-ein Budget definiert ist, wird $Z^"slack"$ zusätzlich um
-$s^"sum" / sum_(k in K) Delta C_k$ erweitert. Der hohe Strafkoeffizient
-$rho$ priorisiert die Einhaltung der weichen Grenzen gegenüber der
-Routenoptimierung, erhält aber auch bei knappen oder widersprüchlichen
-Vorgaben eine diagnostisch auswertbare Lösung.
-
-==== Nebenbedingungen
-
-Die *Startbedingung* @eq:start stellt sicher, dass jede Sendung genau einen
-zu ihrem Freigabezeitpunkt passenden Startknoten verlässt. Die
-*Zielbedingung* @eq:end verlangt, dass der Zielhub genau einmal erreicht
-wird. Die *Flusserhaltung* @eq:flow garantiert an allen Zwischenknoten, dass
-der eingehende Fluss dem ausgehenden entspricht -- keine Sendung geht
-verloren oder wird dupliziert.
-
-Die *Lieferfristbedingung* @eq:deadline formuliert die Ankunft am Zielhub
-als weiche Restriktion: Die Schlupfvariable $s_k^D$ erfasst eine etwaige
-Überschreitung und wird über den Strafterm in der Zielfunktion pönalisiert.
-
-Die *Kapazitätsbedingung* @eq:capacity begrenzt das auf einer zeitlich
-konkreten Kante transportierte Gesamtgewicht auf die aktivierte Kapazität.
-Da mehrere Sendungen gemeinsam auf der linken Seite stehen, reicht bei
-ausreichendem Gesamtgewicht eine einzige Aktivierung ($v_a = 1$) aus.
-Dies ist der zentrale Konsolidierungsmechanismus des Modells.
-
-Die *Kopplungsbedingungen* @eq:coupling-road und @eq:coupling-other
-verhindern Aktivierungen ohne Nutzung. Für Straßenkanten (@eq:coupling-road)
-wird $V_a^"road"$ aus dem Gesamtgewicht aller Sendungen und der
-Fahrzeugkapazität abgeleitet, um die freie Ganzzahlvariable nach oben zu
-begrenzen. Für alle übrigen Kanten (@eq:coupling-other) ist die
-Kopplungsbedingung schärfer, da dort $v_a in {0, 1}$ gilt.
-
-Die *Budgetbedingungen* @eq:budget und @eq:emissions-limit formulieren
-optionale Preis- und Emissionsobergrenzen als weiche Restriktionen. Sie
-enthalten bewusst nur sendungsabhängige variable Anteile, da geteilte
-Fixwerte bei Konsolidierung nicht eindeutig einzelnen Sendungen zugerechnet
-werden können. Die *gemeinsame Budgetbedingung* @eq:total-budget begrenzt
-die vollständigen Kosten einschließlich Fixkosten, wird jedoch nur
-aktiviert, wenn alle Sendungen ein Budget definieren.
 
 
 === Normalisierung der Zielfunktion <sec:normalization>
@@ -469,7 +395,7 @@ Die gewählte Methode muss drei Anforderungen erfüllen:
   $lambda^C = 0.5$ tatsächlich bedeutet, dass Kosten die Hälfte der
   Gesamtbewertung ausmachen.
 
-+ *Interpretierbarkeit:* Im Kontext der Mehrzieloptimierung (MCDM) müssen
++ *Interpretierbarkeit:* Im Kontext der Mehrzieloptimierung müssen
   die Gewichte für Anwender nachvollziehbar bleiben. Eine Min-Max-Skalierung
   auf das Intervall $[0, 1]$ ermöglicht eine intuitive Interpretation: Ein
   Gewicht repräsentiert die Bereitschaft, eine prozentuale Verschlechterung
@@ -481,24 +407,15 @@ Die gewählte Methode muss drei Anforderungen erfüllen:
 
 ==== Analytische Min-Max-Skalierung
 
-Grundsätzlich ließe sich die exakte Normalisierung über eine
-*Pay-off-Tabelle* bestimmen, bei der das Modell vorab für jedes Zielkriterium
-einzeln gelöst wird, um die tatsächlichen Minima und Maxima im Lösungsraum
-zu ermitteln. Da das Lösen des MILP selbst bereits NP-schwer ist, würde
-dieser Ansatz die Rechenzeit jedoch vervierfachen und ist daher
-unpraktikabel.
+Um die verschiedenen Einheiten (Kosten in EUR, Zeit in Minuten, Emissionen in kg CO₂) vergleichbar zu machen, müssen sie normalisiert werden. Zwei theoretisch denkbare Standardverfahren scheiden hierbei aus Praxisgründen aus:
 
-Alternativ könnte eine *Z-Score-Standardisierung* ($X' = (X - mu) / sigma$)
-in Betracht gezogen werden. Im Gegensatz zum maschinellen Lernen liegen
-jedoch vor der Optimierung keine expliziten Datenpunkte vor, aus denen
-Mittelwert und Standardabweichung über den Lösungsraum berechnet werden
-könnten. Die Enumeration aller zulässigen Pfade wäre algorithmisch
-aufwändiger als die eigentliche Optimierung.
+1. *Exakte Min-Max-Skalierung:*
+  Hierbei würde das Optimierungsproblem vorab für jedes Kriterium (Kosten, Zeit, Emissionen) einzeln gelöst, um die exakten Best- und Worst-Case-Werte im Lösungsraum zu bestimmen. Da das Lösen dieses Modells ohnehin sehr rechenintensiv (NP-schwer) ist, würde dieses dreifache Vorab-Lösen die Gesamtrechenzeit vervierfachen.
 
-Das Modell verwendet daher eine *analytische Min-Max-Skalierung*, die
-sendungsspezifische Unter- und Obergrenzen in $O(1)$ aus physikalischen und
-geometrischen Gesetzmäßigkeiten ableitet. Für jede Sendung $k$ werden
-Schätzintervalle
+2. *Z-Score-Standardisierung:*
+  Dieses bekannte Verfahren normiert Werte über Mittelwert und Standardabweichung. Um diese Kennzahlen für alle möglichen Transportwege zu berechnen, müsste man jedoch jede theoretisch denkbare Route im Vorhinein auflisten. Diese vollständige Pfad-Auflistung ist mathematisch aufwendiger als die eigentliche Optimierung selbst.
+
+Das Modell verwendet daher eine *analytische Min-Max-Skalierung*, die sendungsspezifische Unter- und Obergrenzen in $O(1)$ (d. h. in konstanter Rechenzeit pro Sendung) ableitet. Die hierfür benötigten globalen Netzwerkkennzahlen (wie minimale Kapazitäten oder maximale Geschwindigkeiten) werden vorab einmalig berechnet. Für jede Sendung $k$ werden die Schätzintervalle
 
 $ (C_k^-, C_k^+), quad (T_k^-, T_k^+), quad (E_k^-, E_k^+) $
 
@@ -514,25 +431,40 @@ Ausgangspunkt ist die verfügbare Zeit einer Sendung
 
 $ L_k = max(0, min(D_k, T^"H") - r_k) $
 
-sowie die maximale Netzwerkgeschwindigkeit
+sowie die maximale Netzwerkgeschwindigkeit, welche aus den Transportkanten des nicht zeitexpandierten Netzwerks $A_"trans"$ abgeleitet wird:
 
-$ v^"max" = max_(a in A^T_"trans") d_a / tau_a, $
+$ v^"max" = max_(t in A_"trans") d_t / tau_t, $
 
-wobei $d_a$ die Streckenlänge der Transportkante $a$ bezeichnet. Daraus
-ergeben sich die Luftliniendistanz $d_k^-$ zwischen Start- und Zielhub
-(Haversine-Formel) und die maximal erreichbare Distanz $d_k^+ = v^"max" L_k$.
+wobei $d_t$ die Streckenlänge und $tau_t$ die Dauer der Kante $t$ bezeichnet. Daraus
+ergeben sich die maximal erreichbare Distanz $d_k^+ = v^"max" L_k$ sowie die Luftliniendistanz $d_k^-$ zwischen Start- und Zielhub, welche über die Haversine-Formel (vgl. @enwiki:1358395081) berechnet wird:
+$
+  a = sin^2((phi_2 - phi_1) / 2) + cos(phi_1) cos(phi_2) sin^2((lambda_2 - lambda_1) / 2),
+$
+$
+  d_k^- = 2 R arcsin(sqrt(a)),
+$
+wobei $R = 6371 "km"$ den Erdradius, $phi_1, phi_2$ die Breitengrade und $lambda_1, lambda_2$ die Längengrade (in Bogenmaß) der beiden Hubs bezeichnen.
 
-Die *Zeitgrenzen* folgen unmittelbar:
+
+
+Für die Zeitgrenzen folgt:
 
 $ T_k^- = d_k^- / v^"max", quad T_k^+ = L_k. $
 
-Für die *Kosten- und Emissionsgrenzen* werden die minimalen und maximalen
-modusspezifischen Faktoren $c^-$, $c^+$ (Kosten je Tonnenkilometer) sowie
-$e^-$, $e^+$ (Emissionen je Tonnenkilometer) herangezogen. Die geschätzte
-maximale Segmentanzahl $m_k$ ergibt sich aus der verfügbaren Zeit und
-der kürzesten Kantendauer. Die maximale Fahrzeuganzahl je Segment
-$nu_k^"max"$ wird aus Sendungsgewicht und kleinster Netzwerkkapazität
-abgeleitet:
+Für die *Kosten- und Emissionsgrenzen* werden die minimalen und maximalen modusspezifischen Faktoren $c^-$, $c^+$ (Kosten je Tonnenkilometer) sowie $e^-$, $e^+$ (Emissionen je Tonnenkilometer) herangezogen.
+
+Die maximal geschätzte Anzahl an Reiseabschnitten (Segmenten) $m_k$ basiert auf der verfügbaren Zeit $L_k$ und der kürzesten Kantendauer $tau^"min"$ des Netzwerks:
+$
+  m_k = max(1, L_k / tau^"min").
+$
+
+Die maximale Anzahl benötigter Fahrzeuge je Segment $nu_k^"max"$ wird aus dem Sendungsgewicht $q_k$ und der kleinsten Kapazität aller Transportmittel $u^"min"$ abgeleitet:
+$
+  nu_k^"max" = max(1, ceil(q_k / u^"min")).
+$
+
+Die Schätzgrenzen für die Kosten und Emissionen lauten damit:
+
 
 $
   C_k^- = d_k^- c^- q_k, quad
@@ -545,9 +477,7 @@ $
 $
 
 Falls eine obere Schätzung nicht strikt größer als die untere ist, wird der
-Wertebereich auf mindestens eins gesetzt. Die Grenzen dienen ausschließlich
-der Skalierung der Zielfunktion; die Zulässigkeit einer Route wird allein
-durch die Nebenbedingungen bestimmt.
+Wertebereich auf mindestens eins gesetzt.
 
 ==== Fixkosten-Koeffizienten
 
@@ -557,8 +487,8 @@ werden. Ihre Zielfunktionskoeffizienten werden deshalb als Mittelwerte über
 alle Sendungen gebildet:
 
 $
-  alpha_C = 1 / |K| sum_(k in K) lambda_k^C / (Delta C_k), quad
-  alpha_E = 1 / |K| sum_(k in K) lambda_k^E / (Delta E_k).
+  alpha_C = 1 / (|K|) sum_(k in K) lambda_k^C / (Delta C_k), quad
+  alpha_E = 1 / (|K|) sum_(k in K) lambda_k^E / (Delta E_k).
 $
 
 
@@ -568,7 +498,7 @@ Ein Standardansatz der ganzzahligen Optimierung formuliert alle
 Nebenbedingungen als harte Restriktionen. Werden dabei Lieferfristen zu eng,
 Budgets zu gering oder Emissionslimits zu restriktiv gesetzt, meldet der
 Solver lediglich, dass keine zulässige Lösung existiert (_Infeasible_),
-ohne anzugeben, *welche* Bedingung verletzt wurde und um wie viel.
+ohne anzugeben, welche Bedingung verletzt wurde und um wie viel.
 
 Das vorliegende Modell unterscheidet daher zwischen zwei Klassen von
 Nebenbedingungen:
@@ -582,12 +512,9 @@ Nebenbedingungen:
   exakte Höhe einer Grenzüberschreitung:
   $ X - s <= "Limit" quad "mit" s >= 0. $
 
-Durch die Pönalisierung der Schlupfvariablen in der Zielfunktion mit dem
-Strafkoeffizienten $rho = 100$ wird sichergestellt, dass der Solver
-Grenzverletzungen nur im äußersten Notfall akzeptiert. Der Koeffizient ist
-groß genug, um eine Verletzung stets teurer zu machen als jede zulässige
-Umleitung, bleibt aber moderat genug, um numerische Instabilitäten
-zu vermeiden.
+Durch die Bestrafung der Schlupfvariablen in der Zielfunktion mit dem
+Strafkoeffizienten $rho$ wird sichergestellt, dass der Solver
+Grenzverletzungen nur im äußersten Notfall akzeptiert.
 
 Im Ergebnis liefert das Modell auch bei unlösbaren Vorgaben eine
 auswertbare Lösung: Die positiven Schlupfwerte zeigen dem Anwender
