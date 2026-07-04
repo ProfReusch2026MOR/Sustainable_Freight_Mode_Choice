@@ -1,12 +1,10 @@
 = Problembeschreibung <ch:problem-description>
 
-Dieses Kapitel beschreibt das betrachtete Planungsproblem und die zugrunde
-liegende Netzwerkstruktur. Die formale mathematische Modellierung folgt
-anschließend in .
+Dieses Kapitel widmet sich der detaillierten Beschreibung und Abgrenzung des multimodalen Transportplanungsproblems. Es führt in die Struktur des zugrunde liegenden Logistiknetzwerks ein, erläutert die betrieblichen Charakteristika der verschiedenen Verkehrsträger und beschreibt die Umschlag- sowie Konsolidierungsprozesse an den Hubs. Die formale mathematische Formulierung des Modells als gemischt-ganzzahliges lineares Programm (MILP) erfolgt anschließend in @ch:mathematical-model.
 
 == Planungsproblem
 
-Gegenstand dieser Arbeit ist die gemeinsame Routenplanung mehrerer
+Ziel dieser Arbeit ist die gemeinsame Routenplanung mehrerer
 Gütersendungen in einem multimodalen Transportnetzwerk. Jede Sendung wird durch
 einen Starthub, einen Zielhub, einen frühestmöglichen Freigabezeitpunkt, eine
 gewünschte Lieferfrist sowie ein Frachtgewicht in Tonnen charakterisiert.
@@ -21,15 +19,16 @@ gleichzeitig die gegebenen Kapazitäts- und Zeitrestriktionen einhält. Da mehre
 Sendungen gemeinsam betrachtet werden, ergeben sich zusätzliche
 Bündelungsmöglichkeiten: Sendungen, die zur gleichen Zeit dieselbe Verbindung
 nutzen, können sich die bereitgestellte Transportkapazität und damit auch die
-anfallenden Fixkosten und Fixemissionen teilen. Diese Konsolidierung ist ein
-wesentlicher Bestandteil des Planungsproblems.
+anfallenden Fixkosten und Fixemissionen teilen.
+
+
 
 == Das multimodale Transportnetzwerk
 
 Das Transportnetzwerk setzt sich aus Logistikknoten (Hubs) und den
-Verbindungen zwischen ihnen zusammen. Jeder Hub repräsentiert einen
-physischen Standort -- etwa ein Logistikzentrum, einen Bahnhof, einen
-Seehafen oder einen Flughafen -- und unterstützt eine oder mehrere
+Verbindungen (Arcs) zwischen ihnen zusammen. Jeder Hub repräsentiert einen
+physischen Standort, etwa ein Logistikzentrum, einen Bahnhof, einen
+Seehafen oder einen Flughafen, und unterstützt eine oder mehrere
 Transportmodi.
 
 === Verkehrsträger und ihre Charakteristika
@@ -38,26 +37,26 @@ Die betrachteten Verkehrsträger unterscheiden sich grundlegend in ihren
 betrieblichen Eigenschaften, was unmittelbare Auswirkungen auf die
 Modellierungsentscheidungen hat:
 
-- *Straßentransport (LKW)* bietet maximale Flexibilität. Wenn das
+- *Straßentransport (LKW):* bietet maximale Flexibilität. Wenn das
   Frachtvolumen die Kapazität eines einzelnen Fahrzeugs übersteigt, können
   zusätzliche Fahrzeuge ohne infrastrukturelle Einschränkungen eingesetzt
   werden. Die Kapazität skaliert nahezu linear, entsprechend der Praxis
   im Charter- und Spotmarkt. Im Gegenzug verursacht der Straßentransport
   vergleichsweise hohe variable Emissionen pro Tonnenkilometer.
 
-- *Schienentransport* vereint hohe Ladekapazität mit niedrigen variablen
+- *Schienentransport:* vereint hohe Ladekapazität mit niedrigen
   Kosten und Emissionen, ist jedoch an feste Fahrpläne und bestehende
   Infrastruktur gebunden. Je nach Betriebsmodell -- Charterverkehr mit
   flexibler Waggonanzahl oder Stellplatzbuchung in einem
-  Liniengüterzug -- kann die verfügbare Kapazität teil-elastisch oder
+  Liniengüterzug -- kann die verfügbare Kapazität variabel oder
   starr sein.
 
-- *Seefracht* eignet sich besonders für große Volumina auf internationalen
+- *Seefracht:* eignet sich besonders für große Volumina auf internationalen
   Verbindungen, ist allerdings mit deutlich längeren Transportzeiten
   verbunden. Die Kapazität ist durch den Linienfahrplan und die
   Schiffsgrößen fest vorgegeben.
 
-- *Luftfracht* erzielt die kürzesten Lieferzeiten, verursacht jedoch die
+- *Luftfracht:* erzielt die kürzesten Lieferzeiten, verursacht jedoch die
   höchsten Kosten und Emissionen. Wie bei der Seefracht ist die Kapazität
   eines einzelnen Slots hart limitiert; zusätzliche Flugzeuge können nicht
   kurzfristig auf eine Route geschickt werden.
@@ -84,7 +83,7 @@ Sendungen können an einem Hub verweilen, etwa um eine spätere Abfahrt
 abzuwarten. Auch das Warten ist mit Kosten verbunden -- beispielsweise durch
 Lagergebühren -- und kann gegebenenfalls Emissionen verursachen.
 
-== Konsolidierung als Kernmechanismus
+== Konsolidierung
 
 Ein zentrales Merkmal des Modells ist die Fähigkeit zur Frachtbündelung
 (Konsolidierung). Nutzen mehrere Sendungen gleichzeitig dieselbe zeitlich
@@ -139,3 +138,38 @@ Darüber hinaus erweitert das Modell die klassische CMND-Formulierung um
 eine zeitliche Dimension (zeitexpandiertes Netzwerk), eine
 Mehrzieloptimierung (Kosten, Zeit, Emissionen) sowie weiche Restriktionen
 für Lieferfristen und Budgets.
+
+
+
+== Nebenbedingungen und Restriktionen
+
+Für eine zulässige Transportplanung müssen im Modell verschiedene betriebliche und physische Restriktionen eingehalten werden:
+
+- *Flusserhaltung (Flow Conservation):* Jede Sendung muss lückenlos vom Start-Hub über Zwischenstationen zum Ziel-Hub geleitet werden. Es darf kein Frachtgut im Netzwerk verloren gehen oder unkontrolliert entstehen.
+- *Kapazitätsgrenzen:* Die Summe der Gewichte aller Sendungen, die gleichzeitig auf einer Kante transportiert werden, darf die maximale Kapazität der aktivierten Fahrzeuge nicht überschreiten. Dies limitiert die maximale Konsolidierungsrate.
+- *Lieferfristen (Deadlines):* Jede Sendung hat eine individuelle Frist, bis zu der sie am Zielort eintreffen muss. Dies erfordert eine präzise zeitliche Koordination und schließt langsame Transportmittel aus, wenn die verbleibende Zeit knapp ist.
+- *Moduswechselregeln:* Umschlagprozesse sind nur an dafür ausgestatteten Hubs möglich (z. B. Seehafen für Schiffsfracht, Flughafen für Luftfracht). Zudem müssen die anfallenden Transferzeiten beim Wechsel der Verkehrsträger berücksichtigt werden.
+
+== Methodische Herausforderung und heuristischer Fokus
+
+Das zeitexpandierte Netzwerk modelliert alle Transportmöglichkeiten über diskrete Zeitschritte hinweg. Bei kleinen und mittleren Instanzen kann das resultierende gemischt-ganzzahlige lineare Programm (MILP) noch mit exakten Solvern (wie PuLP oder OR-Tools) in angemessener Zeit gelöst werden.
+
+Bei realistischen Großinstanzen -- beispielsweise 50.000 Sendungen über einen Planungshorizont von 30 Tagen auf einem Netzwerk mit tausenden zeitexpandierten Kanten -- führt dies jedoch zu einer kombinatorischen Explosion. Die Anzahl der Entscheidungsvariablen wächst derart massiv, dass exakte Verfahren an Speicher- und Laufzeitgrenzen stoßen.
+
+Aus diesem Grund liegt der methodische Fokus dieser Arbeit auf der Entwicklung und Evaluation heuristischer Verfahren. Durch die Implementierung effizienter Dijkstra- und zielgerichteter $A^*$-Router, kombiniert mit lokalen Suchverfahren (Local Search, Large Neighborhood Search), lassen sich qualitativ hochwertige Transportpläne in wenigen Minuten statt Stunden ermitteln.
+
+== Zentrale Entscheidungsfrage
+
+Zusammenfassend lässt sich das zu lösende Planungsproblem in folgender finalen Entscheidungsfrage formulieren:
+
+#rect(
+  stroke: 1pt + gray,
+  inset: 12pt,
+  radius: 4pt,
+  fill: rgb("f9f9f9"),
+  width: 100%,
+  [
+    *Zentrale Entscheidungsfrage:* \
+    _Welche exakten Routen und Transportmittel sollten für eine gegebene Menge an Sendungen gewählt werden, um eine gewichtete Kombination aus Transportkosten (inklusive Umschlag- und Kapazitäts-Fixkosten), Transportzeiten und CO₂-Emissionen zu minimieren, während gleichzeitig Flottenkapazitäten, zeitaufwändige Terminal-Prozesse und Lieferfristen eingehalten werden?_
+  ],
+)

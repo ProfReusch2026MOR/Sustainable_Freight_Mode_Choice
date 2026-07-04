@@ -5,9 +5,8 @@ Im Rahmen dieser Projektarbeit wurde ein Operations-Research-Modell zur nachhalt
 
 Der direkte Vergleich zeigt, dass der exakte Solver HiGHS für kleine bis mittlere Instanzen hervorragende, global optimale Ergebnisse liefert. Für den Praxiseinsatz bei sehr großen Netzwerken bietet die entwickelte Dijkstra-basierte Heuristik jedoch eine performante Alternative, da sie gute Lösungen in Sekundenbruchteilen berechnet.
 
-== Zukünftige Forschungsrichtungen
+== Ausblick  
 Um das Modell praxisnäher zu gestalten, bieten sich folgende Erweiterungen an:
-- *Robuste Optimierung:* Integration stochastischer Fahrzeiten, um Verspätungsrisiken zu minimieren.
-- *Umlaufplanung:* Modellierung geschlossener Touren für LKWs und Güterzüge, um Leerfahrten zu vermeiden.
 - *Alternative Antriebe:* Einbindung von Elektro-LKWs mit Ladeinfrastruktur- und Batteriekapazitätsbeschränkungen.
 - *Dynamisches Routing:* Echtzeit-Anpassung der Routen bei Störungen während des Transports.
+- *Sesionale Unterschiede*  
