@@ -1,7 +1,7 @@
 = Implementierung & Lösungsansätze <ch:implementation>
 
 == Datengrundlage und Datenmodell
-Die Struktur der Eingabedaten lehnt sich an reale logistische Netzwerke an. Es wird eine Netzwerkinfrastruktur mit vier großen deutschen Hubs (Berlin, Hamburg, Frankfurt, München) abgebildet. Jede Transportkante besitzt einen täglichen Abfahrtsfahrplan. 
+Die Struktur der Eingabedaten lehnt sich an reale logistische Netzwerke an. Es wird eine Netzwerkinfrastruktur mit vier großen deutschen Hubs (Berlin, Hamburg, Frankfurt, München) abgebildet. Jede Transportkante besitzt einen täglichen Abfahrtsfahrplan.
 
 Das Datenmodell umfasst:
 - *Hubs:* Spezifizieren die unterstützten Modi und die zeitlichen Transferfenster für den Wechsel zwischen Modi (z. B. Umladen von Schiene auf Straße in Berlin).
@@ -11,7 +11,7 @@ Das Datenmodell umfasst:
 Für größere Instanzen werden die Daten aus CSV-Dateien (`road_arcs.csv`, `air_arcs.csv`, `sea_routes_updated_18kts.csv` etc.) eingelesen, was eine flexible Skalierung des Netzwerks ermöglicht.
 
 == Exakte Lösung mit Python PuLP
-Das in ch:problem-description formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Kantenvariablen $x_(a,k)$ sowie die Bündelungsvariablen $y_a$ und $z_a$ werden als `LpBinary` bzw. `LpInteger` deklariert.
+Das in @ch:mathematical-model formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Kantenvariablen $x_(a,k)$ sowie die Bündelungsvariablen $y_a$ und $z_a$ werden als `LpBinary` bzw. `LpInteger` deklariert.
 Als zugrundeliegender Solver wird *HiGHS* über die PuLP-Schnittstelle verwendet. HiGHS löst das MILP mit Branch-and-Bound- und Presolve-Verfahren und unterstützt zusätzlich Zeitlimits für größere Instanzen. Dadurch können die Rechenexperimente reproduzierbar mit festen Instanzgrößen und Solver-Zeitgrenzen durchgeführt werden.
 
 = Heuristische Verfahren zur multimodalen Routenplanung
@@ -66,10 +66,10 @@ Das refaktorisierte Verfahren basiert auf dem klassischen Dijkstra-Algorithmus z
 
 Der Router führt folgende Schritte aus:
 
-1. *Graphaufbau & Normalisierung*: Zunächst wird der zeitexpandierte Graph für die gegebene Sendung und den Planungshorizont aufgebaut. Die Normalisierungsgrenzen für Kosten, Zeit und Emissionen werden mithilfe der Methode `estimate_normalization_bounds()` berechnet:
+1. *Graphaufbau & Normalisierung*: Zunächst wird der zeitexpandierte Graph für die gegebene Sendung und den Planungshorizont aufgebaut. Die Normalisierungsgrenzen für Kosten, Zeit und Emissionen werden mit `estimate_normalization_bounds()` sendungsspezifisch analytisch geschätzt. Die maximale Zeit ergibt sich aus `deadline - start_time`; die maximal erreichbare Distanz wird aus dieser Zeit und der höchsten Netzwerkgeschwindigkeit abgeleitet. Eine zusätzliche Pfadsuche ist dafür nicht erforderlich. Solver, Dijkstra- und A\*-Router verwenden dieselbe Berechnung:
 
 ```python
-bounds = model.estimate_normalization_bounds([shipment])
+bounds = network.estimate_normalization_bounds(shipment)
 c_min, c_max = bounds["cost"]
 t_min, t_max = bounds["time"]
 e_min, e_max = bounds["emissions"]
@@ -118,8 +118,8 @@ aufzeigen.
 Das zweite Verfahren ist eine Metaheuristik der lokalen Suche und basiert auf
 dem von Glover entwickelten Tabu-Search-Konzept
 #footnote[Vgl. Glover, F. (1986): Future paths for integer programming and
-links to artificial intelligence, in: Computers & Operations Research, 13(5),
-S. 533–549.]. Im Gegensatz zum zeitexpandierten Dijkstra-Router wird hier nicht versucht,
+  links to artificial intelligence, in: Computers & Operations Research, 13(5),
+  S. 533–549.]. Im Gegensatz zum zeitexpandierten Dijkstra-Router wird hier nicht versucht,
 in einem einzigen Suchlauf eine gute Lösung zu konstruieren. Stattdessen wird
 zunächst eine zulässige, aber bewusst suboptimale *Startlösung* erzeugt – mit
 demselben begrenzten Verzweigungsgrad wie im Dijkstra-Skript – und diese im
@@ -212,21 +212,27 @@ Beide Verfahren lösen das zugrunde liegende Optimierungsproblem – die Suche n
     [Suchprinzip],
     [Exakte Kürzeste-Weg-Suche auf dem zeitexpandierten Graphen],
     [Konstruktive Startlösung + iterative\ lokale Nachbarschaftssuche (statisch)],
+
     [Quelle der Heuristik / Vereinfachung],
     [Keine (vollständige Suche auf dem zeitexpandierten Graphen)],
     [Begrenzte Startlösung +\ gezieltes Verbieten einzelner Kanten],
+
     [Optimalitätsgarantie],
     [Ja (garantiert mathematisch optimal für Einzelsendungen)],
     [Keine (heuristische Meta-Suche auf statischem Graphen)],
+
     [Rechenaufwand],
     [Sehr gering: ein Suchlauf auf dem zeitexpandierten Graphen],
     [Höher: ein Suchlauf zur Initialisierung\ plus mehrere Suchläufe pro Iteration],
+
     [Vermeidung von Zyklen],
     [Inhärent gegeben (kreisfreier zeitexpandierter Graph)],
     [Explizit über Tabu-Liste\ und Tenure-Parameter],
+
     [Verbesserungsmechanismus],
     [Keiner erforderlich (da bereits global optimal)],
     [Shortcuts zusätzlich zur\ systematischen Nachbarschaftssuche],
+
     [Lösungsqualität],
     [Global optimal (identisch zum MILP-Solver)],
     [Heuristisch, kann durch statische Vereinfachung suboptimal sein],

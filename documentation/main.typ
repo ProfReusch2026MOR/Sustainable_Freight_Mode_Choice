@@ -7,7 +7,7 @@
 #import "appendix.typ": appendix
 #import "@preview/callisto:0.2.5"
 
-
+#set heading(numbering: "1.", supplement: [Kapitel])
 #let language = "de" // "de" or "en"
 #show: supercharged-dhbw.with(
   language: "de",
@@ -73,6 +73,7 @@
 #include "introduction.typ"
 #include "theoretischer_hintergrund.typ"
 #include "problem_description.typ"
+#include "mathematical_model.typ"
 #include "implementation.typ"
 #include "results.typ"
 #include "discussion.typ"
