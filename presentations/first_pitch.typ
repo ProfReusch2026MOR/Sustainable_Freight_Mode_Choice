@@ -169,44 +169,20 @@
       inset: 7pt,
       align: center + horizon,
       [*Instance*], [*Routes*], [*Shipments*], [*Runtime*], [*Cost / CO2*],
-      [small], [10], [3], [3.964 s], [1318.35 EUR / 155.13 kg],
-      [medium], [20], [5], [3.433 s], [2485.23 EUR / 280.14 kg],
-      [large], [30], [8], [5.096 s], [3500.67 EUR / 375.05 kg],
+      [small], [10], [3], [1.587 s], [921.27 EUR / 125.35 kg],
+      [medium], [20], [5], [7.913 s], [1675.77 EUR / 219.43 kg],
+      [large], [30], [8], [17.355 s], [2644.14 EUR / 348.31 kg],
     )
   ]
 
   - Runtime increases clearly with model size, even at demo scale.
 ]
 
-#slide(title: "Sensitivity Weight Mapping")[
-  - We vary the cost-emission trade-off with one parameter:
-    $ w_c = 1 / (1 + lambda), quad w_e = lambda / (1 + lambda), quad w_t = 0 $
-  - Objective:
-    $ w_c dot "normalized cost" + w_e dot "normalized emissions" $
-
-  #align(center)[
-    #table(
-      columns: (auto, auto, auto, auto),
-      inset: 7pt,
-      align: center + horizon,
-      [*$lambda$*], [*Cost weight*], [*Emission weight*], [*Interpretation*],
-      [0], [1.000], [0.000], [cost only],
-      [0.1], [0.909], [0.091], [cost-dominated],
-      [0.5], [0.667], [0.333], [emissions included],
-      [1], [0.500], [0.500], [balanced],
-      [2], [0.333], [0.667], [emission-dominated],
-      [5], [0.167], [0.833], [strong emission focus],
-    )
-  ]
-
-  - If the selected route does not change, total cost and emissions remain unchanged.
-]
-
 #slide(title: "Sensitivity Analysis")[
+  - Cost-emission trade-off:
+    $ w_c = 1 / (1 + lambda), quad w_e = lambda / (1 + lambda), quad w_t = 0 $
   - Baseline small instance: all lambda values remain 100% road
-  - Result: no route switch under the tested lambda values
-  - Therefore the cost-emission points overlap in the chart
-  - Interpretation: the tested instance is not sensitive to this weight change
+  - Interpretation: fixed activation costs and fixed emissions dominate on short, light shipments
 
   #align(center)[
     #image("../experiments/results/sensitivity_cost_emissions.svg", width: 68%)
@@ -215,7 +191,7 @@
 
 #slide(title: "Modal-Shift Scenario")[
   - Additional heavy-shipment scenario: 8.0 t per shipment
-  - Goal: test whether higher shipment weight makes rail more attractive
+  - Goal: test whether high emission weight can shift the solution toward rail
 
   #align(center)[
     #table(
@@ -223,14 +199,14 @@
       inset: 7pt,
       align: center + horizon,
       [*$lambda$*], [*Road share*], [*Rail share*], [*CO2*],
-      [0], [37.35%], [62.65%], [553.80 kg],
-      [1], [37.35%], [62.65%], [553.80 kg],
-      [2], [37.35%], [62.65%], [553.80 kg],
-      [5], [37.35%], [62.65%], [553.80 kg],
+      [0], [24.26%], [75.74%], [352.28 kg],
+      [1], [24.26%], [75.74%], [352.28 kg],
+      [2], [0.00%], [100.00%], [339.24 kg],
+      [5], [0.00%], [100.00%], [339.24 kg],
     )
   ]
 
-  - The heavier scenario increases rail usage, but the selected mode mix stays stable across lambda values.
+  - Higher emission weights produce a full rail solution in this scenario.
 ]
 
 #slide(title: "Limitations & Next Evaluation Steps")[
