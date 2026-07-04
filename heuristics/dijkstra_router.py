@@ -106,7 +106,7 @@ class DijkstraRouter:
         if self._min_time_network_data is not network_data:
             self._min_time_cache.clear()
             self._min_time_network_data = network_data
-        
+
         cache_key = shipment.end_hub
         cached = self._min_time_cache.get(cache_key)
         if cached is not None:
@@ -176,6 +176,7 @@ class DijkstraRouter:
         parent: dict[NetworkNode, tuple[NetworkNode | None, _TimedArc | None]] = {}
         counter = 0
         best_feasible_score = math.inf
+        best_end_node = None
 
         for node in start_nodes:
             estimate_to_goal = estimate(node)
@@ -191,6 +192,8 @@ class DijkstraRouter:
         while queue:
             priority, current_distance, _, node = heapq.heappop(queue)
             if priority >= best_feasible_score:
+                if best_end_node is not None:
+                    return self._reconstruct_route(best_end_node, parent)
                 break
             if current_distance > distance.get(node, math.inf):
                 continue
@@ -199,7 +202,10 @@ class DijkstraRouter:
 
             for arc in index.outgoing.get(node, []):
                 next_node = arc.to_node
-                if next_node.time_min + min_time.get(next_node.hub_id, math.inf) > shipment.deadline:
+                if (
+                    next_node.time_min + min_time.get(next_node.hub_id, math.inf)
+                    > shipment.deadline
+                ):
                     continue
                 estimate_to_goal = estimate(next_node)
                 if math.isinf(estimate_to_goal):
@@ -225,6 +231,7 @@ class DijkstraRouter:
                 if next_node in end_nodes:
                     if candidate < best_feasible_score:
                         best_feasible_score = candidate
+                        best_end_node = next_node
 
                 distance[next_node] = candidate
                 parent[next_node] = (node, arc)
