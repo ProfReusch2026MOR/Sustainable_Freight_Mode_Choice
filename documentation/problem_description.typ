@@ -9,7 +9,7 @@ Gütersendungen in einem multimodalen Transportnetzwerk. Jede Sendung wird durch
 einen Starthub, einen Zielhub, einen frühestmöglichen Freigabezeitpunkt, eine
 gewünschte Lieferfrist sowie ein Frachtgewicht in Tonnen charakterisiert.
 Optional können darüber hinaus eine Preisobergrenze, eine maximale
-CO₂-Emissionsgrenze und individuelle Präferenzgewichte für Kosten, Transportzeit 
+CO₂-Emissionsgrenze und individuelle Präferenzgewichte für Kosten, Transportzeit
 und Emissionen angegeben werden.
 
 Das zentrale Ziel besteht darin, für jede Sendung eine Route durch das
@@ -19,7 +19,7 @@ gleichzeitig die gegebenen Kapazitäts- und Zeitrestriktionen einhält. Da mehre
 Sendungen gemeinsam betrachtet werden, ergeben sich zusätzliche
 Bündelungsmöglichkeiten: Sendungen, die zur gleichen Zeit dieselbe Verbindung
 nutzen, können sich die bereitgestellte Transportkapazität und damit auch die
-anfallenden Fixkosten und Fixemissionen teilen. 
+anfallenden Fixkosten und Fixemissionen teilen.
 
 
 
@@ -44,7 +44,7 @@ Modellierungsentscheidungen hat:
   im Charter- und Spotmarkt. Im Gegenzug verursacht der Straßentransport
   vergleichsweise hohe variable Emissionen pro Tonnenkilometer.
 
-- *Schienentransport:* vereint hohe Ladekapazität mit niedrigen 
+- *Schienentransport:* vereint hohe Ladekapazität mit niedrigen
   Kosten und Emissionen, ist jedoch an feste Fahrpläne und bestehende
   Infrastruktur gebunden. Je nach Betriebsmodell -- Charterverkehr mit
   flexibler Waggonanzahl oder Stellplatzbuchung in einem
@@ -55,7 +55,7 @@ Modellierungsentscheidungen hat:
   Verbindungen, ist allerdings mit deutlich längeren Transportzeiten
   verbunden. Die Kapazität ist durch den Linienfahrplan und die
   Schiffsgrößen fest vorgegeben.
-  
+
 - *Luftfracht:* erzielt die kürzesten Lieferzeiten, verursacht jedoch die
   höchsten Kosten und Emissionen. Wie bei der Seefracht ist die Kapazität
   eines einzelnen Slots hart limitiert; zusätzliche Flugzeuge können nicht
@@ -152,7 +152,7 @@ Für eine zulässige Transportplanung müssen im Modell verschiedene betrieblich
 
 == Methodische Herausforderung und heuristischer Fokus
 
-Das zeitexpandierte Netzwerk modelliert alle Transportmöglichkeiten über diskrete Zeitschritte hinweg. Bei kleinen und mittleren Instanzen kann das resultierende gemischt-ganzzahlige lineare Programm (MILP) noch mit exakten Solvern (wie PuLP oder OR-Tools) in angemessener Zeit gelöst werden. 
+Das zeitexpandierte Netzwerk modelliert alle Transportmöglichkeiten über diskrete Zeitschritte hinweg. Bei kleinen und mittleren Instanzen kann das resultierende gemischt-ganzzahlige lineare Programm (MILP) noch mit exakten Solvern (wie PuLP oder OR-Tools) in angemessener Zeit gelöst werden.
 
 Bei realistischen Großinstanzen -- beispielsweise 50.000 Sendungen über einen Planungshorizont von 30 Tagen auf einem Netzwerk mit tausenden zeitexpandierten Kanten -- führt dies jedoch zu einer kombinatorischen Explosion. Die Anzahl der Entscheidungsvariablen wächst derart massiv, dass exakte Verfahren an Speicher- und Laufzeitgrenzen stoßen.
 
@@ -171,5 +171,5 @@ Zusammenfassend lässt sich das zu lösende Planungsproblem in folgender finalen
   [
     *Zentrale Entscheidungsfrage:* \
     _Welche exakten Routen und Transportmittel sollten für eine gegebene Menge an Sendungen gewählt werden, um eine gewichtete Kombination aus Transportkosten (inklusive Umschlag- und Kapazitäts-Fixkosten), Transportzeiten und CO₂-Emissionen zu minimieren, während gleichzeitig Flottenkapazitäten, zeitaufwändige Terminal-Prozesse und Lieferfristen eingehalten werden?_
-  ]
+  ],
 )
