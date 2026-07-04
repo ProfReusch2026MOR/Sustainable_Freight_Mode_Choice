@@ -570,37 +570,20 @@ $ <eq:shortest-path>
 wobei $cal(P)_k$ die Menge aller zulässigen Pfade von den Startknoten
 $N_k^"S"$ zu den Zielknoten $N_k^"Z"$ mit $t(n) <= D_k$ bezeichnet.
 
-Die Suche verwendet einen Min-Heap mit Einträgen $(f, g, "counter", n)$,
-wobei $g$ die kumulative Arc-Score-Distanz vom Start und $f = g + h(n)$
-die Priorität darstellt. Beim Dijkstra-Router gilt $h(n) = 0$; beim
-A\*-Router wird eine zulässige Heuristik $h(n)$ verwendet
-(siehe @sec:astar-heuristic).
+Für eine einzelne Sendung entspricht das Problem einem klassischen Kürzeste-Weg-Problem, welches durch den Dijkstra-Router nachweislich global optimal gelöst wird. Für mehrere Sendungen ist dies aufgrund der geteilten Fixkosten bei Konsolidierungen (vgl. @eq:fixed) nicht mehr der Fall.
 
-Zusätzlich wird ein zeitbasiertes Pruning eingesetzt: Ein Knoten $n$
-wird nur expandiert, wenn seine Ankunftszeit plus die minimale
-Restfahrzeit zum Zielhub die Deadline nicht überschreitet:
+Zur Beschleunigung der Suche bei Einzelsendungen kann der Dijkstra-Router durch eine Heuristik $h(n)$ zum A\*-Router erweitert werden.
 
-$ t(n) + t_"min"(h_n, h_k^"Z") <= D_k $
-
-wobei $t_"min"(h, h')$ die minimale Fahrtdauer von Hub $h$ zum Zielhub
-$h'$ auf dem statischen Graphen bezeichnet, die per Rückwärts-Dijkstra
-vorberechnet wird.
-
-Da der zeitexpandierte Graph kreisfrei ist (jede Kante führt strikt
-vorwärts in der Zeit) und keine Suchraumbegrenzung vorgenommen wird,
-garantiert der Dijkstra-Router die global optimale Lösung für eine
-Einzelsendung.
 
 === A\*-Heuristikfunktion <sec:astar-heuristic>
 
-Der A\*-Router erweitert den Dijkstra-Router um eine zulässige und
-konsistente Heuristikfunktion $h: N^T -> bb(R)_(>=0)$, die für jeden
-Knoten eine untere Schranke der verbleibenden Kosten zum Ziel liefert.
+Der A\*-Router erweitert den Dijkstra-Router um eine Heuristikfunktion $h$, die für jeden Knoten eine untere Schranke der verbleibenden Kosten zum Ziel liefert.
 
-Die Berechnung erfolgt durch einen Rückwärts-Dijkstra auf dem
-statischen Netzwerk, der für jeden Hub $h in H$ den minimalen
-gewichteten Score zum Zielhub $h_k^"Z"$ ermittelt. Sei $overline(A)$
-die Menge der statischen Transportkanten-Templates mit dem Score
+In geografischen Anwendungen wird üblicherweise die Luftliniendistanz (z. B. per Haversine-Formel) als Heuristik verwendet. In einem multimodalen Netzwerk stößt dieser Ansatz jedoch an Grenzen: Zum einen ist die Kantenbewertung (Arc Score) ein gewichteter Wert aus Kosten, Zeit und Emissionen, der sich nicht direkt proportional zur Luftlinie verhält. Zum anderen vernachlässigt die Luftlinie die tatsächliche Konnektivität des Netzwerks. Sie würde Sackgassen oder spärlich verbundene Hubs übersehen, was A\* dazu zwingen würde, weite Teile des zeitexpandierten Suchraums unnötig zu explorieren.
+
+Aus diesem Grund erfolgt die Berechnung durch einen Rückwärts-Dijkstra auf dem
+nicht zeitexpandierten Netz, der für jeden Hub $h in H$ den minimalen
+gewichteten Score zum Zielhub $h_k^"Z"$ ermittelt. Sei $A$ die Menge der Kanten des nicht zeitexpandierten Netzwerks mit dem Score
 
 $
   overline(sigma)(a, k) =
@@ -612,13 +595,13 @@ $
 Dann berechnet der Rückwärts-Dijkstra:
 
 $
-  h(n) = min_(P: h_n -> h_k^"Z" "in" overline(A)) sum_(a in P) overline(sigma)(a, k)
+  h(n) = min_(P: h_n -> h_k^"Z" "in" A) sum_(a in P) overline(sigma)(a, k)
 $ <eq:astar-heuristic>
 
 Da $overline(sigma)$ die Fixkosten sowie Warte- und Transferkanten
 nicht berücksichtigt, unterschätzt $h$ die tatsächlichen Restkosten
 auf dem zeitexpandierten Graphen stets. Damit ist die Heuristik
-*zulässig* (admissible) und *konsistent* (monoton), sodass A\* die
+zulässig und konsistent, sodass A\* die
 Optimalitätsgarantie des Dijkstra-Algorithmus beibehält und gleichzeitig
 die Anzahl der expandierten Knoten reduziert.
 

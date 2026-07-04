@@ -278,7 +278,7 @@ Nach der Lösung werden die Entscheidungsvariablen mit einem Schwellwert von $0{
 
 == Heuristische Lösungsverfahren <sec:heuristic-implementation>
 
-Dieses Unterkapitel beschreibt die Implementierung der in @ch:heuristic-approach mathematisch definierten heuristischen Verfahren. Alle Klassen befinden sich im Modul `dijkstra_router.py` und operieren auf demselben zeitexpandierten Netzwerk (`TimeExpandedNetwork`), das auch der MILP-Solver verwendet. Die zentrale Architektur besteht aus einer Basisklasse `DijkstraRouter` und der davon abgeleiteten Klasse `AStarRouter`.
+Dieses Unterkapitel beschreibt die Implementierung der in @ch:heuristic-approach mathematisch definierten heuristischen Verfahren. Alle Klassen befinden sich im Modul `heuristics/dijkstra_router.py` und operieren auf demselben zeitexpandierten Netzwerk (`TimeExpandedNetwork`), das auch der MILP-Solver verwendet. Die zentrale Architektur besteht aus einer Basisklasse `DijkstraRouter` und der davon abgeleiteten Klasse `AStarRouter`.
 
 === Architektur und Hilfsstrukturen
 
@@ -384,7 +384,7 @@ def _find_shortest_path(self, network, shipment, capacity, normalization):
     }
 ```
 
-Die Prioritätswarteschlange enthält Tupel `(f, g, counter, node)`, wobei der `counter` als Tie-Breaker dient, um Typkonflikte bei nicht-vergleichbaren `NetworkNode`-Objekten zu vermeiden. Das zeitbasierte Pruning filtert Knoten, die den Zielhub zeitlich nicht mehr erreichen können:
+Die Prioritätswarteschlange enthält Tupel `(f, g, counter, node)`, wobei der `counter` als Tie-Breaker dient, um Typkonflikte bei nicht-vergleichbaren `NetworkNode`-Objekten zu vermeiden. Das zeitbasierte Pruning (implementiert in `heuristics/dijkstra_router.py`) filtert Knoten, die den Zielhub zeitlich nicht mehr erreichen können:
 
 ```python
 min_time = self._min_time_by_hub(network, shipment)
