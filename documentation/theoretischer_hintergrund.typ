@@ -76,7 +76,7 @@ $ x_(i j)^k >= 0 quad forall (i,j) in A, forall k in K $
 
 $ y_(i j) in {0, 1} quad forall (i,j) in A $
 
-== Zeitexpandierte Netzwerke
+== Zeitexpandierte Netzwerke <sec:time-expanded>
 
 Um dynamische Flüsse über die Zeit zu modellieren, wird das statische Netzwerk zeitlich expandiert. Die formale Definition eines solchen zeitexpandierten Graphen lässt sich nach @skutella2009introduction [S.~458-459] wie folgt beschreiben:
 

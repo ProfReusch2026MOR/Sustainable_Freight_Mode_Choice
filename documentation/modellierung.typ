@@ -1,20 +1,27 @@
-= Mathematisches Modell <ch:mathematical-model>
+= Modellierung und Optimierung <ch:modelling-and-optimization>
 
-Dieses Kapitel formalisiert das in @ch:problem-description beschriebene
-Planungsproblem als gemischt-ganzzahliges lineares Programm (MILP). Der Aufbau
-folgt der in der Operations-Research-Literatur üblichen Struktur: Zunächst wird
-die Netzwerkstruktur eingeführt, anschließend die vollständige mathematische
+== Exakte mathematische Formulierung <ch:mathematical-model>
+
+Dieser Abschnitt formalisiert das in @ch:problem-description beschriebene
+Planungsproblem als gemischt-ganzzahliges lineares Programm (MILP). Zunächst
+wird die Netzwerkstruktur eingeführt, anschließend die vollständige
 Notation definiert und schließlich das kompakte Modell mit Zielfunktion und
 Nebenbedingungen präsentiert und erläutert.
 
-== Ereignisbasiertes zeitexpandiertes Netzwerk
+=== Ereignisbasiertes zeitexpandiertes Netzwerk
 
-Zur Abbildung zeitlicher Abhängigkeiten wird das in @ch:theory eingeführte
-Konzept zeitexpandierter Graphen auf das multimodale Transportnetzwerk
-übertragen. Der Planungshorizont umfasst $T^"H"$ Minuten, was einer
-konfigurierbaren Anzahl ganzer Tage entspricht (z. B. $T^"H" = 7 times
-24 times 60 = 10 space 080$ Minuten für sieben Tage). Das resultierende
-Netzwerk wird als gerichteter Graph $G^T = (N^T, A^T)$ modelliert.
+Zur Abbildung zeitlicher Abhängigkeiten wird das in @sec:time-expanded
+eingeführte Konzept zeitexpandierter Graphen auf das multimodale
+Transportnetzwerk übertragen. Ausgangspunkt ist das statische
+Netzwerk $G = (N, A)$, in dem jeder Knoten $v in N$ einen physischen
+Hub mit zugehörigem Transportmodus repräsentiert und jede Kante
+$e in A$ eine Verbindung mit fester Dauer, Distanz und
+Kapazität beschreibt.
+
+Durch die zeitliche Expansion wird dieses statische Netzwerk in einen
+gerichteten Graphen $G^T = (N^T, A^T)$ überführt, dessen Knoten und
+Kanten an konkrete Zeitpunkte innerhalb eines Planungshorizonts
+$T^"H"$ (in Minuten) gebunden sind.
 
 === Knotenstruktur
 
@@ -30,24 +37,22 @@ Abständen (z. B. stündlich) Kopien erzeugt werden, enthält die Knotenmenge
 $N^T$ ausschließlich Zeitpunkte, zu denen tatsächlich relevante Ereignisse
 stattfinden:
 
-+ *Beginn und Ende des Planungshorizonts* ($t = 0$ und $t = T^"H"$):
-  Diese Randknoten gewährleisten, dass an jedem Hub-Modus-Paar durchgehend
-  Wartekanten existieren und der Graph vollständig zusammenhängend bleibt.
++ *Beginn und Ende des Planungshorizonts ($t = 0$ und $t = T^"H"$):*
+  Diese Knoten spannen den zeitlichen Rahmen auf. Da Wartekanten immer von einem Ereignis zum nächsten gezogen werden, sichern diese beiden Randereignisse ab, dass zu jedem Zeitpunkt (auch vor der ersten oder nach der letzten Fahrt) an jedem Hub gewartet werden kann.
 
-+ *Fahrplanmäßige Abfahrts- und Ankunftszeiten:*
-  Jede Transportverbindung erzeugt Knoten zu ihren konkreten Abfahrts-
-  und Ankunftszeitpunkten, sodass die Fahrplanstruktur exakt abgebildet
-  wird.
++ *Fahrplanmäßige Abfahrten und Ankünfte:*
+  Ein Zug oder Lkw fährt zu einer festen Zeit ab und kommt zu einer festen Zeit an. Damit die Transportkante (z. B. Fahrt von Frankfurt nach München) im Graphen verankert werden kann, müssen die genauen Minuten der Abfahrt (Startknoten) und der Ankunft (Zielknoten) als Ereignisse registriert werden.
 
-+ *Abfahrts- und Ankunftszeiten von Transferprozessen:*
-  Moduswechsel an Hubs besitzen eigene zeitliche Fenster. Die zugehörigen
-  Knoten stellen sicher, dass Umladeprozesse nur zu den vorgesehenen
-  Zeitpunkten beginnen und enden können.
++ *Start- und Endzeitpunkte von Transfers:*
+  Das Umladen einer Sendung (z. B. von Schiene auf Straße) benötigt Zeit. Um diese Umladekante im Graphen zu verbinden, werden ein Startknoten beim Quellmodus (Beginn des Umladens) und ein Zielknoten beim Zielmodus (Ende des Umladens) erzeugt.
 
-+ *Freigabezeitpunkte und Lieferfristen der Sendungen:*
-  Für jede Sendung werden Knoten zum Startzeitpunkt $r_k$ am Starthub
-  und zur Lieferfrist $D_k$ am Zielhub erzeugt, damit Start- und
-  Zielbedingungen korrekt formuliert werden können.
++ *Freigabe der Sendungen:*
+  Um eine Sendung $k$ zum frühestmöglichen Zeitpunkt in das Netzwerk einzuspeisen, wird am Starthub ein Knoten zu ihrer Freigabezeit $r_k$ benötigt.
+
+
+//  *Wichtiger Hintergrund:* Sobald eine Sendung an *irgendeinem* Knoten des Zielhubs ankommt, gilt sie als zugestellt. Da Zielknoten mathematisch als Senken agieren, verlässt der Fluss diesen Zielpunkt nicht mehr. Eine Sendung muss also nicht bis zur Deadline $D_k$ warten und verursacht nach ihrer tatsächlichen Ankunft am Zielort keine weiteren Wartekosten.
+
+
 
 Durch diese ereignisbasierte Konstruktion bleibt die Knotenmenge kompakt und
 wächst proportional zur Anzahl der tatsächlichen Netzwerkereignisse statt
@@ -61,46 +66,53 @@ Teilmengen zusammen:
 $ A^T = A^T_"trans" union A^T_"transfer" union A^T_"wait". $
 
 Es werden ausschließlich Kanten erzeugt, deren Ankunftszeitpunkt innerhalb
-des Planungshorizonts $T^"H"$ liegt. Da jede Kante zu einem strikt
-späteren Zeitpunkt führt, ist der resultierende Graph azyklisch.
+des Planungshorizonts $T^"H"$ liegt.
 
-==== Transportkanten $A^T_"trans"$
+==== Transportkanten
 
 Transportkanten verbinden zwei _verschiedene_ Hubs $h_1 != h_2$ im
-_gleichen_ Modus $m$. Eine Transportkante wird formal definiert als:
+_gleichen_ Modus $m$:
 
-$ a = ((h_1, m, t_"dep"), (h_2, m, t_"arr")) in A^T_"trans" quad
-  "mit" quad t_"arr" = t_"dep" + tau_a <= T^"H". $
+$
+  a = ((h_1, m, t_"dep"), (h_2, m, t_"arr")) in A^T_"trans" quad
+  "mit" quad t_"arr" = t_"dep" + tau_a <= T^"H".
+$
 
-Abfahrtszeit $t_"dep"$, Dauer $tau_a$ und Entfernung $d_a$ werden aus
-Transportvorlagen abgeleitet. Die in den Vorlagen definierten täglichen
-Abfahrtsminuten werden für jeden Tag des Planungshorizonts wiederholt,
-sodass beispielsweise eine tägliche Abfahrt um 08:00 Uhr an jedem der
-$T^"H" / 1440$ Planungstage je eine Kante erzeugt. Sind keine
-kantenspezifischen variablen Kosten oder Emissionen hinterlegt, werden
-sie aus der Streckenlänge und den modusspezifischen Faktoren berechnet:
+Sie entstehen durch die zeitliche Expansion der statischen
+Transportkanten. Jede statische Kante definiert eine Strecke zwischen
+zwei Hubs mit fester Dauer $tau_a$, Entfernung $d_a$ und einem Satz
+täglicher Abfahrtsminuten. Bei der Expansion wird für jeden Tag des
+Planungshorizonts und jede definierte Abfahrtsminute eine konkrete
+zeitexpandierte Kante erzeugt. Sind keine kantenspezifischen variablen
+Kosten oder Emissionen hinterlegt, werden sie aus der Streckenlänge und
+den modusspezifischen Faktoren berechnet:
 $c_a = d_a dot c_m^"tkm"$ bzw. $e_a = d_a dot e_m^"tkm"$.
 
-==== Transferkanten $A^T_"transfer"$
+==== Transferkanten
 
 Transferkanten beschreiben den Moduswechsel an einem Hub $h$ von Modus
 $m_1$ zu Modus $m_2$ ($m_1 != m_2$):
 
-$ a = ((h, m_1, t_"dep"), (h, m_2, t_"arr")) in A^T_"transfer" quad
-  "mit" quad t_"arr" = t_"dep" + tau_a <= T^"H". $
+$
+  a = ((h, m_1, t_"dep"), (h, m_2, t_"arr")) in A^T_"transfer" quad
+  "mit" quad t_"arr" = t_"dep" + tau_a <= T^"H".
+$
 
 Sie bilden physische Umschlagprozesse ab, etwa das Umladen von der Schiene
-auf die Straße. Transferkanten besitzen eigene fahrplanmäßige
-Abfahrtszeiten und Dauern. Ihre Kosten und Emissionen werden entweder
-kantenspezifisch vorgegeben oder aus globalen Standardwerten übernommen.
+auf die Straße. Auch Transferkanten werden aus statischen Vorlagen
+expandiert, die eigene Abfahrtszeiten und Dauern definieren. Ihre Kosten
+und Emissionen werden entweder kantenspezifisch vorgegeben oder aus
+globalen Standardwerten übernommen.
 
-==== Wartekanten $A^T_"wait"$
+==== Wartekanten
 
 Wartekanten verbinden zwei aufeinanderfolgende Ereigniszeiten $t_1 < t_2$
 desselben Hub-Modus-Paares $(h, m)$:
 
-$ a = ((h, m, t_1), (h, m, t_2)) in A^T_"wait" quad
-  "mit" quad t_1 < t_2. $
+$
+  a = ((h, m, t_1), (h, m, t_2)) in A^T_"wait" quad
+  "mit" quad t_1 < t_2.
+$
 
 Sie modellieren das Verweilen einer Sendung an einem Hub, etwa um eine
 spätere Abfahrt abzuwarten. Ihre variablen Kosten und Emissionen ergeben
@@ -108,12 +120,12 @@ sich aus der tatsächlichen Wartedauer $(t_2 - t_1)$ und den hub- bzw.
 global definierten Stundensätzen.
 
 
-== Notation <sec:notation>
+=== Notation <sec:notation>
 
 Bevor das Modell formuliert wird, werden alle mathematischen Symbole
 vollständig definiert.
 
-=== Mengen und Indizes
+==== Mengen und Indizes
 
 @tab:sets-indices fasst die verwendeten Mengen und Indizes zusammen.
 
@@ -126,12 +138,16 @@ vollständig definiert.
     [*Symbol*], [*Beschreibung*],
     [$H$], [Menge aller Hubs (Logistikknoten) im Netzwerk],
     [$M_h$], [Am Hub $h$ unterstützte Transportmodi],
-    [$T^"H"$], [Planungshorizont in Minuten],
-    [$N^T$], [Knoten des zeitexpandierten Netzwerks; jeder Knoten ist ein
-             Tripel $(h, m, t)$],
+    [$T^"H"$], [Planungshorizont \[min\]],
+    [$N^T$],
+    [Knoten des zeitexpandierten Netzwerks; jeder Knoten ist ein
+      Tripel $(h, m, t)$],
+
     [$A^T$], [Menge aller zeitabhängigen Kanten],
-    [$A^T_"trans"$], [Transportkanten (zwischen verschiedenen Hubs, gleicher
-                     Modus)],
+    [$A^T_"trans"$],
+    [Transportkanten (zwischen verschiedenen Hubs, gleicher
+      Modus)],
+
     [$A^T_"transfer"$], [Transferkanten (Moduswechsel an einem Hub)],
     [$A^T_"wait"$], [Wartekanten (Verweilen am selben Hub-Modus-Paar)],
     [$K$], [Menge aller zu routenden Sendungen],
@@ -139,14 +155,16 @@ vollständig definiert.
     [$K_E subset.eq K$], [Sendungen mit definierter Emissionsobergrenze],
     [$delta^+(n)$], [Menge der von Knoten $n$ ausgehenden Kanten],
     [$delta^-(n)$], [Menge der in Knoten $n$ eingehenden Kanten],
-    [$N_k^"S"$], [Startknoten der Sendung $k$: alle Knoten am Starthub zum
-                 Freigabezeitpunkt $r_k$],
+    [$N_k^"S"$],
+    [Startknoten der Sendung $k$: alle Knoten am Starthub zum
+      Freigabezeitpunkt $r_k$],
+
     [$N_k^"Z"$], [Zielknoten der Sendung $k$: alle Knoten am Zielhub],
   ),
   caption: [Mengen und Indizes des Modells.],
 ) <tab:sets-indices>
 
-=== Parameter
+==== Parameter
 
 @tab:parameters listet die Modellparameter mit ihren Einheiten.
 
@@ -171,8 +189,7 @@ vollständig definiert.
     [$d_a$], [km], [Streckenlänge der Kante $a$ (nur für $a in A^T_"trans"$)],
     [$t(n)$], [min], [Zeitpunkt des Knotens $n$],
     [$overline(v)_a$], [--], [Optionale Obergrenze verfügbarer Einheiten auf Kante $a$],
-    [$lambda_k^C, lambda_k^T, lambda_k^E$], [--],
-    [Sendungsspezifische Gewichte für Kosten, Zeit und Emissionen],
+    [$lambda_k^C, lambda_k^T, lambda_k^E$], [--], [Sendungsspezifische Gewichte für Kosten, Zeit und Emissionen],
   ),
   caption: [Parameter des Optimierungsmodells.],
 ) <tab:parameters>
@@ -182,35 +199,46 @@ dass $lambda_k^C + lambda_k^T + lambda_k^E = 1$. Sind für eine Sendung
 keine eigenen Gewichte hinterlegt, verwendet das Modell die globalen
 Standardgewichte.
 
-=== Entscheidungsvariablen
+==== Entscheidungsvariablen
 
-@tab:decision-variables definiert die Entscheidungsvariablen des Modells.
+@tab:decision-variables gibt einen Überblick über die
+Entscheidungsvariablen des Modells.
 
 #figure(
   table(
-    columns: (auto, auto, 1fr),
-    align: (left, left, left),
+    columns: (auto, 1fr),
+    align: (left, left),
     stroke: 0.5pt,
     inset: 8pt,
-    [*Variable*], [*Domäne*], [*Beschreibung*],
-    [$x_(a,k)$], [$in {0, 1}$],
-    [Binäre Routingvariable: 1 falls Sendung $k$ die Kante $a$ nutzt,
-     0 sonst],
-    [$v_a$], [siehe unten],
-    [Anzahl aktivierter Kapazitätseinheiten auf Kante $a$],
+    [*Variable*], [*Beschreibung*],
+    [$x_(a,k)$], [Binäre Routingvariable],
+    [$v_a$], [Anzahl aktivierter Kapazitätseinheiten auf Kante $a$],
   ),
   caption: [Entscheidungsvariablen des Modells.],
 ) <tab:decision-variables>
 
-Die Domäne der Kapazitätsvariablen $v_a$ spiegelt die in
-@ch:problem-description beschriebene verkehrsträgerspezifische
+Die *Routingvariable* $x_(a,k)$ gibt an, ob eine Sendung $k$ die Kante $a$ nutzt:
+
+$
+  x_(a,k) = cases(
+    1 & "falls Sendung " k " die Kante " a " nutzt",
+    0 & "sonst"
+  ) quad forall a in A^T, k in K.
+$
+
+
+Die *Kapazitätsvariable* $v_a$ beschreibt, wie viele Kapazitätseinheiten
+(z. B. Fahrzeuge) auf einer Kante aktiviert werden. Ihre Domäne spiegelt
+die in @ch:problem-description beschriebene verkehrsträgerspezifische
 Kapazitätsflexibilität wider:
 
-$ v_a in cases(
-  {0, dots, overline(v)_a} & "bei expliziter Fahrzeugobergrenze (z. B. Charterzüge)",
-  bb(N)_0 & "bei Straßentransport (elastische Kapazität)",
-  {0, 1} & "bei Linienverkehr (Schiene, See, Luft) ohne Obergrenze."
-) $
+$
+  v_a in cases(
+    {0, dots, overline(v)_a} & "bei expliziter Fahrzeugobergrenze (z. B. Charterzüge)",
+    bb(N)_0 & "bei Straßentransport (elastische Kapazität)",
+    {0, 1} & "bei Linienverkehr (Schiene, See, Luft) ohne Obergrenze."
+  )
+$
 
 Straßentransportkanten erhalten eine freie ganzzahlige Variable, weil im
 Straßengüterverkehr bei höherem Frachtaufkommen kurzfristig zusätzliche
@@ -220,7 +248,7 @@ modelliert, da ihre Kapazität pro Abfahrt fest vorgegeben ist. Wird im
 Datensatz eine explizite Fahrzeugobergrenze $overline(v)_a$ angegeben,
 begrenzt diese den zulässigen Wertebereich unabhängig vom Modus.
 
-=== Schlupfvariablen
+==== Schlupfvariablen
 
 Zusätzlich führt das Modell nichtnegative Schlupfvariablen ein, die eine
 kontrollierte Verletzung bestimmter Grenzen ermöglichen (siehe
@@ -233,23 +261,27 @@ kontrollierte Verletzung bestimmter Grenzen ermöglichen (siehe
     stroke: 0.5pt,
     inset: 8pt,
     [*Variable*], [*Einheit*], [*Bedeutung*],
-    [$s_k^D >= 0$], [min],
-    [Überschreitung der Lieferfrist der Sendung $k$],
-    [$s_k^B >= 0$], [EUR],
+    [$s_k^D >= 0$], [min], [Überschreitung der Lieferfrist der Sendung $k$],
+    [$s_k^B >= 0$],
+    [EUR],
     [Überschreitung der Preisobergrenze der Sendung $k$
-     (nur für $k in K_B$)],
-    [$s_k^E >= 0$], [kg CO₂],
+      (nur für $k in K_B$)],
+
+    [$s_k^E >= 0$],
+    [kg CO₂],
     [Überschreitung der Emissionsobergrenze der Sendung $k$
-     (nur für $k in K_E$)],
-    [$s^"sum" >= 0$], [EUR],
+      (nur für $k in K_E$)],
+
+    [$s^"sum" >= 0$],
+    [EUR],
     [Überschreitung des gemeinsamen Gesamtbudgets
-     (nur wenn alle Sendungen ein Budget definieren)],
+      (nur wenn alle Sendungen ein Budget definieren)],
   ),
   caption: [Schlupfvariablen des Modells.],
 ) <tab:slack-variables>
 
 
-== Kompakte Modellformulierung <sec:compact-model>
+=== Kompakte Modellformulierung <sec:compact-model>
 
 Im Folgenden wird das vollständige Optimierungsmodell zusammenhängend
 dargestellt. Die Herleitung der Normalisierungsgrößen $Delta C_k$,
@@ -257,10 +289,12 @@ $Delta T_k$, $Delta E_k$ sowie der Fixkosten-Koeffizienten $alpha_C$,
 $alpha_E$ erfolgt in @sec:normalization. Die Motivation der weichen
 Restriktionen wird in @sec:soft-constraints erläutert.
 
-=== Hilfsausdrücke
+==== Hilfsausdrücke
 
-$ C^"fix" = sum_(a in A^T) F_a v_a, quad
-  E^"fix" = sum_(a in A^T) G_a v_a $ <eq:fixed>
+$
+  C^"fix" = sum_(a in A^T) F_a v_a, quad
+  E^"fix" = sum_(a in A^T) G_a v_a
+$ <eq:fixed>
 
 $ C_k^"var" = sum_(a in A^T) c_a q_k x_(a,k) quad forall k in K $ <eq:var-cost>
 
@@ -270,69 +304,89 @@ $ E_k^"var" = sum_(a in A^T) e_a q_k x_(a,k) quad forall k in K $ <eq:var-emissi
 
 $ C^"total" = C^"fix" + sum_(k in K) C_k^"var" $ <eq:total-cost>
 
-=== Zielfunktion
+==== Zielfunktion
 
 $ min quad Z = Z^"route" + rho Z^"slack" $ <eq:objective>
 
 mit dem Routinganteil
 
-$ Z^"route" =
+$
+  Z^"route" =
   alpha_C C^"fix" + alpha_E E^"fix"
   + sum_(k in K) (
     lambda_k^C (C_k^"var" - C_k^-) / Delta C_k
     + lambda_k^T (T_k - T_k^-) / Delta T_k
     + lambda_k^E (E_k^"var" - E_k^-) / Delta E_k
-  ) $ <eq:routing>
+  )
+$ <eq:routing>
 
 und dem Strafterm
 
-$ Z^"slack" =
+$
+  Z^"slack" =
   sum_(k in K) s_k^D / Delta T_k
   + sum_(k in K_B) s_k^B / Delta C_k
-  + sum_(k in K_E) s_k^E / Delta E_k $ <eq:slack>
+  + sum_(k in K_E) s_k^E / Delta E_k
+$ <eq:slack>
 
 wobei $rho = 100$.
 
-=== Nebenbedingungen
+==== Nebenbedingungen
 
-$ sum_(n in N_k^"S") sum_(a in delta^+(n)) x_(a,k) = 1
-  quad forall k in K $ <eq:start>
+$
+  sum_(n in N_k^"S") sum_(a in delta^+(n)) x_(a,k) = 1
+  quad forall k in K
+$ <eq:start>
 
-$ sum_(n in N_k^"Z") sum_(a in delta^-(n)) x_(a,k) = 1
-  quad forall k in K $ <eq:end>
+$
+  sum_(n in N_k^"Z") sum_(a in delta^-(n)) x_(a,k) = 1
+  quad forall k in K
+$ <eq:end>
 
-$ sum_(a in delta^-(n)) x_(a,k)
+$
+  sum_(a in delta^-(n)) x_(a,k)
   = sum_(a in delta^+(n)) x_(a,k)
   quad forall k in K, space
-  forall n in N^T backslash (N_k^"S" union N_k^"Z") $ <eq:flow>
+  forall n in N^T backslash (N_k^"S" union N_k^"Z")
+$ <eq:flow>
 
-$ sum_(n in N_k^"Z") sum_(a in delta^-(n)) t(n) x_(a,k)
+$
+  sum_(n in N_k^"Z") sum_(a in delta^-(n)) t(n) x_(a,k)
   - s_k^D <= D_k
-  quad forall k in K $ <eq:deadline>
+  quad forall k in K
+$ <eq:deadline>
 
-$ sum_(k in K) q_k x_(a,k) <= u_a v_a
-  quad forall a in A^T $ <eq:capacity>
+$
+  sum_(k in K) q_k x_(a,k) <= u_a v_a
+  quad forall a in A^T
+$ <eq:capacity>
 
-$ v_a <= V_a^"road" sum_(k in K) x_(a,k)
-  quad forall a in A^T_"trans" "mit Modus Straße" $ <eq:coupling-road>
+$
+  v_a <= V_a^"road" sum_(k in K) x_(a,k)
+  quad forall a in A^T_"trans" "mit Modus Straße"
+$ <eq:coupling-road>
 
-$ v_a <= sum_(k in K) x_(a,k)
-  quad forall a in A^T backslash A^T_"road" $ <eq:coupling-other>
+$
+  v_a <= sum_(k in K) x_(a,k)
+  quad forall a in A^T backslash A^T_"road"
+$ <eq:coupling-other>
 
 $ C_k^"var" - s_k^B <= B_k quad forall k in K_B $ <eq:budget>
 
 $ E_k^"var" - s_k^E <= E_k^"lim" quad forall k in K_E $ <eq:emissions-limit>
 
-$ C^"total" - s^"sum" <= sum_(k in K) B_k quad
-  "(nur falls" forall k in K: B_k "definiert)" $ <eq:total-budget>
+$
+  C^"total" - s^"sum" <= sum_(k in K) B_k quad
+  "(nur falls" forall k in K: B_k "definiert)"
+$ <eq:total-budget>
 
 
-== Erläuterung des Modells
+=== Erläuterung des Modells
 
 Dieser Abschnitt erläutert die einzelnen Komponenten des in
 @sec:compact-model dargestellten Modells.
 
-=== Hilfsausdrücke
+==== Hilfsausdrücke
 
 Die Gleichungen @eq:fixed bis @eq:total-cost definieren die zentralen
 Bewertungsgrößen als lineare Ausdrücke der Entscheidungsvariablen.
@@ -344,7 +398,7 @@ die individuellen variablen Kosten, die Transportzeit und die variablen
 Emissionen. @eq:total-cost aggregiert fixe und variable Kostenanteile zu
 den monetären Gesamtkosten.
 
-=== Zielfunktion
+==== Zielfunktion
 
 Die Zielfunktion @eq:objective minimiert die Summe aus dem normierten
 Routinganteil $Z^"route"$ (@eq:routing) und dem mit $rho = 100$
@@ -375,7 +429,7 @@ $rho$ priorisiert die Einhaltung der weichen Grenzen gegenüber der
 Routenoptimierung, erhält aber auch bei knappen oder widersprüchlichen
 Vorgaben eine diagnostisch auswertbare Lösung.
 
-=== Nebenbedingungen
+==== Nebenbedingungen
 
 Die *Startbedingung* @eq:start stellt sicher, dass jede Sendung genau einen
 zu ihrem Freigabezeitpunkt passenden Startknoten verlässt. Die
@@ -410,7 +464,7 @@ die vollständigen Kosten einschließlich Fixkosten, wird jedoch nur
 aktiviert, wenn alle Sendungen ein Budget definieren.
 
 
-== Normalisierung der Zielfunktion <sec:normalization>
+=== Normalisierung der Zielfunktion <sec:normalization>
 
 Kosten (EUR), Transportzeit (Minuten) und Emissionen (kg CO₂) besitzen
 unterschiedliche Einheiten und Größenordnungen. Ohne Normalisierung würden
@@ -420,7 +474,7 @@ Zielkriterium mit numerisch höheren Werten die Zielfunktion dominieren
 würde. Eine geeignete Skalierung ist daher notwendig, um die drei
 Dimensionen vergleichbar zu machen.
 
-=== Anforderungen an die Normalisierung
+==== Anforderungen an die Normalisierung
 
 Die gewählte Methode muss drei Anforderungen erfüllen:
 
@@ -439,7 +493,7 @@ Die gewählte Methode muss drei Anforderungen erfüllen:
 + *Recheneffizienz:* Die Normalisierung darf die Lösungszeit des MILP nicht
   nennenswert erhöhen.
 
-=== Analytische Min-Max-Skalierung
+==== Analytische Min-Max-Skalierung
 
 Grundsätzlich ließe sich die exakte Normalisierung über eine
 *Pay-off-Tabelle* bestimmen, bei der das Modell vorab für jedes Zielkriterium
@@ -468,7 +522,7 @@ $ Delta C_k = max(C_k^+ - C_k^-, epsilon), $
 $ Delta T_k = max(T_k^+ - T_k^-, epsilon), $
 $ Delta E_k = max(E_k^+ - E_k^-, epsilon), quad epsilon = 10^(-9). $
 
-=== Herleitung der Schätzgrenzen
+==== Herleitung der Schätzgrenzen
 
 Ausgangspunkt ist die verfügbare Zeit einer Sendung
 
@@ -494,29 +548,35 @@ der kürzesten Kantendauer. Die maximale Fahrzeuganzahl je Segment
 $nu_k^"max"$ wird aus Sendungsgewicht und kleinster Netzwerkkapazität
 abgeleitet:
 
-$ C_k^- = d_k^- c^- q_k, quad
-  C_k^+ = d_k^+ c^+ q_k + m_k F^"max" nu_k^"max", $
+$
+  C_k^- = d_k^- c^- q_k, quad
+  C_k^+ = d_k^+ c^+ q_k + m_k F^"max" nu_k^"max",
+$
 
-$ E_k^- = d_k^- e^- q_k, quad
-  E_k^+ = d_k^+ e^+ q_k + m_k G^"max" nu_k^"max". $
+$
+  E_k^- = d_k^- e^- q_k, quad
+  E_k^+ = d_k^+ e^+ q_k + m_k G^"max" nu_k^"max".
+$
 
 Falls eine obere Schätzung nicht strikt größer als die untere ist, wird der
 Wertebereich auf mindestens eins gesetzt. Die Grenzen dienen ausschließlich
 der Skalierung der Zielfunktion; die Zulässigkeit einer Route wird allein
 durch die Nebenbedingungen bestimmt.
 
-=== Fixkosten-Koeffizienten
+==== Fixkosten-Koeffizienten
 
 Da Fixkosten und Fixemissionen bei Konsolidierung von mehreren Sendungen
 geteilt werden, können sie keiner einzelnen Sendung eindeutig zugeordnet
 werden. Ihre Zielfunktionskoeffizienten werden deshalb als Mittelwerte über
 alle Sendungen gebildet:
 
-$ alpha_C = 1 / |K| sum_(k in K) lambda_k^C / Delta C_k, quad
-  alpha_E = 1 / |K| sum_(k in K) lambda_k^E / Delta E_k. $
+$
+  alpha_C = 1 / |K| sum_(k in K) lambda_k^C / Delta C_k, quad
+  alpha_E = 1 / |K| sum_(k in K) lambda_k^E / Delta E_k.
+$
 
 
-== Weiche Restriktionen und Diagnosefähigkeit <sec:soft-constraints>
+=== Weiche Restriktionen und Diagnosefähigkeit <sec:soft-constraints>
 
 Ein Standardansatz der ganzzahligen Optimierung formuliert alle
 Nebenbedingungen als harte Restriktionen. Werden dabei Lieferfristen zu eng,

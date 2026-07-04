@@ -2,7 +2,7 @@
 
 Dieses Kapitel beschreibt das betrachtete Planungsproblem und die zugrunde
 liegende Netzwerkstruktur. Die formale mathematische Modellierung folgt
-anschließend in @ch:mathematical-model.
+anschließend in .
 
 == Planungsproblem
 

@@ -73,14 +73,14 @@
 #include "introduction.typ"
 #include "theoretischer_hintergrund.typ"
 #include "problem_description.typ"
-#include "mathematical_model.typ"
+#include "modellierung.typ"
 #include "implementation.typ"
 #include "results.typ"
 #include "discussion.typ"
 #include "conclusion.typ"
 
 = Jupyter Notebook
-#let mainSolverNotebook = json("../notebooks/main.ipynb")
+// #let mainSolverNotebook = json("../notebooks/main.ipynb")
 
-#callisto.render(nb: mainSolverNotebook)
+// #callisto.render(nb: mainSolverNotebook)
 
