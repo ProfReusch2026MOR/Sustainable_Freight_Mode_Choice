@@ -227,30 +227,16 @@ $
 $
 
 
-Die *Kapazitätsvariable* $v_a$ beschreibt, wie viele Kapazitätseinheiten
-(z. B. Fahrzeuge) auf einer Kante aktiviert werden. Ihre Domäne spiegelt
-die in @ch:problem-description beschriebene verkehrsträgerspezifische
-Kapazitätsflexibilität wider:
+Die *Kapazitätsvariable* $v_a$ repräsentiert die Anzahl der auf Kante $a$ eingesetzten Fahrzeuge (die Flottengröße):
 
-$
-  v_a in cases(
-    {0, dots, overline(v)_a} & "bei expliziter Fahrzeugobergrenze (z. B. Charterzüge)",
-    bb(N)_0 & "bei Straßentransport (elastische Kapazität)",
-    {0, 1} & "bei Linienverkehr (Schiene, See, Luft) ohne Obergrenze."
-  )
-$
+$ v_a in bb(N)_0 quad forall a in A^T $
 
-Straßentransportkanten erhalten eine freie ganzzahlige Variable, weil im
-Straßengüterverkehr bei höherem Frachtaufkommen kurzfristig zusätzliche
-Fahrzeuge disponiert werden können. Fahrplangebundene Verkehrsträger --
-Linienzüge, Frachtflüge und Schiffsdienste -- werden hingegen binär
-modelliert, da ihre Kapazität pro Abfahrt fest vorgegeben ist. Wird im
-Datensatz eine explizite Fahrzeugobergrenze $overline(v)_a$ angegeben,
-begrenzt diese den zulässigen Wertebereich unabhängig vom Modus.
+Diese Variable ist somit allgemein ganzzahlig. Sie kann durch die maximal verfügbare Flottengröße $overline(v)_a$ auf der Kante beschränkt werden ($v_a <= overline(v)_a$).
+
 
 ==== Schlupfvariablen
 
-Zusätzlich führt das Modell nichtnegative Schlupfvariablen ein, die eine
+Zusätzlich führt das Modell Schlupfvariablen ein, die eine
 kontrollierte Verletzung bestimmter Grenzen ermöglichen (siehe
 @sec:soft-constraints):
 
@@ -388,7 +374,7 @@ Dieser Abschnitt erläutert die einzelnen Komponenten des in
 
 ==== Hilfsausdrücke
 
-Die Gleichungen @eq:fixed bis @eq:total-cost definieren die zentralen
+Die in @eq:fixed bis @eq:total-cost definieren die zentralen
 Bewertungsgrößen als lineare Ausdrücke der Entscheidungsvariablen.
 @eq:fixed erfasst die gemeinsamen Fixkosten $C^"fix"$ und
 Fixemissionen $E^"fix"$ aller aktivierten Kapazitätseinheiten, die bei
