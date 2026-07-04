@@ -9,7 +9,7 @@ Nebenbedingungen präsentiert und erläutert.
 
 == Ereignisbasiertes zeitexpandiertes Netzwerk
 
-Zur Abbildung zeitlicher Abhängigkeiten wird das in @ch:theory eingeführte
+Zur Abbildung zeitlicher Abhängigkeiten wird das in ch:theory eingeführte
 Konzept zeitexpandierter Graphen auf das multimodale Transportnetzwerk
 übertragen. Der Planungshorizont umfasst $T^"H"$ Minuten, was einer
 konfigurierbaren Anzahl ganzer Tage entspricht (z. B. $T^"H" = 7 times

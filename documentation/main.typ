@@ -71,7 +71,6 @@
 // ////////////////////////////////////////////////////////////////////////
 
 #include "introduction.typ"
-#include "problem_description.typ"
 #include "theoretischer_hintergrund.typ"
 #include "problem_description.typ"
 #include "mathematical_model.typ"
