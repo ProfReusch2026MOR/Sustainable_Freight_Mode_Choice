@@ -294,7 +294,7 @@ class TimeExpandedNetwork:
         central_angle = 2.0 * math.atan2(
             math.sqrt(haversine), math.sqrt(1.0 - haversine)
         )
-        return 6371.0 * central_angle
+        return 6371.2 * central_angle
 
     def _build(self) -> None:
         # Populate event times based on templates
@@ -330,9 +330,6 @@ class TimeExpandedNetwork:
                 for mode in self.network_data.hubs[s.start_hub].supported_modes:
                     if s.start_time <= self.max_time_min:
                         self.event_times[(s.start_hub, mode)].add(s.start_time)
-                for mode in self.network_data.hubs[s.end_hub].supported_modes:
-                    if s.deadline <= self.max_time_min:
-                        self.event_times[(s.end_hub, mode)].add(s.deadline)
 
         # Convert event times to sorted lists
         event_times_list = {k: sorted(list(v)) for k, v in self.event_times.items()}
@@ -833,6 +830,10 @@ class TimeExpandedFreightRoutingModel:
                 self.prob += self.vehicle_count[i] <= max_road_vehicles * pulp.lpSum(
                     self.use_arc[(i, k)] for k in shipment_indices
                 )
+            elif arc.max_vehicles is not None:
+                self.prob += self.vehicle_count[i] <= arc.max_vehicles * pulp.lpSum(
+                    self.use_arc[(i, k)] for k in shipment_indices
+                )
             else:
                 self.prob += self.vehicle_count[i] <= pulp.lpSum(
                     self.use_arc[(i, k)] for k in shipment_indices
@@ -996,6 +997,20 @@ class TimeExpandedFreightRoutingModel:
             self.total_time = 0.0
             self.shipment_routes = {}
 
+        num_binary_vars = 0
+        num_integer_vars = 0
+        num_continuous_vars = 0
+        num_constraints = 0
+        if hasattr(self, "prob") and self.prob is not None:
+            num_constraints = len(self.prob.constraints)
+            for v in self.prob.variables():
+                if v.cat == pulp.LpBinary:
+                    num_binary_vars += 1
+                elif v.cat == pulp.LpInteger:
+                    num_integer_vars += 1
+                elif v.cat == pulp.LpContinuous:
+                    num_continuous_vars += 1
+
         return RoutingResult(
             status=self.status,
             is_optimal=is_optimal,
@@ -1009,6 +1024,10 @@ class TimeExpandedFreightRoutingModel:
             total_fixed_emissions=self.total_fixed_emissions,
             total_variable_emissions=self.total_variable_emissions,
             diagnostics=tuple(diagnostics),
+            num_binary_vars=num_binary_vars,
+            num_integer_vars=num_integer_vars,
+            num_continuous_vars=num_continuous_vars,
+            num_constraints=num_constraints,
         )
 
     def _validate_shipments(self, shipments: tuple[Shipment, ...]) -> None:

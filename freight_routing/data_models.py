@@ -407,6 +407,10 @@ class RoutingResult:
     total_variable_emissions: float = 0.0
     is_consolidated: bool = False
     diagnostics: tuple[str, ...] = ()
+    num_binary_vars: int = 0
+    num_integer_vars: int = 0
+    num_continuous_vars: int = 0
+    num_constraints: int = 0
 
     def __post_init__(self) -> None:
         transport_arc_counts = {}

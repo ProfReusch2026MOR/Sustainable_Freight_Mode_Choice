@@ -520,12 +520,14 @@ class DijkstraRouter:
         self,
         network: TimeExpandedNetwork,
         show_progress: bool = False,
+        progress_callback=None,
     ) -> RoutingResult:
         """Construct a feasible multi-shipment solution sequentially.
 
         Args:
             network: The pre-built TimeExpandedNetwork instance.
             show_progress: Optionally show a progress bar.
+            progress_callback: Optional callback progress_callback(current, total, msg)
 
         Returns:
             A RoutingResult containing the consolidated routes and objective metrics.
@@ -552,7 +554,13 @@ class DijkstraRouter:
 
             shipment_iterable = tqdm(sorted_shipments, desc="Routing shipments")
 
-        for shipment in shipment_iterable:
+        for idx, shipment in enumerate(shipment_iterable):
+            if progress_callback:
+                progress_callback(
+                    idx,
+                    len(sorted_shipments),
+                    f"Routing shipment '{shipment.id}' ({idx + 1}/{len(sorted_shipments)})",
+                )
             route_arcs = self._find_shortest_path(
                 network=network,
                 shipment=shipment,
@@ -584,6 +592,7 @@ class DijkstraRouter:
         ruin_fraction: float = 0.2,
         seed: int | None = None,
         show_progress: bool = False,
+        progress_callback=None,
     ) -> RoutingResult:
         """Optimizes an initial RoutingResult for multiple shipments using Ruin-and-Recreate (LNS).
 
@@ -594,6 +603,7 @@ class DijkstraRouter:
             ruin_fraction: Fraction of shipments to remove and reroute in each iteration.
             seed: Optional random seed for reproducibility.
             show_progress: Optionally show a progress bar.
+            progress_callback: Optional callback progress_callback(current, total, msg)
 
         Returns:
             An optimized RoutingResult.
@@ -626,7 +636,11 @@ class DijkstraRouter:
 
             iterator = tqdm(iterator, desc="Optimizing routes (LNS)")
 
-        for _ in iterator:
+        for step in iterator:
+            if progress_callback:
+                progress_callback(
+                    step, iterations, f"LNS Iteration {step + 1}/{iterations}"
+                )
             # Choose shipments to ruin (remove)
             ruined_ids = rng.sample(
                 list(best_routes.keys()), min(num_to_ruin, len(best_routes))

@@ -18,3 +18,7 @@ experiments/.idea/
 
 # Antigravity files
 .antigravitycli/
+
+# Node.js dependencies
+web/node_modules/
+web/package-lock.json
