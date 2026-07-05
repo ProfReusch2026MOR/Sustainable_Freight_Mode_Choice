@@ -262,38 +262,67 @@ Ziel:
 
 Das Projekt beinhaltet ein interaktives Web-Dashboard zur visuellen Routenplanung und Optimierung. Es ermöglicht das Laden von Netzwerkdatensätzen, das Konfigurieren von Sendungen sowie das Starten des MILP-Solvers oder der A\*-Heuristik direkt im Browser.
 
-### Voraussetzungen
+### 🐳 Docker (empfohlen – Zero-Config)
+
+Der einfachste Weg, das Dashboard zu starten. Alle Datensätze sind bereits im Image enthalten – keine weitere Installation nötig.
+
+**Via GitHub Container Registry:**
+```bash
+docker run -p 8000:8000 ghcr.io/profreusch2026mor/optifreight:latest
+```
+
+**Via DockerHub (falls veröffentlicht):**
+```bash
+docker run -p 8000:8000 <dockerhub-username>/optifreight:latest
+```
+
+Das Dashboard ist danach unter **http://localhost:8000** erreichbar.
+
+Anderen Port verwenden:
+```bash
+docker run -p 9090:8000 ghcr.io/profreusch2026mor/optifreight:latest
+```
+
+Eigene Datensätze hinzufügen (per Volume-Mount):
+```bash
+docker run -p 8000:8000 \
+  -v /pfad/zu/meinen/datasets:/app/dataset \
+  ghcr.io/profreusch2026mor/optifreight:latest
+```
+
+---
+
+### 🐍 Manuelle Installation (ohne Docker)
+
+#### Voraussetzungen
 
 - **Python 3.11+** mit allen Abhängigkeiten aus `requirements.txt`
 - **Node.js / npm** (für das einmalige Installieren der Frontend-Pakete)
 
-### Erstmalige Einrichtung
+#### Einrichtung
 
 ```bash
-# 1. Python-Abhängigkeiten installieren (falls noch nicht geschehen)
+# 1. Python-Abhängigkeiten installieren
 python -m pip install -r requirements.txt
 
 # 2. Frontend npm-Pakete installieren (nur einmal nötig)
 cd web && npm install && cd ..
 ```
 
-### Dashboard starten
+#### Dashboard starten
 
 ```bash
 python web/web_server.py
 ```
 
-Der Server startet auf Port `8000`. Das Dashboard ist anschließend erreichbar unter:
+Das Dashboard ist anschließend erreichbar unter **http://localhost:8000**.
 
-```
-http://localhost:8000
-```
-
-Optional kann ein anderer Port übergeben werden:
-
+Anderen Port verwenden:
 ```bash
 python web/web_server.py 8080
 ```
+
+---
 
 ### Funktionen
 
