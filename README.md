@@ -280,7 +280,7 @@ cd web && npm install && cd ..
 ### Dashboard starten
 
 ```bash
-python web_server.py
+python web/web_server.py
 ```
 
 Der Server startet auf Port `8000`. Das Dashboard ist anschließend erreichbar unter:
@@ -292,7 +292,7 @@ http://localhost:8000
 Optional kann ein anderer Port übergeben werden:
 
 ```bash
-python web_server.py 8080
+python web/web_server.py 8080
 ```
 
 ### Funktionen

@@ -10,7 +10,7 @@ import urllib.parse
 from pathlib import Path
 
 # Add workspace root to Python path
-sys.path.insert(0, str(Path(__file__).parent.absolute()))
+sys.path.insert(0, str(Path(__file__).parent.parent.absolute()))
 
 from freight_routing.data_loader import NetworkDataLoader
 from freight_routing.data_models import (
@@ -485,7 +485,7 @@ class RoutePlanningAPIHandler(http.server.BaseHTTPRequestHandler):
             path = "/index.html"
 
         safe_path = path.lstrip("/")
-        file_path = Path(__file__).parent.absolute() / "web" / safe_path
+        file_path = Path(__file__).parent.absolute() / safe_path
 
         if not file_path.exists() or file_path.is_dir():
             self.send_error(404, "File not found")
@@ -519,7 +519,7 @@ class RoutePlanningAPIHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(500, f"Internal server error: {e}")
 
     def handle_get_datasets(self):
-        dataset_dir = Path(__file__).parent.absolute() / "dataset"
+        dataset_dir = Path(__file__).parent.parent.absolute() / "dataset"
         files = []
         if dataset_dir.exists():
             for f in dataset_dir.iterdir():
@@ -545,7 +545,7 @@ class RoutePlanningAPIHandler(http.server.BaseHTTPRequestHandler):
                 finally:
                     os.unlink(tmp_path)
             elif filename:
-                dataset_path = Path(__file__).parent.absolute() / "dataset" / filename
+                dataset_path = Path(__file__).parent.parent.absolute() / "dataset" / filename
                 if not dataset_path.exists():
                     self.send_error(400, "Dataset file does not exist")
                     return
