@@ -46,6 +46,15 @@ class DijkstraRouter:
         self.objective_weights = objective_weights
         self._cached_network: TimeExpandedNetwork | None = None
         self._network_index: _NetworkIndex | None = None
+        self._apsp_network_data: NetworkData | None = None
+        self._min_time_matrix: dict[str, dict[str, float]] = {}
+        self._min_cost_matrix: dict[str, dict[str, float]] = {}
+        self._min_emissions_matrix: dict[str, dict[str, float]] = {}
+        self._node_to_id: dict[NetworkNode, int] = {}
+        self._arc_capacity: list[float] = []
+        self._arc_fixed_cost: list[float] = []
+        self._arc_fixed_emissions: list[float] = []
+        self._arc_vehicle_limit: list[float] = []
 
     def _normalization_context(
         self,
@@ -74,6 +83,20 @@ class DijkstraRouter:
 
     def _get_network_index(self, network: TimeExpandedNetwork) -> _NetworkIndex:
         if self._cached_network is not network or self._network_index is None:
+            self._node_to_id = {node: i for i, node in enumerate(network.nodes)}
+
+            # Precompute static arc attributes
+            self._arc_capacity = [arc.capacity for arc in network.all_arcs]
+            self._arc_fixed_cost = [
+                network._get_fixed_cost(arc) for arc in network.all_arcs
+            ]
+            self._arc_fixed_emissions = [
+                network._get_fixed_emissions(arc) for arc in network.all_arcs
+            ]
+            self._arc_vehicle_limit = [
+                self._vehicle_limit(arc) for arc in network.all_arcs
+            ]
+
             outgoing = defaultdict(list)
             arc_to_index = {}
             for index, arc in enumerate(network.all_arcs):
@@ -94,6 +117,80 @@ class DijkstraRouter:
                 nodes_by_hub=dict(nodes_by_hub),
             )
         return self._network_index
+
+    def _run_static_backward_dijkstra(
+        self, end_hub: str, rev_graph: dict[str, list[tuple[str, float]]]
+    ) -> dict[str, float]:
+        distance = {end_hub: 0.0}
+        queue = [(0.0, end_hub)]
+        while queue:
+            current_distance, hub = heapq.heappop(queue)
+            if current_distance > distance.get(hub, math.inf):
+                continue
+            for previous_hub, score in rev_graph.get(hub, []):
+                candidate = current_distance + score
+                if candidate >= distance.get(previous_hub, math.inf):
+                    continue
+                distance[previous_hub] = candidate
+                heapq.heappush(queue, (candidate, previous_hub))
+        return distance
+
+    def _precompute_apsp(self, network: TimeExpandedNetwork) -> None:
+        network_data = network.network_data
+        if self._apsp_network_data is network_data:
+            return
+
+        self._min_time_matrix.clear()
+        self._min_cost_matrix.clear()
+        self._min_emissions_matrix.clear()
+
+        time_rev_graph = defaultdict(list)
+        cost_rev_graph = defaultdict(list)
+        emissions_rev_graph = defaultdict(list)
+
+        for template in network_data.arc_templates:
+            if not isinstance(template, TransportArcTemplate):
+                continue
+            factor = network_data.mode_factors[template.mode]
+            cost = (
+                template.cost
+                if template.cost is not None
+                else template.distance * factor.cost_per_ton_km
+            )
+            emissions = (
+                template.emissions
+                if template.emissions is not None
+                else template.distance * factor.emissions_kg_per_ton_km
+            )
+
+            time_rev_graph[template.to_hub].append(
+                (template.from_hub, float(template.duration_min))
+            )
+            cost_rev_graph[template.to_hub].append((template.from_hub, float(cost)))
+            emissions_rev_graph[template.to_hub].append(
+                (template.from_hub, float(emissions))
+            )
+
+        for hub_id in network_data.hubs:
+            self._min_time_matrix[hub_id] = self._run_static_backward_dijkstra(
+                hub_id, time_rev_graph
+            )
+            self._min_cost_matrix[hub_id] = self._run_static_backward_dijkstra(
+                hub_id, cost_rev_graph
+            )
+            self._min_emissions_matrix[hub_id] = self._run_static_backward_dijkstra(
+                hub_id, emissions_rev_graph
+            )
+
+        self._apsp_network_data = network_data
+
+    def _min_time_by_hub(
+        self,
+        network: TimeExpandedNetwork,
+        shipment: Shipment,
+    ) -> dict[str, float]:
+        self._precompute_apsp(network)
+        return self._min_time_matrix[shipment.end_hub]
 
     def _find_shortest_path(
         self,
@@ -124,36 +221,72 @@ class DijkstraRouter:
             weights=weights,
             ranges=ranges,
         )
+        min_time = self._min_time_by_hub(network, shipment)
+
+        # Corridor pruning threshold
+        min_time_direct = min_time.get(shipment.start_hub, math.inf)
+        corridor_threshold = math.inf
+        if not math.isinf(min_time_direct):
+            corridor_threshold = max(2.5 * min_time_direct, min_time_direct + 2880)
 
         def estimate(node: NetworkNode) -> float:
             if heuristic is None:
                 return 0.0
             return heuristic.get(node.hub_id, math.inf)
 
+        node_to_id = self._node_to_id
+        num_nodes = len(network.nodes)
         queue: list[tuple[float, float, int, NetworkNode]] = []
-        distance: dict[NetworkNode, float] = {}
+        distance: list[float] = [math.inf] * num_nodes
         parent: dict[NetworkNode, tuple[NetworkNode | None, _TimedArc | None]] = {}
         counter = 0
+        best_feasible_score = math.inf
+        best_end_node = None
+
         for node in start_nodes:
             estimate_to_goal = estimate(node)
             if math.isinf(estimate_to_goal):
                 continue
-            distance[node] = 0.0
+
+            min_time_to_end = min_time.get(node.hub_id, math.inf)
+            if node.time_min + min_time_to_end > shipment.deadline:
+                continue
+
+            min_time_from_start = self._min_time_matrix.get(node.hub_id, {}).get(
+                shipment.start_hub, math.inf
+            )
+            if min_time_from_start + min_time_to_end > corridor_threshold:
+                continue
+
+            distance[node_to_id[node]] = 0.0
             parent[node] = (None, None)
             heapq.heappush(queue, (estimate_to_goal, 0.0, counter, node))
             counter += 1
 
         while queue:
-            _, current_distance, _, node = heapq.heappop(queue)
-            if current_distance > distance.get(node, math.inf):
+            priority, current_distance, _, node = heapq.heappop(queue)
+            if priority >= best_feasible_score:
+                if best_end_node is not None:
+                    return self._reconstruct_route(best_end_node, parent)
+                break
+            if current_distance > distance[node_to_id[node]]:
                 continue
             if node in end_nodes:
                 return self._reconstruct_route(node, parent)
 
             for arc in index.outgoing.get(node, []):
                 next_node = arc.to_node
-                if next_node.time_min > shipment.deadline:
+
+                min_time_to_end = min_time.get(next_node.hub_id, math.inf)
+                if next_node.time_min + min_time_to_end > shipment.deadline:
                     continue
+
+                min_time_from_start = self._min_time_matrix.get(
+                    next_node.hub_id, {}
+                ).get(shipment.start_hub, math.inf)
+                if min_time_from_start + min_time_to_end > corridor_threshold:
+                    continue
+
                 estimate_to_goal = estimate(next_node)
                 if math.isinf(estimate_to_goal):
                     continue
@@ -172,9 +305,16 @@ class DijkstraRouter:
                     continue
 
                 candidate = current_distance + arc_score
-                if candidate >= distance.get(next_node, math.inf):
+                v_id = node_to_id[next_node]
+                if candidate >= distance[v_id]:
                     continue
-                distance[next_node] = candidate
+
+                if next_node in end_nodes:
+                    if candidate < best_feasible_score:
+                        best_feasible_score = candidate
+                        best_end_node = next_node
+
+                distance[v_id] = candidate
                 parent[next_node] = (node, arc)
                 heapq.heappush(
                     queue,
@@ -204,20 +344,30 @@ class DijkstraRouter:
         weights: ObjectiveWeights,
         ranges: dict[str, float],
     ) -> float | None:
-        needed = self._additional_vehicles(
-            arc, shipment.weight, capacity.remaining_capacity[arc_index]
-        )
-        if capacity.active_vehicles[arc_index] + needed > self._vehicle_limit(arc):
+        remaining_cap = capacity.remaining_capacity[arc_index]
+        weight = shipment.weight
+
+        if remaining_cap >= weight:
+            needed = 0
+        else:
+            needed = math.ceil(
+                (weight - remaining_cap) / max(self._arc_capacity[arc_index], 1e-9)
+            )
+
+        if (
+            capacity.active_vehicles[arc_index] + needed
+            > self._arc_vehicle_limit[arc_index]
+        ):
             return None
 
-        fixed_cost = network._get_fixed_cost(arc) * needed
-        fixed_emissions = network._get_fixed_emissions(arc) * needed
+        fixed_cost = self._arc_fixed_cost[arc_index] * needed
+        fixed_emissions = self._arc_fixed_emissions[arc_index] * needed
         return (
             normalization.fixed_cost_coefficient * fixed_cost
-            + weights.cost * arc.cost * shipment.weight / ranges["cost"]
+            + weights.cost * arc.cost * weight / ranges["cost"]
             + weights.time * arc.duration_min / ranges["time"]
             + normalization.fixed_emissions_coefficient * fixed_emissions
-            + weights.emissions * arc.emissions * shipment.weight / ranges["emissions"]
+            + weights.emissions * arc.emissions * weight / ranges["emissions"]
         )
 
     @staticmethod
@@ -674,10 +824,13 @@ class AStarRouter(DijkstraRouter):
         weights: ObjectiveWeights,
         ranges: dict[str, float],
     ) -> dict[str, float]:
+        self._precompute_apsp(network)
+
         network_data = network.network_data
         if self._heuristic_network_data is not network_data:
             self._heuristic_cache.clear()
             self._heuristic_network_data = network_data
+
         cache_key = (
             shipment.end_hub,
             shipment.weight,
