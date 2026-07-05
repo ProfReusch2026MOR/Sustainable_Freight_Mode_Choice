@@ -331,7 +331,6 @@ class TimeExpandedNetwork:
                     if s.start_time <= self.max_time_min:
                         self.event_times[(s.start_hub, mode)].add(s.start_time)
 
-
         # Convert event times to sorted lists
         event_times_list = {k: sorted(list(v)) for k, v in self.event_times.items()}
 
