@@ -103,20 +103,37 @@ Die ökonomischen und ökologischen Parameter sowie Kapazitätsgrenzen des Netzw
 
 Diese globalen Faktoren dienen als Standardwerte für das gesamte Netzwerk. Sie können auf Ebene einzelner Verbindungen in den `arc_templates` überschrieben werden (beispielsweise durch Angabe spezifischer `capacity` oder `fixed_cost` Werte), was eine flexible Modellierung unterschiedlicher Infrastrukturen ermöglicht.
 === Datensatzgrößen
-Um die Skalierbarkeit der Lösungsverfahren zu evaluieren, werden drei Datensatzgrößen bereitgestellt:
+Um die Skalierbarkeit der Lösungsverfahren zu evaluieren, werden drei Datensatzgrößen bereitgestellt. Die Generierung basiert auf einer Reihe von Konfigurationsparametern, die in @tab:dataset-configs aufgeführt sind.
+
 #figure(
   table(
     columns: (auto, auto, auto, auto),
     align: (left, right, right, right),
     stroke: 0.5pt,
-    [*Parameter*], [*S (Small)*], [*M (Medium)*], [*L (Large)*],
-    [Max. Hubs], [100], [300], [1.000],
-    [Städte pro Land], [3], [6], [15],
+    [*Konfigurationsparameter*], [*S (Small)*], [*M (Medium)*], [*L (Large)*],
+    [Max. Hubs (globales Limit)], [100], [300], [1.000],
+    [Städte pro Land (Limit)], [3], [6], [15],
     [Straßen-Nachbarn ($k$)], [2], [3], [3],
     [Schienen-Nachbarn ($k$)], [1], [2], [2],
   ),
   caption: [Konfigurationsparameter der drei Datensatzgrößen],
+) <tab:dataset-configs>
+
+Die aus diesen Parametern tatsächlich resultierenden Netzwerkgrößen sind in @tab:dataset-sizes dargestellt.
+
+#figure(
+  table(
+    columns: (auto, auto, auto, auto),
+    align: (left, right, right, right),
+    stroke: 0.5pt,
+    [*Strukturgröße*], [*S (Small)*], [*M (Medium)*], [*L (Large)*],
+    [Hubs (Knoten)], [100], [300], [870],
+    [Transport-Kanten], [1.186], [6.816], [32.694],
+    [Transfer-Kanten], [478], [1.364], [3.578],
+  ),
+  caption: [Tatsächliche Strukturgrößen der generierten Datensätze],
 ) <tab:dataset-sizes>
+
 == Datenbeschaffung <sec:data-collection>
 Die Generierung des multimodalen Netzwerkdatensatzes erfolgt vollautomatisch über das Skript `data_collector.py`. Dieses kombiniert öffentlich verfügbare Geodaten mit analytischen Berechnungen und API-Abfragen zu einem realistischen Netzwerk.
 === Überblick der Pipeline
