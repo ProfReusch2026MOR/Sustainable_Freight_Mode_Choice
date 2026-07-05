@@ -255,3 +255,53 @@ Technologien:
 Ziel:
 
 - schnelle gute Lösungen für große Instanzen  
+
+---
+
+## 🌐 Web Dashboard
+
+Das Projekt beinhaltet ein interaktives Web-Dashboard zur visuellen Routenplanung und Optimierung. Es ermöglicht das Laden von Netzwerkdatensätzen, das Konfigurieren von Sendungen sowie das Starten des MILP-Solvers oder der A\*-Heuristik direkt im Browser.
+
+### Voraussetzungen
+
+- **Python 3.11+** mit allen Abhängigkeiten aus `requirements.txt`
+- **Node.js / npm** (für das einmalige Installieren der Frontend-Pakete)
+
+### Erstmalige Einrichtung
+
+```bash
+# 1. Python-Abhängigkeiten installieren (falls noch nicht geschehen)
+python -m pip install -r requirements.txt
+
+# 2. Frontend npm-Pakete installieren (nur einmal nötig)
+cd web && npm install && cd ..
+```
+
+### Dashboard starten
+
+```bash
+python web_server.py
+```
+
+Der Server startet auf Port `8000`. Das Dashboard ist anschließend erreichbar unter:
+
+```
+http://localhost:8000
+```
+
+Optional kann ein anderer Port übergeben werden:
+
+```bash
+python web_server.py 8080
+```
+
+### Funktionen
+
+| Feature | Beschreibung |
+|---------|-------------|
+| **Datensatz laden** | JSON-Netzwerkdateien aus `dataset/` auswählen oder eigene hochladen |
+| **Sendungen konfigurieren** | Start-/Ziel-Hub, Gewicht, Deadline und Zielgewichte pro Sendung |
+| **MILP-Solver** | Exakte Optimierung via HiGHS (PuLP) für alle Sendungen gleichzeitig |
+| **A\*-Heuristik** | Schnelle sequentielle Routenplanung mit Echtzeit-Fortschrittsanzeige |
+| **LNS-Optimierung** | Large-Neighborhood-Search zur Verbesserung der Heuristiklösung |
+| **Kartenvisualisierung** | Interaktive Leaflet-Karte mit animierten Routen pro Sendung |
