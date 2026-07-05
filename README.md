@@ -264,16 +264,11 @@ Das Projekt beinhaltet ein interaktives Web-Dashboard zur visuellen Routenplanun
 
 ### 🐳 Docker (empfohlen – Zero-Config)
 
-Der einfachste Weg, das Dashboard zu starten. Alle Datensätze sind bereits im Image enthalten – keine weitere Installation nötig.
+Der einfachste Weg, das Dashboard zu starten. Alle Datensätze sind bereits im Image enthalten.
 
 **Via GitHub Container Registry:**
 ```bash
 docker run -p 8000:8000 ghcr.io/profreusch2026mor/optifreight:latest
-```
-
-**Via DockerHub (falls veröffentlicht):**
-```bash
-docker run -p 8000:8000 <dockerhub-username>/optifreight:latest
 ```
 
 Das Dashboard ist danach unter **http://localhost:8000** erreichbar.
@@ -292,7 +287,7 @@ docker run -p 8000:8000 \
 
 ---
 
-### 🐍 Manuelle Installation (ohne Docker)
+### Manuelle Installation (ohne Docker)
 
 #### Voraussetzungen
 
