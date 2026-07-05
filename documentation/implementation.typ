@@ -630,7 +630,7 @@ Der Zielfunktionswert wird analog zur MILP-Zielfunktion (@eq:routing) berechnet,
 
 == Weboberfläche <sec:web-app>
 
-Für die interaktive Nutzung steht das Dashboard *OptiFreight* zur Verfügung, das die Routingplanung ohne direkten Code-Zugriff ermöglicht (@fig:dashboard). Über das Dashboard lässt sich ein Netzwerkdatensatz laden, eine oder mehrere Sendungen mit Start, Ziel, Gewicht und Zeitfenster anlegen und zwischen exaktem MILP-Solver und heuristischem Routing wählen. Die Gewichtung der Zielfunktion (Kosten, Zeit, Emissionen) kann direkt über Schieberegler angepasst werden.
+Für die interaktive Nutzung steht das Dashboard OptiFreight zur Verfügung, das die Routingplanung ohne direkten Code-Zugriff ermöglicht (@fig:dashboard). Über das Dashboard lässt sich ein Netzwerkdatensatz laden, eine oder mehrere Sendungen mit Start, Ziel, Gewicht und Zeitfenster anlegen und zwischen exaktem MILP-Solver und heuristischem Routing wählen. Die Gewichtung der Zielfunktion (Kosten, Zeit, Emissionen) kann direkt über Schieberegler angepasst werden.
 
 Nach dem Start der Routenberechnung zeigt die Karte die gewählte Route eingefärbt nach Transportmodus (Straße, Schiene, Luft, Schiff). Das rechte Panel listet den Routenverlauf Station für Station mit Distanz, Kosten und Gewicht auf, während unten die aggregierten Ergebnisse – Gesamtkosten, CO2-Emissionen, Transportzeit und Konsolidierungsgrad – sowie ein Konsolenprotokoll des Lösungsvorgangs angezeigt werden.
 
