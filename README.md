@@ -278,6 +278,12 @@ Anderen Port verwenden:
 docker run -p 9090:8000 ghcr.io/profreusch2026mor/optifreight:latest
 ```
 
+Davor ggf. noch einloggen:
+```bash
+docker login ghcr.io
+```
+
+
 Eigene Datensätze hinzufügen (per Volume-Mount):
 ```bash
 docker run -p 8000:8000 \
