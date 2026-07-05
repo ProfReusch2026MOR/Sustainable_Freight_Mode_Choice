@@ -240,19 +240,23 @@ class TimeExpandedNetwork:
         max_fixed_cost = max(fixed_costs, default=0.0) * max_required_vehicles
         max_fixed_emissions = max(fixed_emissions, default=0.0) * max_required_vehicles
 
+        MAX_DETOUR_FACTOR = 3.0  # indirect multimodal routing incl. transfers
+        MAX_TRANSPORT_LEGS = 8.0  # realistic upper bound on legs per shipment
+
+        max_route_distance = aerial_distance * MAX_DETOUR_FACTOR
+        max_segments = max(1.0, min(available_time / min_duration, MAX_TRANSPORT_LEGS))
+
         min_time = aerial_distance / max_speed
         max_time = available_time
-        max_distance = max_speed * available_time
-        max_segments = max(1.0, available_time / min_duration)
 
         min_cost = aerial_distance * min_cost_rate * shipment.weight
         max_cost = (
-            max_distance * max_cost_rate * shipment.weight
+            max_route_distance * max_cost_rate * shipment.weight
             + max_segments * max_fixed_cost
         )
         min_emissions = aerial_distance * min_emissions_rate * shipment.weight
         max_emissions = (
-            max_distance * max_emissions_rate * shipment.weight
+            max_route_distance * max_emissions_rate * shipment.weight
             + max_segments * max_fixed_emissions
         )
 
