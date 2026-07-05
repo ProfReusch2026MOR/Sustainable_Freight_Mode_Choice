@@ -1,0 +1,10 @@
+{
+  "name": "sustainable-freight-mode-choice-web",
+  "version": "1.0.0",
+  "description": "Web frontend for the Sustainable Freight Mode Choice routing tool",
+  "private": true,
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "lucide": "^0.511.0"
+  }
+}

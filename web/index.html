@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Route Planning & Optimization Dashboard</title>
+    
+    <!-- npm packages (node_modules) -->
+    <script src="node_modules/lucide/dist/umd/lucide.min.js"></script>
+    <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css">
+    <script src="node_modules/leaflet/dist/leaflet.js"></script>
+
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <header class="sidebar-header">
+                <div class="logo">
+                    <i data-lucide="route"></i>
+                    <span>OptiFreight</span>
+                </div>
+                <span class="badge">Multimodal v2.0</span>
+            </header>
+
+            <div class="sidebar-scroll">
+                <!-- Section 1: Dataset Loader -->
+                <section class="panel-section">
+                    <h2 class="section-title">
+                        <i data-lucide="database"></i> Network Dataset
+                    </h2>
+                    <div class="form-group">
+                        <label for="dataset-select">Select Available Dataset</label>
+                        <div class="select-wrapper">
+                            <select id="dataset-select">
+                                <option value="" disabled selected>Choose a network...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="upload-area" id="dataset-upload-zone">
+                        <i data-lucide="upload-cloud"></i>
+                        <span>Drag & drop network .json or <strong class="link-label">browse</strong></span>
+                        <input type="file" id="dataset-file-input" accept=".json" style="display: none;">
+                    </div>
+                    <div class="dataset-info-box hidden" id="dataset-info">
+                        <div class="info-row">
+                            <span>Hubs:</span><span id="stat-hubs">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Templates:</span><span id="stat-templates">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Road/Rail:</span><span id="stat-modes">-</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: Shipments Manager -->
+                <section class="panel-section">
+                    <div class="section-header-row">
+                        <h2 class="section-title">
+                            <i data-lucide="package"></i> Shipments
+                        </h2>
+                        <button class="btn btn-icon-small" id="btn-add-shipment" title="Add Shipment manually">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="upload-area-small" id="shipment-upload-zone">
+                        <i data-lucide="file-json"></i>
+                        <span>Upload shipments .json or <strong class="link-label">browse</strong></span>
+                        <input type="file" id="shipment-file-input" accept=".json" style="display: none;">
+                    </div>
+
+                    <div class="shipment-list-container">
+                        <table class="shipment-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Route</th>
+                                    <th>Weight (t)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shipments-tbody">
+                                <tr>
+                                    <td colspan="4" class="empty-state">No shipments loaded.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section 3: Parameters Override -->
+                <section class="panel-section">
+                    <h2 class="section-title">
+                        <i data-lucide="sliders"></i> Global Settings
+                    </h2>
+                    
+                    <!-- Planning Horizon -->
+                    <div class="form-group inline">
+                        <label for="param-planning-horizon">Planning Horizon (Days)</label>
+                        <input type="number" id="param-planning-horizon" value="1" min="1" max="14">
+                    </div>
+
+                    <!-- Global Objective Weights -->
+                    <div class="parameter-group-card">
+                        <div class="card-header">Global Objective Weights</div>
+                        <div class="form-group">
+                            <div class="slider-label-row">
+                                <span>Cost weight</span><span id="val-weight-cost">0.4</span>
+                            </div>
+                            <input type="range" id="param-weight-cost" min="0" max="1" step="0.05" value="0.4">
+                        </div>
+                        <div class="form-group">
+                            <div class="slider-label-row">
+                                <span>Time weight</span><span id="val-weight-time">0.3</span>
+                            </div>
+                            <input type="range" id="param-weight-time" min="0" max="1" step="0.05" value="0.3">
+                        </div>
+                        <div class="form-group">
+                            <div class="slider-label-row">
+                                <span>Emissions weight</span><span id="val-weight-emissions">0.3</span>
+                            </div>
+                            <input type="range" id="param-weight-emissions" min="0" max="1" step="0.05" value="0.3">
+                        </div>
+                        <div class="warning-alert hidden" id="weights-zero-alert">
+                            At least one weight must be positive!
+                        </div>
+                    </div>
+
+                    <!-- Cost Factors Collapsible -->
+                    <details class="parameter-collapsible">
+                        <summary>Cost & Emission Factors</summary>
+                        <div class="details-wrapper-relative" style="position: relative; display: flex; flex-direction: column;">
+                            <div class="details-content" id="cost-factors-container">
+                                <p class="placeholder-text">Load a dataset to edit cost factors.</p>
+                            </div>
+                            <div class="resizer-y-small" id="resizer-cost-factors"></div>
+                        </div>
+                    </details>
+                </section>
+
+                <!-- Section 4: Routing Engine -->
+                <section class="panel-section">
+                    <h2 class="section-title">
+                        <i data-lucide="zap"></i> Routing Engine
+                    </h2>
+                    <div class="form-group">
+                        <label for="engine-method">Algorithm Type</label>
+                        <div class="select-wrapper">
+                            <select id="engine-method">
+                                <option value="solver">HiGHS Solver (MILP)</option>
+                                <option value="heuristic">A* Heuristic (Sequential)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group inline" id="grp-time-limit">
+                        <label for="param-time-limit">Solver Time Limit (s)</label>
+                        <input type="number" id="param-time-limit" value="60" min="1" style="width: 70px;">
+                    </div>
+
+                    <button class="btn btn-primary btn-full mt-10" id="btn-run-solve">
+                        <i data-lucide="play"></i> Run Routing
+                    </button>
+                    
+                    <div class="lns-divider hidden" id="lns-section-divider"></div>
+                    
+                    <!-- LNS Controls -->
+                    <div class="lns-card hidden" id="lns-card">
+                        <div class="card-header">Ruin & Recreate Optimization (LNS)</div>
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label for="lns-iterations">Iterations</label>
+                                <input type="number" id="lns-iterations" value="20" min="1" max="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="lns-ruin">Ruin %</label>
+                                <input type="number" id="lns-ruin" value="20" min="5" max="95">
+                            </div>
+                            <div class="form-group">
+                                <label for="lns-seed">Seed</label>
+                                <input type="number" id="lns-seed" placeholder="Random" style="width: 100%;">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-full mt-10" id="btn-run-optimize">
+                            <i data-lucide="trending-up"></i> Optimize Routes (LNS)
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </aside>
+
+        <!-- Horizontal resizer handle -->
+        <div class="resizer-x" id="resizer-x"></div>
+
+        <!-- Main Display Area -->
+        <main class="main-content">
+            <!-- Top App Bar -->
+            <header class="app-bar">
+                <div class="bar-left">
+                    <span class="active-dataset-label">Active Network:</span>
+                    <span class="active-dataset-value" id="current-dataset-name">None Loaded</span>
+                </div>
+                <div class="bar-right">
+                    <div class="solver-status-indicator" id="solver-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Idle</span>
+                    </div>
+                    <button class="btn btn-danger btn-small hidden" id="btn-cancel-solve">
+                        <i data-lucide="square"></i> Stop Solve
+                    </button>
+                </div>
+            </header>
+
+            <!-- Map View Container -->
+            <div class="map-wrapper">
+                <div id="map"></div>
+                <div class="map-overlay-legend" id="map-legend">
+                    <div class="legend-title">Modes (Click to Toggle)</div>
+                    <div class="legend-item" data-mode="road"><span class="legend-color color-road"></span> Road (LKW)</div>
+                    <div class="legend-item" data-mode="rail"><span class="legend-color color-rail"></span> Rail (Bahn)</div>
+                    <div class="legend-item" data-mode="air"><span class="legend-color color-air"></span> Air (Flug)</div>
+                    <div class="legend-item" data-mode="ship"><span class="legend-color color-ship"></span> Ship (Schiff)</div>
+                </div>
+            </div>
+
+            <!-- Vertical resizer handle -->
+            <div class="resizer-y" id="resizer-y"></div>
+
+            <!-- Terminal log & results grid -->
+            <div class="dashboard-grid">
+                <!-- Left: Live Log & Variables -->
+                <div class="dashboard-panel flex-column">
+                    <div class="panel-header-tabs">
+                        <button class="tab-btn active" id="tab-btn-terminal" data-tab="tab-terminal">
+                            <i data-lucide="terminal"></i> Console Log
+                        </button>
+                        <button class="tab-btn" id="tab-btn-ten" data-tab="tab-ten">
+                            <i data-lucide="git-branch"></i> TEN & Variables
+                        </button>
+                    </div>
+
+                    <div class="tab-content active" id="tab-terminal">
+                        <!-- Progress info -->
+                        <div class="progress-bar-wrapper hidden" id="solve-progress-container">
+                            <div class="progress-info-row">
+                                <span id="solve-progress-text">Solving...</span>
+                                <span id="solve-progress-percent">0%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" id="solve-progress-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="terminal-log-viewer" id="log-viewer">
+                            <div class="log-line system">Waiting for network loading or solver trigger...</div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tab-ten">
+                        <div class="ten-grid">
+                            <div class="metric-card shadow-sm">
+                                <div class="metric-label">TEN Hubs</div>
+                                <div class="metric-val" id="ten-stat-hubs">0</div>
+                            </div>
+                            <div class="metric-card shadow-sm">
+                                <div class="metric-label">TEN Nodes</div>
+                                <div class="metric-val" id="ten-stat-nodes">0</div>
+                            </div>
+                            <div class="metric-card shadow-sm">
+                                <div class="metric-label">TEN Total Edges</div>
+                                <div class="metric-val" id="ten-stat-edges">0</div>
+                            </div>
+                            <div class="metric-card shadow-sm">
+                                <div class="metric-label">Transport Edges</div>
+                                <div class="metric-val" id="ten-stat-transport">0</div>
+                            </div>
+                            <div class="metric-card shadow-sm">
+                                <div class="metric-label">Transfer Edges</div>
+                                <div class="metric-val" id="ten-stat-transfer">0</div>
+                            </div>
+                            <div class="metric-card shadow-sm">
+                                <div class="metric-label">Waiting Edges</div>
+                                <div class="metric-val" id="ten-stat-waiting">0</div>
+                            </div>
+                        </div>
+                        <div class="variables-panel" id="solver-variables-card">
+                            <h3 class="panel-subtitle">Mathematical Model Variables</h3>
+                            <div class="vars-grid">
+                                <div class="var-item"><span>Binary Variables:</span><strong id="solver-var-binary">0</strong></div>
+                                <div class="var-item"><span>Integer Variables:</span><strong id="solver-var-integer">0</strong></div>
+                                <div class="var-item"><span>Continuous Variables:</span><strong id="solver-var-continuous">0</strong></div>
+                                <div class="var-item"><span>Total Constraints:</span><strong id="solver-var-constraints">0</strong></div>
+                            </div>
+                            <p class="small-info-text text-muted mt-5">Note: Variable counts are only generated by the HiGHS MILP Solver model.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vertical resizer handle in dashboard -->
+                <div class="resizer-x" id="resizer-dashboard-x"></div>
+
+                <!-- Right: Optimization Results -->
+                <div class="dashboard-panel flex-column" id="results-dashboard-panel">
+                    <h2 class="panel-header">
+                        <i data-lucide="bar-chart-3"></i> Results & Metrics
+                    </h2>
+                    
+                    <!-- KPI Metrics -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card shadow-sm border-left-blue">
+                            <div class="kpi-title">Total Cost</div>
+                            <div class="kpi-value" id="kpi-cost">0.00 EUR</div>
+                            <div class="kpi-sub" id="kpi-cost-sub">Fixed: 0.00 | Var: 0.00</div>
+                        </div>
+                        <div class="kpi-card shadow-sm border-left-green">
+                            <div class="kpi-title">CO2 Emissions</div>
+                            <div class="kpi-value" id="kpi-emissions">0.00 kg</div>
+                            <div class="kpi-sub" id="kpi-emissions-sub">Fixed: 0.00 | Var: 0.00</div>
+                        </div>
+                        <div class="kpi-card shadow-sm border-left-red">
+                            <div class="kpi-title">Transit Time</div>
+                            <div class="kpi-value" id="kpi-time">0 min</div>
+                            <div class="kpi-sub" id="kpi-time-sub">Avg transit time per ship</div>
+                        </div>
+                        <div class="kpi-card shadow-sm border-left-purple">
+                            <div class="kpi-title">Consolidation Rate</div>
+                            <div class="kpi-value" id="kpi-consolidation">0%</div>
+                            <div class="kpi-sub">Shared vehicles detected</div>
+                        </div>
+                    </div>
+
+                    <!-- Diagnostics Alerts -->
+                    <div class="diagnostics-wrapper hidden" id="diagnostics-card">
+                        <div class="diagnostics-header">
+                            <i data-lucide="alert-triangle"></i> Solver Infeasibility & Warnings
+                        </div>
+                        <ul class="diagnostics-list" id="diagnostics-list"></ul>
+                    </div>
+
+                    <!-- Routes Details -->
+                    <div class="routes-results-wrapper" id="routes-results-box">
+                        <div class="routes-box-header" draggable="true" id="routes-box-drag-handle" style="cursor: grab; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">
+                            <h3 class="panel-subtitle" style="margin: 0; display: flex; align-items: center; gap: 6px;"><i data-lucide="grip-vertical" style="width: 14px; height: 14px; cursor: grab;"></i> Optimal Shipment Routing Paths</h3>
+                            <button type="button" class="btn btn-icon-small" id="btn-dock-toggle" title="Toggle Dock View" style="padding: 2px;">
+                                <i data-lucide="layout-sidebar" style="width: 14px; height: 14px;"></i>
+                            </button>
+                        </div>
+                        <div class="routes-scroll-container">
+                            <div class="routes-placeholder" id="routes-empty-state">
+                                Perform an optimization run to view generated routes.
+                            </div>
+                            <div class="routes-accordion hidden" id="routes-accordion"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Side Panel for dragging routes into -->
+        <div class="resizer-x hidden" id="resizer-right-x"></div>
+        <aside class="right-panel hidden" id="right-panel">
+            <div class="right-panel-header">
+                <span>Docked View</span>
+                <button class="btn btn-icon-small" id="btn-dock-back" title="Dock back to bottom panel">
+                    <i data-lucide="arrow-left-to-line" style="width: 14px; height: 14px;"></i>
+                </button>
+            </div>
+            <div class="right-panel-body" id="right-panel-body">
+                <!-- Will contain #routes-results-box when dragged here -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- Manual Shipment Modal -->
+    <div class="modal-backdrop" id="modal-shipment">
+        <div class="modal-card">
+            <header class="modal-header">
+                <h3 id="modal-shipment-title">Add New Shipment</h3>
+                <button class="btn btn-icon-close" id="modal-shipment-close">&times;</button>
+            </header>
+            <div class="modal-body">
+                <form id="form-add-shipment">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ship-id">Shipment ID</label>
+                            <input type="text" id="ship-id" required placeholder="e.g. S1">
+                        </div>
+                        <div class="form-group">
+                            <label for="ship-weight">Weight (Tons)</label>
+                            <input type="number" id="ship-weight" step="0.1" min="0.1" value="2.0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ship-start-hub">Start Hub</label>
+                            <div class="select-wrapper">
+                                <select id="ship-start-hub" required>
+                                    <option value="" disabled selected>Select start...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ship-end-hub">End Hub</label>
+                            <div class="select-wrapper">
+                                <select id="ship-end-hub" required>
+                                    <option value="" disabled selected>Select destination...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ship-start-time">Departure Time (Min)</label>
+                            <input type="number" id="ship-start-time" value="0" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ship-deadline">Deadline (Min)</label>
+                            <input type="number" id="ship-deadline" value="1440" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ship-max-price">Max Cost Limit (EUR, Optional)</label>
+                            <input type="number" id="ship-max-price" min="0" placeholder="No limit">
+                        </div>
+                        <div class="form-group">
+                            <label for="ship-max-emissions">Max CO2 Limit (kg, Optional)</label>
+                            <input type="number" id="ship-max-emissions" min="0" placeholder="No limit">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group inline" style="margin-top: 14px; margin-bottom: 6px;">
+                        <label for="ship-use-custom-weights" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="ship-use-custom-weights" style="width: auto; cursor: pointer;">
+                            Use custom objective weights for this shipment
+                        </label>
+                    </div>
+                    
+                    <div id="shipment-weights-container" class="parameter-group-card hidden" style="margin-top: 6px;">
+                        <div class="form-row-three weights-row">
+                            <div class="form-group">
+                                <label for="ship-weight-cost">Cost</label>
+                                <input type="number" id="ship-weight-cost" step="0.05" min="0" max="1" value="0.4" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label for="ship-weight-time">Time</label>
+                                <input type="number" id="ship-weight-time" step="0.05" min="0" max="1" value="0.3" style="width: 100%;">
+                            </div>
+                            <div class="form-group">
+                                <label for="ship-weight-emissions">CO2</label>
+                                <input type="number" id="ship-weight-emissions" step="0.05" min="0" max="1" value="0.3" style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-shipment">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-shipment">Add Shipment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Injection -->
+    <script src="index.js"></script>
+</body>
+</html>

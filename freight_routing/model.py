@@ -997,6 +997,20 @@ class TimeExpandedFreightRoutingModel:
             self.total_time = 0.0
             self.shipment_routes = {}
 
+        num_binary_vars = 0
+        num_integer_vars = 0
+        num_continuous_vars = 0
+        num_constraints = 0
+        if hasattr(self, "prob") and self.prob is not None:
+            num_constraints = len(self.prob.constraints)
+            for v in self.prob.variables():
+                if v.cat == pulp.LpBinary:
+                    num_binary_vars += 1
+                elif v.cat == pulp.LpInteger:
+                    num_integer_vars += 1
+                elif v.cat == pulp.LpContinuous:
+                    num_continuous_vars += 1
+
         return RoutingResult(
             status=self.status,
             is_optimal=is_optimal,
@@ -1010,6 +1024,10 @@ class TimeExpandedFreightRoutingModel:
             total_fixed_emissions=self.total_fixed_emissions,
             total_variable_emissions=self.total_variable_emissions,
             diagnostics=tuple(diagnostics),
+            num_binary_vars=num_binary_vars,
+            num_integer_vars=num_integer_vars,
+            num_continuous_vars=num_continuous_vars,
+            num_constraints=num_constraints,
         )
 
     def _validate_shipments(self, shipments: tuple[Shipment, ...]) -> None:
