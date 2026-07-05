@@ -7,7 +7,7 @@
 #import "appendix.typ": appendix
 #import "@preview/callisto:0.2.5"
 
-
+#set heading(numbering: "1.", supplement: [Kapitel])
 #let language = "de" // "de" or "en"
 #show: supercharged-dhbw.with(
   language: "de",
@@ -73,13 +73,8 @@
 #include "introduction.typ"
 #include "theoretischer_hintergrund.typ"
 #include "problem_description.typ"
+#include "modellierung.typ"
 #include "implementation.typ"
 #include "results.typ"
 #include "discussion.typ"
 #include "conclusion.typ"
-
-= Jupyter Notebook
-#let mainSolverNotebook = json("../notebooks/main.ipynb")
-
-#callisto.render(nb: mainSolverNotebook)
-

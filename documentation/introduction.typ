@@ -28,7 +28,7 @@ Daraus leiten sich folgende konkrete Teilziele ab:
 == Aufbau der Arbeit
 Die Arbeit gliedert sich wie folgt: @ch:theory erörtert die theoretischen Grundlagen des Netzwerkflusses und des Service Network Designs. In @ch:problem-description wird das mathematische Modell des multimodalen Gütertransports formal definiert. @ch:implementation beschreibt die softwareseitige Umsetzung. Die experimentellen Ergebnisse werden in @ch:results präsentiert, gefolgt von einer kritischen Diskussion in @ch:discussion. Die Arbeit schließt mit einem Fazit und Ausblick in @ch:conclusion.
 
-
+/**
 = Legacy 
 
 == Einschränkungen
@@ -294,3 +294,4 @@ Untersucht werden insbesondere:
 
 Dadurch liefert das Projekt Erkenntnisse über die praktische Anwendbarkeit verschiedener Optimierungsansätze in komplexen Logistiknetzwerken.
 
+**/
