@@ -436,7 +436,7 @@ sowie die maximale Netzwerkgeschwindigkeit, welche aus den Transportkanten des n
 $ v^"max" = max_(t in A_"trans") d_t / tau_t, $
 
 wobei $d_t$ die Streckenlänge und $tau_t$ die Dauer der Kante $t$ bezeichnet. Daraus
-ergeben sich die maximal erreichbare Distanz $d_k^+ = v^"max" L_k$ sowie die Luftliniendistanz $d_k^-$ zwischen Start- und Zielhub, welche über die Haversine-Formel (vgl. @enwiki:1358395081) berechnet wird:
+ergibt sich die Luftliniendistanz $d_k^-$ zwischen Start- und Zielhub, welche über die Haversine-Formel (vgl. @enwiki:1358395081) berechnet wird:
 $
   a = sin^2((phi_2 - phi_1) / 2) + cos(phi_1) cos(phi_2) sin^2((lambda_2 - lambda_1) / 2),
 $
@@ -445,7 +445,11 @@ $
 $
 wobei $R = 6371 "km"$ den Erdradius, $phi_1, phi_2$ die Breitengrade und $lambda_1, lambda_2$ die Längengrade (in Bogenmaß) der beiden Hubs bezeichnen.
 
+Als Obergrenze für die Routendistanz wird bewusst *nicht* die im verfügbaren Zeitfenster theoretisch erreichbare Distanz $v^"max" L_k$ verwendet: Diese überschätzt reale Routen um Größenordnungen und würde die Kosten- und Emissionsbereiche derart aufblähen, dass deren normierte Werte gegen null kollabieren. In der Folge würde der Zeitterm die Zielfunktion unabhängig von der gewählten Gewichtung dominieren und das Modell durchgängig die schnellste (Luft-)Verbindung bevorzugen. Die Obergrenze wird daher an einem plausiblen Umweg über der Luftlinie verankert:
 
+$ d_k^+ = beta d_k^-, quad beta = 3, $
+
+wobei $beta$ den maximalen Umwegfaktor (indirekte multimodale Führung inklusive Umschlag) bezeichnet.
 
 Für die Zeitgrenzen folgt:
 
@@ -453,9 +457,9 @@ $ T_k^- = d_k^- / v^"max", quad T_k^+ = L_k. $
 
 Für die *Kosten- und Emissionsgrenzen* werden die minimalen und maximalen modusspezifischen Faktoren $c^-$, $c^+$ (Kosten je Tonnenkilometer) sowie $e^-$, $e^+$ (Emissionen je Tonnenkilometer) herangezogen.
 
-Die maximal geschätzte Anzahl an Reiseabschnitten (Segmenten) $m_k$ basiert auf der verfügbaren Zeit $L_k$ und der kürzesten Kantendauer $tau^"min"$ des Netzwerks:
+Die maximal geschätzte Anzahl an Reiseabschnitten (Segmenten) $m_k$ basiert auf der verfügbaren Zeit $L_k$ und der kürzesten Kantendauer $tau^"min"$ des Netzwerks und wird zusätzlich auf eine realistische Obergrenze $m^"max" = 8$ begrenzt, damit der Fixkostenanteil den geschätzten Wertebereich nicht dominiert:
 $
-  m_k = max(1, L_k / tau^"min").
+  m_k = max(1, min(L_k / tau^"min", m^"max")).
 $
 
 Die maximale Anzahl benötigter Fahrzeuge je Segment $nu_k^"max"$ wird aus dem Sendungsgewicht $q_k$ und der kleinsten Kapazität aller Transportmittel $u^"min"$ abgeleitet:
