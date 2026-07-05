@@ -207,6 +207,12 @@ class DijkstraRouter:
         )
         min_time = self._min_time_by_hub(network, shipment)
 
+        # Corridor pruning threshold
+        min_time_direct = min_time.get(shipment.start_hub, math.inf)
+        corridor_threshold = math.inf
+        if not math.isinf(min_time_direct):
+            corridor_threshold = max(2.5 * min_time_direct, min_time_direct + 2880)
+
         def estimate(node: NetworkNode) -> float:
             if heuristic is None:
                 return 0.0
@@ -225,8 +231,17 @@ class DijkstraRouter:
             estimate_to_goal = estimate(node)
             if math.isinf(estimate_to_goal):
                 continue
-            if node.time_min + min_time.get(node.hub_id, math.inf) > shipment.deadline:
+
+            min_time_to_end = min_time.get(node.hub_id, math.inf)
+            if node.time_min + min_time_to_end > shipment.deadline:
                 continue
+
+            min_time_from_start = self._min_time_matrix.get(node.hub_id, {}).get(
+                shipment.start_hub, math.inf
+            )
+            if min_time_from_start + min_time_to_end > corridor_threshold:
+                continue
+
             distance[node_to_id[node]] = 0.0
             parent[node] = (None, None)
             heapq.heappush(queue, (estimate_to_goal, 0.0, counter, node))
@@ -245,11 +260,17 @@ class DijkstraRouter:
 
             for arc in index.outgoing.get(node, []):
                 next_node = arc.to_node
-                if (
-                    next_node.time_min + min_time.get(next_node.hub_id, math.inf)
-                    > shipment.deadline
-                ):
+
+                min_time_to_end = min_time.get(next_node.hub_id, math.inf)
+                if next_node.time_min + min_time_to_end > shipment.deadline:
                     continue
+
+                min_time_from_start = self._min_time_matrix.get(
+                    next_node.hub_id, {}
+                ).get(shipment.start_hub, math.inf)
+                if min_time_from_start + min_time_to_end > corridor_threshold:
+                    continue
+
                 estimate_to_goal = estimate(next_node)
                 if math.isinf(estimate_to_goal):
                     continue
