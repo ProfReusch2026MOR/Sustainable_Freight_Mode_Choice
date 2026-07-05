@@ -51,6 +51,10 @@ class DijkstraRouter:
         self._min_cost_matrix: dict[str, dict[str, float]] = {}
         self._min_emissions_matrix: dict[str, dict[str, float]] = {}
         self._node_to_id: dict[NetworkNode, int] = {}
+        self._arc_capacity: list[float] = []
+        self._arc_fixed_cost: list[float] = []
+        self._arc_fixed_emissions: list[float] = []
+        self._arc_vehicle_limit: list[float] = []
 
     def _normalization_context(
         self,
@@ -80,6 +84,18 @@ class DijkstraRouter:
     def _get_network_index(self, network: TimeExpandedNetwork) -> _NetworkIndex:
         if self._cached_network is not network or self._network_index is None:
             self._node_to_id = {node: i for i, node in enumerate(network.nodes)}
+
+            # Precompute static arc attributes
+            self._arc_capacity = [arc.capacity for arc in network.all_arcs]
+            self._arc_fixed_cost = [
+                network._get_fixed_cost(arc) for arc in network.all_arcs
+            ]
+            self._arc_fixed_emissions = [
+                network._get_fixed_emissions(arc) for arc in network.all_arcs
+            ]
+            self._arc_vehicle_limit = [
+                self._vehicle_limit(arc) for arc in network.all_arcs
+            ]
 
             outgoing = defaultdict(list)
             arc_to_index = {}
@@ -328,20 +344,30 @@ class DijkstraRouter:
         weights: ObjectiveWeights,
         ranges: dict[str, float],
     ) -> float | None:
-        needed = self._additional_vehicles(
-            arc, shipment.weight, capacity.remaining_capacity[arc_index]
-        )
-        if capacity.active_vehicles[arc_index] + needed > self._vehicle_limit(arc):
+        remaining_cap = capacity.remaining_capacity[arc_index]
+        weight = shipment.weight
+
+        if remaining_cap >= weight:
+            needed = 0
+        else:
+            needed = math.ceil(
+                (weight - remaining_cap) / max(self._arc_capacity[arc_index], 1e-9)
+            )
+
+        if (
+            capacity.active_vehicles[arc_index] + needed
+            > self._arc_vehicle_limit[arc_index]
+        ):
             return None
 
-        fixed_cost = network._get_fixed_cost(arc) * needed
-        fixed_emissions = network._get_fixed_emissions(arc) * needed
+        fixed_cost = self._arc_fixed_cost[arc_index] * needed
+        fixed_emissions = self._arc_fixed_emissions[arc_index] * needed
         return (
             normalization.fixed_cost_coefficient * fixed_cost
-            + weights.cost * arc.cost * shipment.weight / ranges["cost"]
+            + weights.cost * arc.cost * weight / ranges["cost"]
             + weights.time * arc.duration_min / ranges["time"]
             + normalization.fixed_emissions_coefficient * fixed_emissions
-            + weights.emissions * arc.emissions * shipment.weight / ranges["emissions"]
+            + weights.emissions * arc.emissions * weight / ranges["emissions"]
         )
 
     @staticmethod
