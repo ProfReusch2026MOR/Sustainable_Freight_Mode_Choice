@@ -177,40 +177,18 @@ Die Näherungsprüfung nutzt zunächst einen Bounding-Box-Filter (±0,45° ≈ 5
 ) <lst:bounding-box-filter>
 === Kantenberechnung nach Transportmodus
 Für jeden Transportmodus werden die Verbindungen nach spezifischen Regeln erzeugt:
-*Straße:* Jeder Hub wird mit seinen $k$-nächsten Nachbarn auf demselben Kontinent verbunden, sofern die geodätische Distanz 800 km nicht überschreitet. Die Fahrtdistanzen werden nach Möglichkeit über die öffentliche OSRM-API (Open Source Routing Machine) berechnet. Bei einem Timeout oder Fehler wird als Fallback die geodätische Distanz mit einem Umwegfaktor von 1,2 verwendet (siehe @lst:osrm-query):
-#figure(
-  ```python
-  url = f"http://router.project-osrm.org/route/v1/driving/..."
-  try:
-      response = requests.get(url, timeout=3)
-      if response.status_code == 200:
-          data = response.json()
-          dist_km = round(data["routes"][0]["distance"] / 1000.0, 1)
-          duration_min = int(data["routes"][0]["duration"] / 60.0)
-  except Exception:
-      pass  # Fall back to geodesic estimate
-  ```,
-  caption: [Abfrage von realen Fahrzeiten über die OSRM-API],
-) <lst:osrm-query>
-*Schiene:* Analoges $k$-Nearest-Neighbour-Verfahren innerhalb des gleichen Kontinents mit einer maximalen Distanz von 1.500 km und einem Umwegfaktor von 1,25. Die Durchschnittsgeschwindigkeit wird mit 50 km/h plus 2 Stunden Puffer angesetzt. Abfahrten erfolgen fahrplanbasiert zweimal täglich (06:00 und 18:00).
-*Schiff:* Verbindung aller Hafenhubs mit einer geodätischen Distanz zwischen 200 und 15.000 km. Es wird ein maritimer Umwegfaktor von 1,35 und eine Durchschnittsgeschwindigkeit von 22 km/h (12 Knoten) plus 12 Stunden Hafenzeit angesetzt. Tägliche Abfahrt um 08:00.
-*Luft:* Jeder Flughafen wird mit seinem nächsten Super-Hub verbunden, und die Super-Hubs untereinander werden für Langstreckenflüge über 1.000 km verknüpft (siehe @lst:hub-and-spoke):
-#figure(
-  ```python
-  super_hub_names = {
-      "Berlin", "Hamburg", "Frankfurt", "München",
-      "London", "Paris", "New York", "Singapore",
-      "Tokyo", "Shanghai", "Los Angeles", "Chicago", "Dubai",
-  }
-  for h1 in air_hubs:
-      closest_super = min(
-          super_hubs,
-          key=lambda sh: geodesic(...).km
-      )
-      # Spoke → Hub und Hub → Spoke Kanten erzeugen
-  ```,
-  caption: [Verknüpfungslogik für das Hub-and-Spoke-Luftfrachtnetz],
-) <lst:hub-and-spoke>
+
+
+*Straße:* Jeder Hub wird mit seinen $k$-nächsten Nachbarn auf demselben Kontinent verbunden, sofern die geodätische Distanz 800 km nicht überschreitet. Die Fahrtdistanzen werden nach Möglichkeit über die öffentliche OSRM-API (Open Source Routing Machine) berechnet. Bei einem Timeout oder Fehler wird als Fallback die geodätische Distanz mit einem Umwegfaktor von 1,2 verwendet.
+
+*Schiene:* Analoges $k$-Nearest-Neighbour-Verfahren innerhalb des gleichen Kontinents mit einer maximalen Distanz von 1.500 km und einem Umwegfaktor von 1,25. Die Durchschnittsgeschwindigkeit wird mit 50 km/h plus 2 Stunden Puffer angesetzt.
+
+
+*Schiff:* Verbindung aller Hafenhubs mit einer geodätischen Distanz zwischen 200 und 15.000 km. Es wird ein maritimer Umwegfaktor von 1,35 und eine Durchschnittsgeschwindigkeit von 22 km/h (12 Knoten) angesetzt.
+
+
+*Luft:* Für die Luftfracht wird eine Hub-and-Spoke-Architektur implementiert, um eine kombinatorische Explosion der Kantenanzahl zu vermeiden und die Struktur realer Luftfrachtnetzwerke abzubilden @bryan1999hub. Hierbei werden bestimmte Hubs als sogenannte *Super-Hubs* definiert (z. B. Frankfurt, London, Singapore, Tokyo, New York, Dubai). Kleinere Flughäfen (Spokes) besitzen keine Direktverbindungen untereinander, sondern werden ausschließlich bidirektional mit ihrem jeweils geografisch nächstgelegenen Super-Hub über Zubringerflüge (Spoke-Kanten) verknüpft. Die Super-Hubs untereinander bilden das globale Rückgrat des Netzwerks und sind für Langstreckenflüge ab einer Distanz von 1.000 km direkt miteinander verbunden.
+
 === Transfer-Kanten
 An jedem Hub mit mindestens zwei unterstützten Modi werden Transfer-Kanten für alle Moduskombinationen erzeugt. Die Umschlagdauer variiert je nach Moduskombination (z.B. 60 Minuten für Straße↔Schiene, 480 Minuten für Luft↔Schiff) und reflektiert die realen Umschlagprozesse.
 == Exakte Lösung mit Python PuLP <sec:solver-implementation>
