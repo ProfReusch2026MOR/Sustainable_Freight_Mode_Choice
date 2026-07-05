@@ -611,9 +611,15 @@ class DijkstraRouter:
             # Precompute APSP so worker processes have it ready
             self._precompute_apsp(network)
 
-            # Partition shipments into batches (limit to max 4 processes to prevent sandbox resource exhaustion)
+            # Limit to max 4 processes to prevent sandbox resource exhaustion
             num_processes = min(4, multiprocessing.cpu_count(), len(sorted_shipments))
-            batches = [sorted_shipments[i::num_processes] for i in range(num_processes)]
+
+            # Partition shipments into ~100 smaller chunks to show a smooth progress bar
+            chunk_size = max(1, len(sorted_shipments) // 100)
+            batches = [
+                sorted_shipments[i : i + chunk_size]
+                for i in range(0, len(sorted_shipments), chunk_size)
+            ]
             batches = [b for b in batches if b]
 
             args = [
@@ -633,11 +639,22 @@ class DijkstraRouter:
                 mp_context = multiprocessing
 
             with mp_context.Pool(
-                processes=len(batches),
+                processes=num_processes,
                 initializer=_init_worker,
                 initargs=(network, self.objective_weights, type(self)),
             ) as pool:
-                results = pool.map(_route_batch, args)
+                if show_progress:
+                    from tqdm import tqdm
+
+                    results = []
+                    for result in tqdm(
+                        pool.imap(_route_batch, args),
+                        total=len(args),
+                        desc="Parallel Routing",
+                    ):
+                        results.append(result)
+                else:
+                    results = pool.map(_route_batch, args)
 
             # Merge results
             merged_active_vehicles = [0] * len(network.all_arcs)
