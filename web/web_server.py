@@ -545,7 +545,9 @@ class RoutePlanningAPIHandler(http.server.BaseHTTPRequestHandler):
                 finally:
                     os.unlink(tmp_path)
             elif filename:
-                dataset_path = Path(__file__).parent.parent.absolute() / "dataset" / filename
+                dataset_path = (
+                    Path(__file__).parent.parent.absolute() / "dataset" / filename
+                )
                 if not dataset_path.exists():
                     self.send_error(400, "Dataset file does not exist")
                     return
