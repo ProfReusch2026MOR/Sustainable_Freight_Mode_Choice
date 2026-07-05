@@ -50,6 +50,7 @@ class DijkstraRouter:
         self._min_time_matrix: dict[str, dict[str, float]] = {}
         self._min_cost_matrix: dict[str, dict[str, float]] = {}
         self._min_emissions_matrix: dict[str, dict[str, float]] = {}
+        self._node_to_id: dict[NetworkNode, int] = {}
 
     def _normalization_context(
         self,
@@ -78,6 +79,8 @@ class DijkstraRouter:
 
     def _get_network_index(self, network: TimeExpandedNetwork) -> _NetworkIndex:
         if self._cached_network is not network or self._network_index is None:
+            self._node_to_id = {node: i for i, node in enumerate(network.nodes)}
+
             outgoing = defaultdict(list)
             arc_to_index = {}
             for index, arc in enumerate(network.all_arcs):
@@ -144,14 +147,24 @@ class DijkstraRouter:
                 else template.distance * factor.emissions_kg_per_ton_km
             )
 
-            time_rev_graph[template.to_hub].append((template.from_hub, float(template.duration_min)))
+            time_rev_graph[template.to_hub].append(
+                (template.from_hub, float(template.duration_min))
+            )
             cost_rev_graph[template.to_hub].append((template.from_hub, float(cost)))
-            emissions_rev_graph[template.to_hub].append((template.from_hub, float(emissions)))
+            emissions_rev_graph[template.to_hub].append(
+                (template.from_hub, float(emissions))
+            )
 
         for hub_id in network_data.hubs:
-            self._min_time_matrix[hub_id] = self._run_static_backward_dijkstra(hub_id, time_rev_graph)
-            self._min_cost_matrix[hub_id] = self._run_static_backward_dijkstra(hub_id, cost_rev_graph)
-            self._min_emissions_matrix[hub_id] = self._run_static_backward_dijkstra(hub_id, emissions_rev_graph)
+            self._min_time_matrix[hub_id] = self._run_static_backward_dijkstra(
+                hub_id, time_rev_graph
+            )
+            self._min_cost_matrix[hub_id] = self._run_static_backward_dijkstra(
+                hub_id, cost_rev_graph
+            )
+            self._min_emissions_matrix[hub_id] = self._run_static_backward_dijkstra(
+                hub_id, emissions_rev_graph
+            )
 
         self._apsp_network_data = network_data
 
@@ -199,8 +212,10 @@ class DijkstraRouter:
                 return 0.0
             return heuristic.get(node.hub_id, math.inf)
 
+        node_to_id = self._node_to_id
+        num_nodes = len(network.nodes)
         queue: list[tuple[float, float, int, NetworkNode]] = []
-        distance: dict[NetworkNode, float] = {}
+        distance: list[float] = [math.inf] * num_nodes
         parent: dict[NetworkNode, tuple[NetworkNode | None, _TimedArc | None]] = {}
         counter = 0
         best_feasible_score = math.inf
@@ -212,7 +227,7 @@ class DijkstraRouter:
                 continue
             if node.time_min + min_time.get(node.hub_id, math.inf) > shipment.deadline:
                 continue
-            distance[node] = 0.0
+            distance[node_to_id[node]] = 0.0
             parent[node] = (None, None)
             heapq.heappush(queue, (estimate_to_goal, 0.0, counter, node))
             counter += 1
@@ -223,7 +238,7 @@ class DijkstraRouter:
                 if best_end_node is not None:
                     return self._reconstruct_route(best_end_node, parent)
                 break
-            if current_distance > distance.get(node, math.inf):
+            if current_distance > distance[node_to_id[node]]:
                 continue
             if node in end_nodes:
                 return self._reconstruct_route(node, parent)
@@ -253,7 +268,8 @@ class DijkstraRouter:
                     continue
 
                 candidate = current_distance + arc_score
-                if candidate >= distance.get(next_node, math.inf):
+                v_id = node_to_id[next_node]
+                if candidate >= distance[v_id]:
                     continue
 
                 if next_node in end_nodes:
@@ -261,7 +277,7 @@ class DijkstraRouter:
                         best_feasible_score = candidate
                         best_end_node = next_node
 
-                distance[next_node] = candidate
+                distance[v_id] = candidate
                 parent[next_node] = (node, arc)
                 heapq.heappush(
                     queue,
