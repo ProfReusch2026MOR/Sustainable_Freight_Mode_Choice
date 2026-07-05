@@ -56,6 +56,17 @@ class DijkstraRouter:
         self._arc_fixed_emissions: list[float] = []
         self._arc_vehicle_limit: list[float] = []
 
+        # Static graph representations
+        self._time_forward_graph: dict[str, list[tuple[str, float]]] = {}
+        self._time_rev_graph: dict[str, list[tuple[str, float]]] = {}
+        self._cost_rev_graph: dict[str, list[tuple[str, float]]] = {}
+        self._emissions_rev_graph: dict[str, list[tuple[str, float]]] = {}
+        self._rev_graphs_network_data: NetworkData | None = None
+
+        # Caches for on-demand Dijkstra
+        self._min_time_from_start_cache: dict[str, dict[str, float]] = {}
+        self._min_time_to_end_cache: dict[str, dict[str, float]] = {}
+
     def _normalization_context(
         self,
         network: TimeExpandedNetwork,
@@ -135,18 +146,15 @@ class DijkstraRouter:
                 heapq.heappush(queue, (candidate, previous_hub))
         return distance
 
-    def _precompute_apsp(self, network: TimeExpandedNetwork) -> None:
+    def _build_static_graphs(self, network: TimeExpandedNetwork) -> None:
         network_data = network.network_data
-        if self._apsp_network_data is network_data:
+        if self._rev_graphs_network_data is network_data:
             return
 
-        self._min_time_matrix.clear()
-        self._min_cost_matrix.clear()
-        self._min_emissions_matrix.clear()
-
-        time_rev_graph = defaultdict(list)
-        cost_rev_graph = defaultdict(list)
-        emissions_rev_graph = defaultdict(list)
+        self._time_forward_graph = defaultdict(list)
+        self._time_rev_graph = defaultdict(list)
+        self._cost_rev_graph = defaultdict(list)
+        self._emissions_rev_graph = defaultdict(list)
 
         for template in network_data.arc_templates:
             if not isinstance(template, TransportArcTemplate):
@@ -163,34 +171,103 @@ class DijkstraRouter:
                 else template.distance * factor.emissions_kg_per_ton_km
             )
 
-            time_rev_graph[template.to_hub].append(
+            # Forward graph
+            self._time_forward_graph[template.from_hub].append(
+                (template.to_hub, float(template.duration_min))
+            )
+            # Reverse graphs
+            self._time_rev_graph[template.to_hub].append(
                 (template.from_hub, float(template.duration_min))
             )
-            cost_rev_graph[template.to_hub].append((template.from_hub, float(cost)))
-            emissions_rev_graph[template.to_hub].append(
+            self._cost_rev_graph[template.to_hub].append(
+                (template.from_hub, float(cost))
+            )
+            self._emissions_rev_graph[template.to_hub].append(
                 (template.from_hub, float(emissions))
             )
 
+        self._rev_graphs_network_data = network_data
+
+    def _run_static_forward_dijkstra(
+        self, start_hub: str, forward_graph: dict[str, list[tuple[str, float]]]
+    ) -> dict[str, float]:
+        distance = {start_hub: 0.0}
+        queue = [(0.0, start_hub)]
+        while queue:
+            current_distance, hub = heapq.heappop(queue)
+            if current_distance > distance.get(hub, math.inf):
+                continue
+            for next_hub, score in forward_graph.get(hub, []):
+                candidate = current_distance + score
+                if candidate >= distance.get(next_hub, math.inf):
+                    continue
+                distance[next_hub] = candidate
+                heapq.heappush(queue, (candidate, next_hub))
+        return distance
+
+    def _precompute_apsp(self, network: TimeExpandedNetwork) -> None:
+        network_data = network.network_data
+        if self._apsp_network_data is network_data:
+            return
+
+        self._build_static_graphs(network)
+
+        self._min_time_matrix.clear()
+        self._min_cost_matrix.clear()
+        self._min_emissions_matrix.clear()
+
         for hub_id in network_data.hubs:
             self._min_time_matrix[hub_id] = self._run_static_backward_dijkstra(
-                hub_id, time_rev_graph
+                hub_id, self._time_rev_graph
             )
             self._min_cost_matrix[hub_id] = self._run_static_backward_dijkstra(
-                hub_id, cost_rev_graph
+                hub_id, self._cost_rev_graph
             )
             self._min_emissions_matrix[hub_id] = self._run_static_backward_dijkstra(
-                hub_id, emissions_rev_graph
+                hub_id, self._emissions_rev_graph
             )
 
         self._apsp_network_data = network_data
+
+    def _get_min_time_to_end_dict(
+        self, network: TimeExpandedNetwork, shipment: Shipment
+    ) -> dict[str, float]:
+        end_hub = shipment.end_hub
+        if self._min_time_matrix:
+            return self._min_time_matrix[end_hub]
+
+        if end_hub not in self._min_time_to_end_cache:
+            self._build_static_graphs(network)
+            self._min_time_to_end_cache[end_hub] = self._run_static_backward_dijkstra(
+                end_hub, self._time_rev_graph
+            )
+        return self._min_time_to_end_cache[end_hub]
+
+    def _get_min_time_from_start_dict(
+        self, network: TimeExpandedNetwork, shipment: Shipment
+    ) -> dict[str, float]:
+        start_hub = shipment.start_hub
+        if self._min_time_matrix:
+            return {
+                target: self._min_time_matrix[target].get(start_hub, math.inf)
+                for target in network.network_data.hubs
+            }
+
+        if start_hub not in self._min_time_from_start_cache:
+            self._build_static_graphs(network)
+            self._min_time_from_start_cache[start_hub] = (
+                self._run_static_forward_dijkstra(start_hub, self._time_forward_graph)
+            )
+        return self._min_time_from_start_cache[start_hub]
 
     def _min_time_by_hub(
         self,
         network: TimeExpandedNetwork,
         shipment: Shipment,
     ) -> dict[str, float]:
-        self._precompute_apsp(network)
-        return self._min_time_matrix[shipment.end_hub]
+        if len(network.shipments) >= 100:
+            self._precompute_apsp(network)
+        return self._get_min_time_to_end_dict(network, shipment)
 
     def _find_shortest_path(
         self,
@@ -221,10 +298,11 @@ class DijkstraRouter:
             weights=weights,
             ranges=ranges,
         )
-        min_time = self._min_time_by_hub(network, shipment)
+        min_time_to_end_dict = self._get_min_time_to_end_dict(network, shipment)
+        min_time_from_start_dict = self._get_min_time_from_start_dict(network, shipment)
 
         # Corridor pruning threshold
-        min_time_direct = min_time.get(shipment.start_hub, math.inf)
+        min_time_direct = min_time_to_end_dict.get(shipment.start_hub, math.inf)
         corridor_threshold = math.inf
         if not math.isinf(min_time_direct):
             corridor_threshold = max(2.5 * min_time_direct, min_time_direct + 2880)
@@ -248,13 +326,11 @@ class DijkstraRouter:
             if math.isinf(estimate_to_goal):
                 continue
 
-            min_time_to_end = min_time.get(node.hub_id, math.inf)
+            min_time_to_end = min_time_to_end_dict.get(node.hub_id, math.inf)
             if node.time_min + min_time_to_end > shipment.deadline:
                 continue
 
-            min_time_from_start = self._min_time_matrix.get(node.hub_id, {}).get(
-                shipment.start_hub, math.inf
-            )
+            min_time_from_start = min_time_from_start_dict.get(node.hub_id, math.inf)
             if min_time_from_start + min_time_to_end > corridor_threshold:
                 continue
 
@@ -277,13 +353,13 @@ class DijkstraRouter:
             for arc in index.outgoing.get(node, []):
                 next_node = arc.to_node
 
-                min_time_to_end = min_time.get(next_node.hub_id, math.inf)
+                min_time_to_end = min_time_to_end_dict.get(next_node.hub_id, math.inf)
                 if next_node.time_min + min_time_to_end > shipment.deadline:
                     continue
 
-                min_time_from_start = self._min_time_matrix.get(
-                    next_node.hub_id, {}
-                ).get(shipment.start_hub, math.inf)
+                min_time_from_start = min_time_from_start_dict.get(
+                    next_node.hub_id, math.inf
+                )
                 if min_time_from_start + min_time_to_end > corridor_threshold:
                     continue
 
@@ -446,6 +522,10 @@ class DijkstraRouter:
             raise ValueError("solve() requires a network with exactly one shipment.")
         shipment = network.shipments[0]
 
+        # Clear on-demand caches for this run
+        self._min_time_from_start_cache.clear()
+        self._min_time_to_end_cache.clear()
+
         normalization = self._normalization_context(network, [shipment])
         bounds = normalization.bounds[shipment.id]
         ranges = normalization.ranges[shipment.id]
@@ -536,6 +616,19 @@ class DijkstraRouter:
         if not shipments:
             raise ValueError("solve_multiple() requires at least one shipment.")
 
+        # Clear on-demand caches for this run
+        self._min_time_from_start_cache.clear()
+        self._min_time_to_end_cache.clear()
+
+        # Conditionally precompute APSP (only if shipments >= 100)
+        if len(shipments) < 100:
+            self._min_time_matrix.clear()
+            self._min_cost_matrix.clear()
+            self._min_emissions_matrix.clear()
+            self._apsp_network_data = None
+        else:
+            self._precompute_apsp(network)
+
         normalization = self._normalization_context(network, shipments)
 
         # Sort shipments by weight descending (heaviest first)
@@ -616,6 +709,20 @@ class DijkstraRouter:
             return initial_result
 
         shipments = network.shipments
+
+        # Clear on-demand caches for this run
+        self._min_time_from_start_cache.clear()
+        self._min_time_to_end_cache.clear()
+
+        # Conditionally precompute APSP (only if shipments >= 100)
+        if len(shipments) < 100:
+            self._min_time_matrix.clear()
+            self._min_cost_matrix.clear()
+            self._min_emissions_matrix.clear()
+            self._apsp_network_data = None
+        else:
+            self._precompute_apsp(network)
+
         normalization = self._normalization_context(network, shipments)
         rng = random.Random(seed)
 
@@ -824,7 +931,8 @@ class AStarRouter(DijkstraRouter):
         weights: ObjectiveWeights,
         ranges: dict[str, float],
     ) -> dict[str, float]:
-        self._precompute_apsp(network)
+        if len(network.shipments) >= 100:
+            self._precompute_apsp(network)
 
         network_data = network.network_data
         if self._heuristic_network_data is not network_data:
