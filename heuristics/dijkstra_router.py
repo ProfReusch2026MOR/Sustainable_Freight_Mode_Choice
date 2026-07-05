@@ -41,6 +41,63 @@ class _NormalizationContext:
     fixed_emissions_coefficient: float
 
 
+import multiprocessing
+
+_worker_network = None
+_worker_router = None
+
+
+def _init_worker(network, objective_weights, router_class):
+    global _worker_network, _worker_router
+    _worker_network = network
+    _worker_router = router_class(objective_weights)
+
+
+def _route_batch(args):
+    (
+        shipments_batch,
+        active_vehicles,
+        remaining_capacity,
+        ranges_by_shipment,
+        bounds_by_shipment,
+    ) = args
+    global _worker_network, _worker_router
+
+    from heuristics.dijkstra_router import _CapacityState, _NormalizationContext
+
+    capacity = _CapacityState(
+        active_vehicles=list(active_vehicles),
+        remaining_capacity=list(remaining_capacity),
+    )
+
+    normalization = _NormalizationContext(
+        bounds=bounds_by_shipment,
+        ranges=ranges_by_shipment,
+        fixed_cost_coefficient=_worker_network.shared_fixed_objective_coefficients(
+            shipments_batch, _worker_router.objective_weights
+        )[0],
+        fixed_emissions_coefficient=_worker_network.shared_fixed_objective_coefficients(
+            shipments_batch, _worker_router.objective_weights
+        )[1],
+    )
+
+    routes = {}
+    for shipment in shipments_batch:
+        route_arcs = _worker_router._find_shortest_path(
+            network=_worker_network,
+            shipment=shipment,
+            capacity=capacity,
+            normalization=normalization,
+        )
+        if route_arcs is not None:
+            _worker_router._reserve_route(
+                _worker_network, route_arcs, shipment, capacity
+            )
+            routes[shipment.id] = tuple(route_arcs)
+
+    return routes, capacity.active_vehicles
+
+
 class DijkstraRouter:
     def __init__(self, objective_weights: ObjectiveWeights):
         self.objective_weights = objective_weights
@@ -520,12 +577,14 @@ class DijkstraRouter:
         self,
         network: TimeExpandedNetwork,
         show_progress: bool = False,
+        parallel: bool = False,
     ) -> RoutingResult:
-        """Construct a feasible multi-shipment solution sequentially.
+        """Construct a feasible multi-shipment solution.
 
         Args:
             network: The pre-built TimeExpandedNetwork instance.
             show_progress: Optionally show a progress bar.
+            parallel: Run in parallel using multiple processes if True (requires __main__ guard).
 
         Returns:
             A RoutingResult containing the consolidated routes and objective metrics.
@@ -538,34 +597,125 @@ class DijkstraRouter:
 
         # Sort shipments by weight descending (heaviest first)
         sorted_shipments = sorted(shipments, key=lambda s: s.weight, reverse=True)
+        shipments_by_id = {s.id: s for s in shipments}
 
         # Track active vehicles and remaining capacities on each time-expanded arc
         capacity = self._empty_capacity_state(network)
-
         shipment_routes = {}
         diagnostics = []
 
-        # Route each shipment sequentially
-        shipment_iterable = sorted_shipments
-        if show_progress:
-            from tqdm import tqdm
+        # Determine if we should run in parallel (need more than 1 shipment)
+        run_parallel = parallel and len(sorted_shipments) > 1
 
-            shipment_iterable = tqdm(sorted_shipments, desc="Routing shipments")
+        if run_parallel:
+            # Precompute APSP so worker processes have it ready
+            self._precompute_apsp(network)
 
-        for shipment in shipment_iterable:
-            route_arcs = self._find_shortest_path(
-                network=network,
-                shipment=shipment,
-                capacity=capacity,
-                normalization=normalization,
+            # Partition shipments into batches (limit to max 4 processes to prevent sandbox resource exhaustion)
+            num_processes = min(4, multiprocessing.cpu_count(), len(sorted_shipments))
+            batches = [sorted_shipments[i::num_processes] for i in range(num_processes)]
+            batches = [b for b in batches if b]
+
+            args = [
+                (
+                    batch,
+                    capacity.active_vehicles,
+                    capacity.remaining_capacity,
+                    {s.id: normalization.ranges[s.id] for s in batch},
+                    {s.id: normalization.bounds[s.id] for s in batch},
+                )
+                for batch in batches
+            ]
+
+            try:
+                mp_context = multiprocessing.get_context("fork")
+            except ValueError:
+                mp_context = multiprocessing
+
+            with mp_context.Pool(
+                processes=len(batches),
+                initializer=_init_worker,
+                initargs=(network, self.objective_weights, type(self)),
+            ) as pool:
+                results = pool.map(_route_batch, args)
+
+            # Merge results
+            merged_active_vehicles = [0] * len(network.all_arcs)
+            for batch_routes, batch_active_vehicles in results:
+                shipment_routes.update(batch_routes)
+                for i in range(len(network.all_arcs)):
+                    merged_active_vehicles[i] += batch_active_vehicles[i]
+
+            # Detect capacity conflicts
+            conflicting_shipments = set()
+            for i, arc in enumerate(network.all_arcs):
+                limit = self._vehicle_limit(arc)
+                if merged_active_vehicles[i] > limit:
+                    # Find all shipments using this arc
+                    for shipment_id, route in list(shipment_routes.items()):
+                        if arc in route:
+                            conflicting_shipments.add(shipment_id)
+                            if shipment_id in shipment_routes:
+                                del shipment_routes[shipment_id]
+
+            # Re-build conflict-free capacity state
+            for shipment_id, route in shipment_routes.items():
+                self._reserve_route(
+                    network, route, shipments_by_id[shipment_id], capacity
+                )
+
+            # Route conflicting shipments sequentially
+            conflicting_sorted = sorted(
+                [shipments_by_id[sid] for sid in conflicting_shipments],
+                key=lambda s: s.weight,
+                reverse=True,
             )
 
-            if route_arcs is None:
-                diagnostics.append(f"Shipment {shipment.id}: No feasible path found.")
-                continue
+            shipment_iterable = conflicting_sorted
+            if show_progress and conflicting_sorted:
+                from tqdm import tqdm
 
-            self._reserve_route(network, route_arcs, shipment, capacity)
-            shipment_routes[shipment.id] = tuple(route_arcs)
+                shipment_iterable = tqdm(
+                    conflicting_sorted, desc="Resolving parallel conflicts"
+                )
+
+            for shipment in shipment_iterable:
+                route_arcs = self._find_shortest_path(
+                    network=network,
+                    shipment=shipment,
+                    capacity=capacity,
+                    normalization=normalization,
+                )
+                if route_arcs is None:
+                    diagnostics.append(
+                        f"Shipment {shipment.id}: No feasible path found."
+                    )
+                    continue
+                self._reserve_route(network, route_arcs, shipment, capacity)
+                shipment_routes[shipment.id] = tuple(route_arcs)
+
+        else:
+            # Sequential routing
+            shipment_iterable = sorted_shipments
+            if show_progress:
+                from tqdm import tqdm
+
+                shipment_iterable = tqdm(sorted_shipments, desc="Routing shipments")
+
+            for shipment in shipment_iterable:
+                route_arcs = self._find_shortest_path(
+                    network=network,
+                    shipment=shipment,
+                    capacity=capacity,
+                    normalization=normalization,
+                )
+                if route_arcs is None:
+                    diagnostics.append(
+                        f"Shipment {shipment.id}: No feasible path found."
+                    )
+                    continue
+                self._reserve_route(network, route_arcs, shipment, capacity)
+                shipment_routes[shipment.id] = tuple(route_arcs)
 
         return self._build_combined_result(
             network=network,
