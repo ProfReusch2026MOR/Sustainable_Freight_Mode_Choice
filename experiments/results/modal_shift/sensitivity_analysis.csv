@@ -1,7 +1,0 @@
-instance,method,shipment_count,route_count,time_limit_sec,status,is_optimal,runtime_sec,objective_value,total_cost_eur,total_emissions_kg,total_time_min,road_share_pct,rail_share_pct,air_share_pct,ship_share_pct,lambda,cost_weight,emissions_weight,time_weight
-modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.498,0.010940,8176.48,553.80,1880.00,37.35,62.65,0.00,0.00,0,1.000000,0.000000,0.000000
-modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.519,0.010397,8176.48,553.80,1880.00,37.35,62.65,0.00,0.00,0.1,0.909091,0.090909,0.000000
-modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.657,0.008948,8176.48,553.80,1880.00,37.35,62.65,0.00,0.00,0.5,0.666667,0.333333,0.000000
-modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.623,0.007953,8176.48,553.80,1880.00,37.35,62.65,0.00,0.00,1,0.500000,0.500000,0.000000
-modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.479,0.006957,8176.48,553.80,1880.00,37.35,62.65,0.00,0.00,2,0.333333,0.666667,0.000000
-modal_shift,HiGHS MILP,3,10,20,Optimal,True,3.742,0.005961,8176.48,553.80,1880.00,37.35,62.65,0.00,0.00,5,0.166667,0.833333,0.000000
