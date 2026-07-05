@@ -160,7 +160,16 @@
   show footnote: set text(font: body-font, weight: "regular", 10pt)
   set cite(style: "alphanumeric")
   show raw.where(block: false): set text(size: 1.05em)
-  show raw.where(block: true): set text(size: 1.05em)
+  show raw.where(block: true): set text(size: 0.9em)
+  show raw.where(block: true): it => block(
+    fill: luma(250),
+    stroke: 0.5pt + luma(200),
+    inset: 10pt,
+    radius: 4pt,
+    width: 100%,
+    align(left, it),
+  )
+  show figure.where(kind: raw): set align(left)
 
   // heading numbering
   set heading(numbering: heading-numbering)
@@ -186,7 +195,7 @@
   }
 
   show heading.where(level: 1): it => {
-    colbreak()
+    pagebreak(weak: true)
     v(1em) + it + v(1em)
   }
   show heading.where(level: 2): it => v(1em) + it + v(0.5em)
