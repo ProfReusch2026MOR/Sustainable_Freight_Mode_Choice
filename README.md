@@ -258,6 +258,66 @@ Ziel:
 
 ---
 
+## 📂 Repository-Struktur
+
+Das Projekt ist in folgende Hauptverzeichnisse und Dateien unterteilt:
+
+- [freight_routing](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing): Hauptmodul zur Modellierung und Optimierung.
+  - [data_models.py](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/data_models.py): Datenklassen für Hubs, Kanten, Sendungen und Ziele.
+  - [data_loader.py](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/data_loader.py): Hilfsklassen zum Laden der JSON-Netzwerkdaten.
+  - [model.py](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/model.py): Implementierung des Time-Expanded Netzwerks und Optimierungsmodells.
+  - [visualization.py](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/visualization.py): Funktionen zur interaktiven Routen- und Netzwerk-Visualisierung.
+- [heuristics](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/heuristics): Implementierung heuristischer Lösungsverfahren (z. B. Dijkstra/A*-Router, Tabu Search).
+- [web](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/web): Quellcode des interaktiven Web-Dashboards (Frontend und Flask-Server).
+- [dataset](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/dataset): JSON-Datensätze (small, medium, large, test) und Datengenerierungs-Skripte.
+- [notebooks](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/notebooks): Jupyter Notebooks für Experimente, Analysen und Code-Beispiele.
+- [experiments](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/experiments): Skripte zur systematischen Evaluierung der Solver- und Heuristik-Performance.
+- [documentation](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/documentation): Wissenschaftliche Ausarbeitung/Dokumentation des Projekts in Typst.
+- [presentations](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/presentations): Präsentationen (z. B. Pitch-Folien).
+- [tests](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/tests): Automatisierte Unit-Tests für das Optimierungsmodell.
+
+---
+
+## 💻 Nutzung des Python-Moduls
+
+Das Kernmodul kann direkt in Python importiert und verwendet werden. Die Klassen [NetworkDataLoader](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/data_loader.py#L26), [Shipment](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/data_models.py#L152), [TimeExpandedNetwork](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/model.py#L26) und [TimeExpandedFreightRoutingModel](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/freight_routing/model.py#L510) steuern das Laden der Daten, die Modellkonfiguration und die Optimierung (siehe das ausführliche [example.ipynb](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/notebooks/example.ipynb) für Details):
+
+### Code-Beispiel
+
+```python
+from freight_routing.data_loader import NetworkDataLoader
+from freight_routing.data_models import Shipment
+from freight_routing.model import TimeExpandedNetwork, TimeExpandedFreightRoutingModel
+
+# 1. Transportnetzwerk laden
+network_data = NetworkDataLoader.from_json("dataset/test_network.json")
+
+# 2. Eine Sendung definieren
+shipment = Shipment(
+    id="sendung_1",
+    start_hub="BER",
+    end_hub="MUC",
+    start_time=0,
+    deadline=2880,  # in Minuten (48h)
+    weight=5.0      # in Tonnen
+)
+
+# 3. Zeit-erweitertes Netzwerk erstellen (z.B. für 2 Tage Planungshorizont)
+network = TimeExpandedNetwork.build(network_data, planning_days=2, shipments=[shipment])
+
+# 4. MILP-Optimierungsmodell initialisieren und lösen
+model = TimeExpandedFreightRoutingModel()
+result = model.solve(network)
+
+# 5. Ergebnisse auswerten
+if result.is_optimal:
+    print(f"Status: Optimal gelöst")
+    print(f"Gesamtkosten: {result.total_cost:.2f} EUR")
+    print(f"Gesamtemissionen: {result.total_emissions:.2f} kg CO2")
+```
+
+---
+
 ## 🌐 Web Dashboard
 
 Das Projekt beinhaltet ein interaktives Web-Dashboard zur visuellen Routenplanung und Optimierung. Es ermöglicht das Laden von Netzwerkdatensätzen, das Konfigurieren von Sendungen sowie das Starten des MILP-Solvers oder der A\*-Heuristik direkt im Browser.
