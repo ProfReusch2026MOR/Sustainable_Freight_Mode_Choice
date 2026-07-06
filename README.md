@@ -6,13 +6,13 @@
 
 ## Projektmitglieder
 
-| Name | GitHub-Username | Zuständigkeit im Projekt |
-|------|-----------------|--------------------------|
-| Benedikt Wehner | [bennewehn](https://github.com/bennewehn) | Konzeption der Datenstruktur, mathematische Modellierung (MILP) und Solver-Validierung |
-| Phil Kahlert | [phil-kl](https://github.com/phil-kl) | Datenaufbereitung, Einlesen der Datensätze und Entwicklung des ersten Test-Solvers |
-| Laurens Rüther | [LaurensRuether](https://github.com/LaurensRuether) | Datensammlung, Literaturrecherche und Ausarbeitung des multimodalen Netzwerks |
-| Luis Kruse | [lkruse301](https://github.com/lkruse301) | Problem- und Zieldefinition, Datensammlung/Vorverarbeitung (Luftfracht) sowie Heuristik-Entwicklung |
-| Minglu Li (Sam) | [Sam18069272581](https://github.com/Sam18069272581) | Solver-Heuristik-Vergleich, experimentelle Evaluation, Sensitivitätsanalysen und CI-Validierung |
+| Name | GitHub-Username |
+|------|-----------------|
+| Benedikt Wehner | [bennewehn](https://github.com/bennewehn) |
+| Phil Kahlert | [phil-kl](https://github.com/phil-kl) |
+| Laurens Rüther | [LaurensRuether](https://github.com/LaurensRuether) |
+| Luis Kruse | [lkruse301](https://github.com/lkruse301) |
+| Minglu Li (Sam) | [Sam18069272581](https://github.com/Sam18069272581) |
 
 ---
 
@@ -205,27 +205,22 @@ Typische Nutzung:
 
 ### Entscheidungsvariablen
 
-- Routing-Entscheidungen  
-- Moduswahl  
-- Terminalnutzung  
-- Konsolidierung  
+- **Routingvariable ($x_{a,k} \in \{0, 1\}$):** Gibt an, ob Sendung $k$ die zeitexpandierte Kante $a$ nutzt.
+- **Kapazitätsvariable ($v_a \in \mathbb{N}_0$):** Bestimmt die Anzahl der aktivierten Kapazitäts-/Fahrzeugeinheiten auf Kante $a$.
+- **Schlupfvariablen ($s_k^D, s_k^B, s_k^E \geq 0$):** Messen die Überschreitung weicher Restriktionen für Lieferfrist (Deadlines), Preisgrenzen (Budget) und Emissionsobergrenzen.
 
 ### Zielfunktion
 
-Minimierung von:
-
-- Transportkosten  
-- Umschlagskosten  
-- CO₂-Emissionen  
-- Verspätungskosten  
+Minimierung von $Z = Z^{\text{route}} + \rho Z^{\text{slack}}$:
+- **Routingterm ($Z^{\text{route}}$):** Minimiert die gewichteten und normierten variablen Transportkosten, Fahrzeiten und CO₂-Emissionen für alle Sendungen sowie die anteiligen Fixkosten.
+- **Strafterm ($Z^{\text{slack}}$):** Bestraft Verletzungen der weichen Restriktionen (Lieferzeiten, Budgetgrenzen, Emissionsgrenzen).
 
 ### Nebenbedingungen
 
-- Flusserhaltung  
-- Kapazitäten  
-- Deadlines  
-- Konsistenz  
-- Moduswechselregeln  
+- **Flusserhaltung:** Steuert den Transportfluss vom Start zum Ziel auf dem zeitexpandierten Graphen.
+- **Kapazitäts- und Kopplungsbedingungen:** Sichert, dass das Gesamtgewicht aller Kanten-nutzenden Sendungen die Kantenkapazität der aktivierten Fahrzeuge nicht überschreitet.
+- **Lieferfristen (Deadlines):** Garantiert die Einhaltung der maximal zulässigen Lieferzeit für jede Sendung (unterstützt durch weiche Restriktionen).
+- **Budget- und Emissionsgrenzen:** Begrenzt die Kosten und Emissionen pro Sendung oder global (unterstützt durch weiche Restriktionen).
 
 ---
 
@@ -233,28 +228,30 @@ Minimierung von:
 
 Technologien:
 
-- Python  
-- PuLP  
-- OR-Tools  
+- Python (Modellierung mit **PuLP**)
+- Solver: **HiGHS** (über `highspy`), optional CBC
 
-### Auswertung
+### Auswertung und Diagnose
 
-- Laufzeit  
-- Gap  
-- Zielfunktionswert  
+- Optimierungs-Laufzeit (CPU-Time)
+- Relativer Gap (Optimierungsschranke)
+- Gewichteter Zielfunktionswert (Kosten, Zeit und CO₂-Emissionen)
+- Diagnostik-Ausgabe über Soft-Constraints bei Unzulässigkeit (Infeasibility)
 
 ---
 
 ## Heuristische Verfahren
 
-- Greedy  
-- Shortest Path Heuristic  
-- Local Search  
-- Konsolidierungsheuristiken  
+Zur Skalierung auf große Netzwerke und viele Sendungen wurden folgende heuristische Algorithmen implementiert:
+
+- **Dijkstra-Router:** Kürzeste-Weg-Suche für Einzelsendungen auf dem zeitexpandierten Netzwerk.
+- **A\*-Router:** Suchraum-optimiertes Routing unter Verwendung von Pruning-Strategien (z. B. bedarfsgesteuerte APSP-Vorberechnung als Heuristikfunktion).
+- **Sequentielle Multi-Sendungs-Planung:** Schrittweise Zuweisung von Routen mit Konsolidierungseffekten und dynamischer Kapazitätsprüfung.
+- **Large Neighborhood Search (LNS):** Metaheuristik mit *Ruin-and-Recreate*-Prinzip zur nachträglichen Optimierung bei kapazitativen Engpässen.
 
 Ziel:
 
-- schnelle gute Lösungen für große Instanzen  
+- Berechnung qualitativ hochwertiger, kapazitätskonformer Transportpläne in Sekundenbruchteilen für Instanzen, bei denen der exakte Solver an Skalierungsgrenzen stößt.
 
 ---
 

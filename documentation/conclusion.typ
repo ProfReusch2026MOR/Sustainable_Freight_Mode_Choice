@@ -32,7 +32,7 @@ Zur Herstellung von Transparenz über die individuellen Beiträge im Rahmen des 
   [Benedikt Wehner \ (`bennetwehn`)], [
     - *MILP-Modell & Solver-Implementierung:* Formulierung des mathematischen Modells auf dem zeitexpandierten Netzwerk und Implementierung des exakten Solvers (PuLP/HiGHS) inkl. Normalisierung der Zielfunktion und Infeasibility-Diagnose.
     - *Software-Engineering:* Erstellung des Dockerfiles, CI/CD-Pipelines (GitHub Actions) sowie des interaktiven Web-Dashboards.
-    - *Dokumentation:* Schreiben der Mathematischen Definition, Solver-Beschreibung, Web-Dashboards, Diskussion, Literaturrecherche.https://github.com/Sam18069272581
+    - *Dokumentation:* Schreiben der Mathematischen Definition, Solver-Beschreibung, Web-Dashboards, Diskussion, Literaturrecherche.
   ],
   [Phil Kahlert \ (`Phil-kl`)], [
     - *Heuristik-Optimierung:* Konzeption und Implementierung des $A^*$-Routers, Optimierung des Suchraums (Pruning-Strategien, bedarfsgesteuerte APSP-Vorberechnung) und Performanz-Tuning.
@@ -42,7 +42,7 @@ Zur Herstellung von Transparenz über die individuellen Beiträge im Rahmen des 
     - *Dokumentation:* Schreiben der Einleitung und Problemstellung (Klarheit, Struktur), Heuristik-Beschreibung, Fazit, Datensammlung.
   ],
   [Luis Kruse \ (`lkruse301`)], [
-    - *Frühe Heuristiken:* Erste prototypische Entwürfe und Implementierung einer Tabu-Search- und Dijkstra-Heuristik (im historischen Ordner `Heuristic/`).
+    - *Frühe Heuristiken:* Erste prototypische Entwürfe und Implementierung einer Tabu-Search- und Dijkstra-Heuristik.
     - *Datenvorbereitung:* Erste Entwürfe von Straßen- und Luftfrachtverbindungen als CSV-Dateien.
   ],
   [Laurens Rüther \ (`LaurensRuether`)], [
