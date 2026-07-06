@@ -1,5 +1,5 @@
 = Umsetzung <ch:implementation>
-Dieses Kapitel beschreibt die softwaretechnische Umsetzung des in @ch:mathematical-model formulierten Optimierungsmodells. Die Implementierung gliedert sich in vier Bereiche: zunächst die Spezifikation des Datensatzes (@sec:dataset), dann die automatisierte Datenbeschaffung (@sec:data-collection), anschließend die exakte Lösung mittels MILP-Solver (@sec:solver-implementation) und schließlich die heuristische Lösung (@sec:heuristic-implementation). Sämtlicher Quellcode ist in Python umgesetzt.
+Dieses Kapitel beschreibt die softwaretechnische Umsetzung des in @ch:mathematical-model formulierten Optimierungsmodells. Die Implementierung gliedert sich in fünf Bereiche: zunächst die Spezifikation des Datensatzes (@sec:dataset), dann die automatisierte Datenbeschaffung (@sec:data-collection), anschließend die exakte Lösung mittels MILP-Solver (@sec:solver-implementation) und die heuristische Lösung (@sec:heuristic-implementation) sowie abschließend die interaktive Weboberfläche (@sec:web-app). Sämtlicher Quellcode ist in Python umgesetzt.
 == Datensatz und Datenmodell <sec:dataset>
 Grundlage aller Experimente ist ein multimodales Transportnetzwerk, das
 vollständig in einer JSON-Datei beschrieben wird. Dieser Abschnitt stellt das
@@ -215,7 +215,7 @@ Für jeden Transportmodus werden die Verbindungen nach spezifischen Regeln erzeu
 An jedem Hub mit mindestens zwei unterstützten Modi werden Transfer-Kanten für alle Moduskombinationen erzeugt. Die Umschlagdauer variiert je nach Moduskombination (z.B. 60 Minuten für Straße↔Schiene, 480 Minuten für Luft↔Schiff) und reflektiert die realen Umschlagprozesse.
 
 === Plausibilitätsprüfung der generierten Daten <sec:plausibility>
-Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusammengesetzt wird, werden die erzeugten Parameter vor der Optimierung gegen einfache Plausibilitätsregeln geprüft. Diese Prüfungen sind im Notebook `notebooks/data_plausibility_check.ipynb` implementiert und werden dort für alle drei Datensatzgrößen (Small, Medium, Large) automatisiert ausgeführt; sämtliche Regeln werden bestanden. @tab:plausibility fasst die Prüfaspekte und ihre Ausprägung zusammen.
+Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusammengesetzt wird, werden die erzeugten Parameter vor der Optimierung gegen einfache Plausibilitätsregeln geprüft. Diese Prüfungen sind im Notebook implementiert und werden dort für alle drei Datensatzgrößen (Small, Medium, Large) automatisiert ausgeführt; sämtliche Regeln werden bestanden. @tab:plausibility fasst die Prüfaspekte und ihre Ausprägung zusammen.
 
 #figure(
   table(

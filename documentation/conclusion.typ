@@ -1,5 +1,7 @@
 = Fazit & Ausblick <ch:conclusion>
 
+Dieses abschließende Kapitel bündelt die Ergebnisse der vorangegangenen Kapitel: Es fasst zunächst die zentralen Erkenntnisse und Beiträge der Arbeit zusammen, ordnet diese anschließend im Hinblick auf die Anforderungen des Moduls ein und schließt mit einem Ausblick auf mögliche Erweiterungen des Modells.
+
 == Zusammenfassung der Erkenntnisse und Beiträge der Arbeit
 Im Rahmen dieser Projektarbeit wurde ein Operations-Research-Modell zur nachhaltigen multimodalen Transportplanung erfolgreich konzipiert, implementiert und evaluiert. Die Arbeit liefert wesentliche methodische, softwaretechnische und praktische Beiträge zur Lösung komplexer logistischer Fragestellungen unter Berücksichtigung ökonomischer und ökologischer Kriterien:
 
