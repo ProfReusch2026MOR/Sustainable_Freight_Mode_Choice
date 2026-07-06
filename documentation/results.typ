@@ -98,18 +98,3 @@ Wie viele Sendungen LNS pro Schritt entnehmen sollte (die sogenannte Zerstörung
 
 *Erkenntnisse zur Zerstörungsrate (Ruin-Fraction):*
 1. *Die richtige Balance:* Wenn das Modell zu wenige Sendungen entnimmt (10 %), konvergiert die Berechnung zwar schnell, aber das Modell übersieht globale Bündelungschancen. Werden zu viele Sendungen entnommen (30 % bis 40 %), hat das Modell zwar maximale Freiheit bei der Neuplanung, die Rechenzeit steigt jedoch drastisch an, da ein sehr großes Teilproblem neu gelöst werden muss. Eine Ruin-Fraction von *20 %* erweist sich als optimaler Kompromiss zwischen Rechenzeit und Lösungsqualität.
-
-== Sensitivitätsanalyse der Verkehrsmittelwahl
-Ein wichtiges Ziel des Planungs-Tools ist es, flexibel auf politische oder ökologische Vorgaben zu reagieren. Daher wurde untersucht, wie sich der Modal Split (der prozentuale Anteil der Straße und Schiene an den gesamten Transporten) verschiebt, wenn der Fokus schrittweise von reiner Kostenminimierung hin zu reiner Emissionsminimierung verschoben wird. Das Gewicht für CO₂-Emissionen ($w_("emissions")$) wird dazu von 0,0 auf 1,0 erhöht.
-
-Als Testfall dient eine europäische Instanz mit schweren Sendungen (80 Tonnen), da hier die umweltfreundliche Schiene ihre Kapazitätsvorteile ausspielen kann.
-
-#figure(
-  image("assets/sensitivity_weights.png", width: 90%),
-  caption: [Verschiebung des Modal Splits bei Variation des Emissions-Gewichts],
-) <fig:sensitivity_weights>
-
-*Ergebnisse der Sensitivitätsanalyse:*
-- *Reine Kostenoptimierung ($w_("emissions") = 0.0$):* Liegt der Fokus rein auf den Kosten, dominiert die Straße (Lkw). Dies liegt an den hohen Aktivierungskosten (Fixkosten) der Schiene (500 € pro Zug vs. 150 € pro Lkw). Lkw sind für kleinere oder mittlere Transportmengen auf kürzeren Strecken wirtschaftlicher.
-- *Der Umschlagpunkt (Tipping Point):* Sobald das Umweltgewicht $w_("emissions") \ge 0.4$ beträgt, verlagert das Modell schwere Sendungen vollständig auf die Schiene (@fig:sensitivity_weights). Da ein Zug pro Kilometer extrem wenig CO₂ ausstößt (0,025 kg/tkm vs. 0,09 kg/tkm beim Lkw), gleicht der Umweltvorteil die höheren Fixkosten der Schiene ab diesem Punkt aus.
-- *Der Faktor Zeit (Deadlines):* Diese Verlagerung zur Schiene funktioniert jedoch nur, wenn die Lieferfristen ausreichend lang sind. Werden die Deadlines zu eng gesetzt (unter 80 % der Standardzeit), muss das Modell auf Lkw ausweichen, da Zugfahrpläne starr sind und Lkw die Ziele schneller erreichen.
