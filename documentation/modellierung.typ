@@ -1,5 +1,5 @@
 = Modellierung und Optimierung <ch:modelling-and-optimization>
-
+// TODO: Text hier
 == Exakte mathematische Formulierung <ch:mathematical-model>
 
 Dieser Abschnitt formalisiert das in @ch:problem-description beschriebene
@@ -445,17 +445,17 @@ $
 $
 wobei $R = 6371 "km"$ den Erdradius, $phi_1, phi_2$ die Breitengrade und $lambda_1, lambda_2$ die Längengrade (in Bogenmaß) der beiden Hubs bezeichnen.
 
-Als Obergrenze für die Routendistanz wird bewusst *nicht* die im verfügbaren Zeitfenster theoretisch erreichbare Distanz $v^"max" L_k$ verwendet: Diese überschätzt reale Routen um Größenordnungen und würde die Kosten- und Emissionsbereiche derart aufblähen, dass deren normierte Werte gegen null kollabieren. In der Folge würde der Zeitterm die Zielfunktion unabhängig von der gewählten Gewichtung dominieren und das Modell durchgängig die schnellste (Luft-)Verbindung bevorzugen. Die Obergrenze wird daher an einem plausiblen Umweg über der Luftlinie verankert:
+Als Obergrenze für die Routendistanz wird bewusst nicht die im verfügbaren Zeitfenster theoretisch erreichbare Distanz $v^"max" L_k$ verwendet: Diese überschätzt reale Routen um Größenordnungen und würde die Kosten- und Emissionsbereiche derart aufblähen, dass deren normierte Werte gegen null kollabieren. In der Folge würde der Zeitterm die Zielfunktion unabhängig von der gewählten Gewichtung dominieren und das Modell durchgängig die schnellste (Luft-)Verbindung bevorzugen. Die Obergrenze wird daher an einem plausiblen Umweg über der Luftlinie verankert:
 
 $ d_k^+ = beta d_k^-, quad beta = 3, $
 
-wobei $beta$ den maximalen Umwegfaktor (indirekte multimodale Führung inklusive Umschlag) bezeichnet.
+wobei $beta$ den maximalen Umwegfaktor bezeichnet.
 
 Für die Zeitgrenzen folgt:
 
 $ T_k^- = d_k^- / v^"max", quad T_k^+ = L_k. $
 
-Für die *Kosten- und Emissionsgrenzen* werden die minimalen und maximalen modusspezifischen Faktoren $c^-$, $c^+$ (Kosten je Tonnenkilometer) sowie $e^-$, $e^+$ (Emissionen je Tonnenkilometer) herangezogen.
+Für die Kosten- und Emissionsgrenzen werden die minimalen und maximalen modusspezifischen Faktoren $c^-$, $c^+$ (Kosten je Tonnenkilometer) sowie $e^-$, $e^+$ (Emissionen je Tonnenkilometer) herangezogen.
 
 Die maximal geschätzte Anzahl an Reiseabschnitten (Segmenten) $m_k$ basiert auf der verfügbaren Zeit $L_k$ und der kürzesten Kantendauer $tau^"min"$ des Netzwerks und wird zusätzlich auf eine realistische Obergrenze $m^"max" = 8$ begrenzt, damit der Fixkostenanteil den geschätzten Wertebereich nicht dominiert:
 $
@@ -583,7 +583,7 @@ Zur Beschleunigung der Suche bei Einzelsendungen kann der Dijkstra-Router durch 
 
 Der A\*-Router @hart1968formal erweitert den Dijkstra-Router um eine Heuristikfunktion $h$, die für jeden Knoten eine untere Schranke der verbleibenden Kosten zum Ziel liefert.
 
-In geografischen Anwendungen wird üblicherweise die Luftliniendistanz (z. B. per Haversine-Formel) als Heuristik verwendet. In einem multimodalen Netzwerk stößt dieser Ansatz jedoch an Grenzen: Zum einen ist die Kantenbewertung (Arc Score) ein gewichteter Wert aus Kosten, Zeit und Emissionen, der sich nicht direkt proportional zur Luftlinie verhält. Zum anderen vernachlässigt die Luftlinie die tatsächliche Konnektivität des Netzwerks. Sie würde Sackgassen oder spärlich verbundene Hubs übersehen, was A\* dazu zwingen würde, weite Teile des zeitexpandierten Suchraums unnötig zu explorieren.
+In geografischen Anwendungen wird üblicherweise die Luftliniendistanz (z. B. per Haversine-Formel) als Heuristik verwendet. In einem multimodalen Netzwerk stößt dieser Ansatz jedoch an Grenzen: Zum einen ist die Kantenbewertung (Arc Score) ein gewichteter Wert aus Kosten, Zeit und Emissionen, der sich nicht direkt proportional zur Luftlinie verhält. Zum anderen vernachlässigt die Luftlinie die tatsächliche Konnektivität des Netzwerks. Sie würde Sackgassen oder spärlich verbundene Hubs übersehen, was A\* dazu zwingen würde, weite Teile des zeitexpandierten Suchraums unnötig zu durchsuchen.
 
 Aus diesem Grund erfolgt die Berechnung durch einen Rückwärts-Dijkstra auf dem
 nicht zeitexpandierten Netz, der für jeden Hub $h in H$ den minimalen

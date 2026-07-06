@@ -1,6 +1,7 @@
 = Umsetzung <ch:implementation>
 Dieses Kapitel beschreibt die softwaretechnische Umsetzung des in @ch:mathematical-model formulierten Optimierungsmodells. Die Implementierung gliedert sich in vier Bereiche: zunächst die Spezifikation des Datensatzes (@sec:dataset), dann die automatisierte Datenbeschaffung (@sec:data-collection), anschließend die exakte Lösung mittels MILP-Solver (@sec:solver-implementation) und schließlich die heuristische Lösung (@sec:heuristic-implementation). Sämtlicher Quellcode ist in Python umgesetzt.
 == Datensatz und Datenmodell <sec:dataset>
+// TODO: text hier
 === JSON-Datenformat
 Das multimodale Transportnetzwerk wird in einer zentralen JSON-Datei gespeichert. Die Datei beschreibt die vollständige physische Infrastruktur – Hubs, Verbindungen, Fahrpläne und Kostenparameter – und dient als einzige Datenquelle für Solver und Heuristiken.
 Die JSON-Datei enthält die folgenden Toplevel-Schlüssel:
@@ -219,8 +220,14 @@ Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusa
     stroke: 0.5pt,
     inset: 7pt,
     [*Prüfaspekt*], [*Regel bzw. Wert im Datensatz*], [*Status*],
-    [Distanzen positiv], [Alle Kantendistanzen $> 0$; Modusgrenzen: Straße $<= 800$ km, Schiene $<= 1.500$ km, Schiff $200$--$15.000$ km], [OK],
-    [Geschwindigkeit ↔ Modus], [Schiene $approx 50$ km/h, Schiff $approx 22$ km/h (12 kn), Straße via OSRM-Realdistanz, Luft am schnellsten], [OK],
+    [Distanzen positiv],
+    [Alle Kantendistanzen $> 0$; Modusgrenzen: Straße $<= 800$ km, Schiene $<= 1.500$ km, Schiff $200$--$15.000$ km],
+    [OK],
+
+    [Geschwindigkeit ↔ Modus],
+    [Schiene $approx 50$ km/h, Schiff $approx 22$ km/h (12 kn), Straße via OSRM-Realdistanz, Luft am schnellsten],
+    [OK],
+
     [Umwegfaktoren realistisch], [Straße $1{,}2$, Schiene $1{,}25$, Schiff $1{,}35$ gegenüber der Luftlinie], [OK],
     [Kapazitäten fahrzeugtypisch \[t\]], [Straße $40$, Luft $50$, Schiene $1.000$, Schiff $8.000$], [OK],
     [Kostenrangfolge \[€/t·km\]], [Schiff $0{,}4 <$ Schiene $0{,}7 <$ Straße $1{,}2 <$ Luft $3{,}5$], [OK],
@@ -231,7 +238,6 @@ Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusa
   caption: [Plausibilitätsprüfung der generierten Netzwerkdaten.],
 ) <tab:plausibility>
 
-Diese Prüfungen stellen sicher, dass die kombinatorische Schwierigkeit der großen Instanzen aus der Problemstruktur und nicht aus fehlerhaften oder unrealistischen Eingabedaten resultiert.
 == Exakte Lösung mit Python PuLP <sec:solver-implementation>
 Das in @ch:mathematical-model formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Implementierung gliedert sich in zwei zentrale Klassen: `TimeExpandedNetwork` für den Graphaufbau und `TimeExpandedFreightRoutingModel` für die MILP-Formulierung.
 === Aufbau des zeitexpandierten Netzwerks
@@ -294,17 +300,11 @@ Das Modell verwendet drei Variablentypen (siehe @lst:pulp-variables):
   ```,
   caption: [Deklaration der PuLP-Entscheidungsvariablen im MILP-Modell],
 ) <lst:pulp-variables>
-Zusätzlich werden Slack-Variablen für Deadline-, Budget- und Emissionsrestriktionen deklariert. Diese ermöglichen eine Soft-Constraint-Formulierung: Falls keine vollständig zulässige Lösung existiert, werden Verletzungen in der Zielfunktion mit einem hohen Strafterm ($= 100$) penalisiert, anstatt das Problem als infeasibel abzubrechen.
+Zusätzlich werden Slack-Variablen für Deadline-, Budget- und Emissionsrestriktionen deklariert. Diese ermöglichen eine Soft-Constraint-Formulierung: Falls keine vollständig zulässige Lösung existiert, werden Verletzungen in der Zielfunktion mit einem hohen Strafterm ($rho= 100$) penalisiert, anstatt das Problem als infeasibel abzubrechen.
 ==== Zielfunktion
-Die Zielfunktion realisiert die gewichtete multikritierielle Optimierung. Kosten, Zeit und Emissionen werden sendungsspezifisch auf den Wertebereich $[0, 1]$ normiert, um Größenordnungsunterschiede auszugleichen. Die Normalisierungsgrenzen werden analytisch aus den Netzwerkparametern geschätzt (siehe @lst:normalization-bounds):
-#figure(
-  ```python
-  bounds = network.estimate_normalization_bounds(shipment)
-  # bounds = {"cost": (min_cost, max_cost), "time": (...), "emissions": (...)}
-  ```,
-  caption: [Schätzung der Normalisierungsgrenzen pro Sendung],
-) <lst:normalization-bounds>
-Die normierte Zielfunktion kombiniert die fixen Fahrzeugkosten (gewichtet über alle Sendungen gemittelt) mit den sendungsspezifischen variablen Komponenten (vgl. @lst:pulp-objective):
+Die Zielfunktion realisiert die gewichtete multikritierielle Optimierung. Kosten, Zeit und Emissionen werden sendungsspezifisch auf den Wertebereich $[0, 1]$ normiert, um Größenordnungsunterschiede auszugleichen. Die Normalisierungsgrenzen werden analytisch aus den Netzwerkparametern geschätzt.
+
+Die normierte Zielfunktion kombiniert die fixen Fahrzeugkosten (gewichtet über alle Sendungen gemittelt) mit den sendungsspezifischen variablen Komponenten:
 #figure(
   ```python
   routing_objective = (
@@ -323,7 +323,7 @@ Die normierte Zielfunktion kombiniert die fixen Fahrzeugkosten (gewichtet über 
 ==== Nebenbedingungen
 Die Nebenbedingungen bilden die in @ch:mathematical-model definierten Restriktionen ab:
 - *Flusserhaltung:* An jedem Zwischenknoten muss der eingehende Fluss jeder Sendung dem ausgehenden entsprechen. An den Startknoten wird genau eine ausgehende Kante aktiviert, an den Zielknoten genau eine eingehende.
-- *Kapazitätskopplung:* Die Summe der Sendungsgewichte auf einer Kante darf die Kapazität mal der Fahrzeuganzahl nicht überschreiten: $ sum_k w_k dot x_(i,k) <= c_i dot y_i $
+- *Kapazitätskopplung:* Die Summe der Sendungsgewichte auf einer Kante darf die Kapazität mal der Fahrzeuganzahl nicht überschreiten.
 - *Budget- und Emissionsgrenzen:* Optionale sendungsspezifische Obergrenzen für Kosten und Emissionen werden als Soft Constraints formuliert.
 ==== Solver-Ausführung
 Als Solver wird *HiGHS* über die PuLP-Schnittstelle eingesetzt. HiGHS löst das MILP mit Branch-and-Bound- und Presolve-Verfahren und unterstützt konfigurierbare Zeitlimits (siehe @lst:solver-execution). Eine vollständige Übersicht aller in diesem Projekt eingesetzten Softwarekomponenten samt Versionsangaben findet sich im Softwareverzeichnis in @tab:software-directory im Anhang.
@@ -337,7 +337,7 @@ Als Solver wird *HiGHS* über die PuLP-Schnittstelle eingesetzt. HiGHS löst das
   ```,
   caption: [Solver-Konfiguration und Ausführung über PuLP],
 ) <lst:solver-execution>
-Nach der Lösung werden die Entscheidungsvariablen mit einem Schwellwert von $0{,}5$ ausgelesen, um Gleitkomma-Toleranzen des Solvers zu kompensieren. Aus den aktivierten Kanten werden die Routen je Sendung rekonstruiert und als `RoutingResult` zurückgegeben. Eventuelle Slack-Variablen-Verletzungen werden in einem diagnostischen Report ausgegeben.
+Nach der Lösung werden die binären Entscheidungsvariablen mit einem Schwellwert von $0,5$ ausgelesen, um Gleitkomma-Toleranzen des Solvers zu kompensieren. Aus den aktivierten Kanten werden die Routen je Sendung rekonstruiert und als `RoutingResult` zurückgegeben. Eventuelle Slack-Variablen-Verletzungen werden in einem diagnostischen Report ausgegeben.
 
 == Heuristische Lösungsverfahren <sec:heuristic-implementation>
 
@@ -380,26 +380,8 @@ Die Methode `_additional_vehicles` berechnet dabei auf Basis der Restkapazität 
 === Kürzeste-Weg-Suche und Pruning
 Die Methode `_find_shortest_path` realisiert die eigentliche Routensuche als Best-First-Suche über eine Prioritätswarteschlange. Um die Leistung im zeitexpandierten Netzwerk zu optimieren, werden zwei Pruning-Verfahren eingesetzt:
 1. *Zeitbasiertes Pruning:* Knoten werden verworfen, wenn die aktuelle Reisezeit plus die minimale Restreisezeit zum Ziel die Deadline überschreitet. Diese minimale Restreisezeit wird vorab mittels eines Rückwärts-Dijkstra-Laufs auf dem statischen Netzwerk für alle Hubs berechnet.
-2. *Heuristikbasiertes Pruning (A\*):* Knoten, die rechnerisch keine zulässige Lösung zum Zielhub mehr erreichen können (Heuristikwert unendlich), werden verworfen (siehe @lst:pruning-logic).
+2. *Heuristikbasiertes Pruning (A\*):* Knoten, die rechnerisch keine zulässige Lösung zum Zielhub mehr erreichen können (Heuristikwert unendlich), werden verworfen.
 
-#figure(
-  ```python
-  # Hauptschleife der Routensuche (Ausschnitt)
-  min_time = self._min_time_by_hub(network, shipment)
-
-  for arc in index.outgoing.get(node, []):
-      next_node = arc.to_node
-      # Zeitbasiertes Pruning
-      if (next_node.time_min + min_time.get(next_node.hub_id, math.inf)
-          > shipment.deadline):
-          continue
-      # Heuristik-basiertes Pruning (A*)
-      estimate_to_goal = estimate(next_node)
-      if math.isinf(estimate_to_goal):
-          continue
-  ```,
-  caption: [Pruning-Logik in der Kürzeste-Weg-Suche],
-) <lst:pruning-logic>
 
 === A\*-Router
 Die Klasse `AStarRouter` erweitert den `DijkstraRouter` und überschreibt die Heuristikmethode `_heuristic_by_hub`. Sie berechnet vorab die minimalen Restkosten zum Zielhub mittels Rückwärts-Dijkstra auf dem statischen Netzwerk. Anstelle der reinen Reisezeit wird hierfür der gewichtete und normierte Kanten-Score (Kosten, Zeit, Emissionen) herangezogen. Das Ergebnis wird gecacht, sodass wiederholte Suchen mit identischen Sendungsparametern keine Neuberechnung erfordern.
