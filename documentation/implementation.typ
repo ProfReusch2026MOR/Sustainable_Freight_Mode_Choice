@@ -302,7 +302,7 @@ Die Nebenbedingungen bilden die in @ch:mathematical-model definierten Restriktio
 - *Kapazitätskopplung:* Die Summe der Sendungsgewichte auf einer Kante darf die Kapazität mal der Fahrzeuganzahl nicht überschreiten: $ sum_k w_k dot x_(i,k) <= c_i dot y_i $
 - *Budget- und Emissionsgrenzen:* Optionale sendungsspezifische Obergrenzen für Kosten und Emissionen werden als Soft Constraints formuliert.
 ==== Solver-Ausführung
-Als Solver wird *HiGHS* über die PuLP-Schnittstelle eingesetzt. HiGHS löst das MILP mit Branch-and-Bound- und Presolve-Verfahren und unterstützt konfigurierbare Zeitlimits (siehe @lst:solver-execution):
+Als Solver wird *HiGHS* über die PuLP-Schnittstelle eingesetzt. HiGHS löst das MILP mit Branch-and-Bound- und Presolve-Verfahren und unterstützt konfigurierbare Zeitlimits (siehe @lst:solver-execution). Eine vollständige Übersicht aller in diesem Projekt eingesetzten Softwarekomponenten samt Versionsangaben findet sich im Softwareverzeichnis in @tab:software-directory im Anhang.
 #figure(
   ```python
   highs_py = pulp.HiGHS(
