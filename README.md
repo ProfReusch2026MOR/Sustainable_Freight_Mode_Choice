@@ -2,7 +2,7 @@
 
 # Sustainable Freight Mode Choice
 
-📄 **[Projekt-Dokumentation (PDF)](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/releases/download/v0.1.0/main.pdf)** (Lokal: [main.pdf](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/documentation/main.pdf)) | 📊 **[Präsentations-Folien (PDF)](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/releases/download/v0.1.0/first_pitch.pdf)** (Lokal: [first_pitch.pdf](file:///home/benedikt/Projects/Sustainable_Freight_Mode_Choice/presentations/first_pitch.pdf))
+📄 **[Projekt-Dokumentation (PDF)](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/releases/download/v0.1.0/main.pdf)** 
 
 [![CI](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/actions/workflows/ci.yml/badge.svg)](https://github.com/ProfReusch2026MOR/Sustainable_Freight_Mode_Choice/actions/workflows/ci.yml)
 
