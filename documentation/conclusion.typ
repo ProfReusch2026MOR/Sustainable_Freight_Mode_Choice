@@ -42,8 +42,12 @@ Zur Herstellung von Transparenz über die individuellen Beiträge im Rahmen des 
     - *Dokumentation:* Schreiben der Einleitung und Problemstellung (Klarheit, Struktur), Heuristik-Beschreibung, Fazit, Datensammlung.
   ],
   [Luis Kruse \ (`lkruse301`)], [
-    - *Frühe Heuristiken:* Erste prototypische Entwürfe und Implementierung einer Tabu-Search- und Dijkstra-Heuristik.
-    - *Datenvorbereitung:* Erste Entwürfe von Straßen- und Luftfrachtverbindungen als CSV-Dateien.
+    - *Problemstellung und Zielsetzung:* Anlegen der konkreten Problemstellung und Zielsetzung.
+    - *Recherche nach geeigneten heuristischen Lösungsansätzen:* Informatiosnaufnahme von passenden heuristischen Lösungsverfahren im Bezug auf das Kernproblem.
+    - *Entwicklung heuristischer Ansätze:*  Entwürfe und Implementierung einer Tabu-Search- und Dijkstra-Heuristik. Vergleich und Funktionsanalyse der Heuristiken.
+    - *Datenrecherche:* Recherche nach geeigneten Datensätzen und Datenmodellen. 
+    - *Datenvorbereitung:* Erste Entwürfe von Straßen-, Bahn-, Schiff- und  Luftfrachtverbindungen als CSV-Dateien.
+    - *Dokumentation:* Erste Entwürfe einer theoretischen Ausarbeitung des heuristischen Lösungsverfahrens. 
   ],
   [Laurens Rüther \ (`LaurensRuether`)], [
     - *Datensammlung:* Händische Extraktion von ersten Geodaten, Erarbeiten von realen kosten.  
