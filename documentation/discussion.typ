@@ -30,14 +30,12 @@ Zöllen nicht mehr zwingend die günstigste Option wäre.
 
 *Exakter Solver.* Die Stresstests (@sec:stress-test) zeigen, dass HiGHS
 bei wachsender Instanzgröße an seine Grenzen stößt. Die binären
-Routingvariablen $x_(a,k)$ wachsen als $|A^T| dot |K|$ und erreichen auf
+Routingvariablen erreichen auf
 dem großen Netzwerk bereits 4,3 Mio. Die Lösungszeit hängt zudem von der
 konkreten Instanzstruktur ab, was sich in der nicht-monotonen
 Laufzeitkurve (@tab:stress-shipments) zeigt. Für operative Szenarien
 (Hunderte Sendungen, wochenlange Horizonte) ist der exakte Solver _nicht
-praktikabel_. Denkbare Verbesserungen wären Schnittebenen und
-symmetriebrechende Constraints, Benders- oder Lagrange-Dekomposition
-sowie ein Rolling-Horizon-Ansatz.
+praktikabel_.
 
 *Heuristik.* Die A\*-Heuristik mit LNS bleibt stets unter 1,2 Sekunden,
 hat aber strukturelle Grenzen: Die feste Sortierreihenfolge (absteigend
@@ -45,28 +43,17 @@ nach Gewicht) beeinflusst die Lösung erheblich, und LNS schließt den Gap
 bei kapazitätskritischen Instanzen kaum, da Ruin-and-Recreate auf
 demselben greedy Mechanismus beruht. Der Optimality Gap beträgt dort bis
 zu 4 % mit real höheren Kosten, Emissionen und Lieferzeiten
-(@sec:consolidation-gap). Zudem gilt die Optimalitätsgarantie von A\* nur
-für Einzelsendungen -- bei Mehrfachplanung geht sie verloren.
+(@sec:consolidation-gap).
 
-*Arbeitsteilung.* Der Solver eignet sich als Referenz und für kleine
-operative Entscheidungen; für taktische Planung mit vielen Sendungen oder
-langen Horizonten ist die Heuristik das einzig praktikable Verfahren.
-Diese Arbeitsteilung wurde in @sec:sensitivity-validation für ein kleines
-Szenario bestätigt; ob die Approximationsgüte auf größere oder strukturell
-andere Netzwerke generalisierbar ist, bleibt offen.
 
 == Normalisierung <sec:normalization-discussion>
 
 Die analytische Min-Max-Skalierung (@sec:normalization) ist
-rechenzeiteffizient, bringt aber zwei Einschränkungen mit sich. Erstens
-hängen die Normalisierungsbereiche $Delta C_k$, $Delta T_k$, $Delta E_k$
+rechenzeiteffizient, bringt aber eine Einschränkungen mit sich.
+Die Normalisierungsbereiche $Delta C_k$, $Delta T_k$, $Delta E_k$ hängen
 vom heuristisch gewählten Umwegfaktor $beta = 3$ ab -- liegt die optimale
 Route deutlich außerhalb der Schätzgrenzen, kann ein Zielkriterium
-unbeabsichtigt über- oder untergewichtet werden. Zweitens schätzen MILP
-und Heuristik ihre Grenzen unabhängig, sodass normierte Zielfunktionswerte
-_nicht_ direkt zwischen Verfahren oder Instanzen vergleichbar sind. Für
-präzise Vergleiche müssen die Rohgrößen (EUR, kg CO₂, min) herangezogen
-werden, wie im Konsolidierungstest (@sec:consolidation-gap) geschehen.
+unbeabsichtigt über- oder untergewichtet werden.
 
 == Limitationen der Datengrundlage <sec:data-limitations>
 
@@ -90,20 +77,11 @@ Emissionsvorteil einzelner Modi systematisch verzerren.
 
 == Fehlende realweltliche Faktoren <sec:missing-factors>
 
-*Stochastik und Resilienz.* Lieferkettenunterbrechungen (Hafensperrungen,
-Extremwetter, geopolitische Konflikte) können nicht bewertet werden. Ein
-stochastisches Modell könnte zeigen, dass ein diversifizierter Modal Split
-resilienter ist als die vom deterministischen Modell bevorzugte
-Seefrachtstrategie.
-
 *Regulierung.* Nicht modelliert sind innerstädtische Fahrverbote,
 länderspezifische Mautsysteme (z. B. deutsche LKW-Maut) sowie
-regulatorische CO₂-Instrumente wie absolute Emissionsobergrenzen. Die
-Sensitivitätsanalyse (@sec:sensitivity-carbon) zeigt bereits, dass ein
-CO₂-Preis nur bei vorhandenen Ausweichoptionen wirkt -- härtere
-Regulierung könnte stärkere Effekte haben.
+regulatorische CO₂-Instrumente wie absolute Emissionsobergrenzen.
 
-*Betriebliche Restriktionen.* Lenk- und Ruhezeiten (EG Nr. 561/2006),
+*Betriebliche Restriktionen.* Lenk- und Ruhezeiten (EG Nr. 561/2006 @regulation5612006),
 Gefahrgutvorschriften und reale Terminalzeitfenster sind nicht abgebildet
 und könnten das Routing auf langen Straßenverbindungen einschränken.
 
