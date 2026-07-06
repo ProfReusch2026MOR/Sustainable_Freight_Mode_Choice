@@ -15,7 +15,7 @@
   authors: (
     (
       name: "Benedikt Wehner",
-      student-id: "50118397,",
+      student-id: "50118397",
       course: "Operations Research",
       course-of-studies: "Ingenieurwissenschaften und Mathematik",
     ),

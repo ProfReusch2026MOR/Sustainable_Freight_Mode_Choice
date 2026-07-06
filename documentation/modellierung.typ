@@ -436,7 +436,7 @@ sowie die maximale Netzwerkgeschwindigkeit, welche aus den Transportkanten des n
 $ v^"max" = max_(t in A_"trans") d_t / tau_t, $
 
 wobei $d_t$ die Streckenlänge und $tau_t$ die Dauer der Kante $t$ bezeichnet. Daraus
-ergibt sich die Luftliniendistanz $d_k^-$ zwischen Start- und Zielhub, welche über die Haversine-Formel (vgl. @enwiki:1358395081) berechnet wird:
+ergibt sich die Luftliniendistanz $d_k^-$ zwischen Start- und Zielhub, welche über die Haversine-Formel (vgl. @sinnott1984virtues) berechnet wird:
 $
   a = sin^2((phi_2 - phi_1) / 2) + cos(phi_1) cos(phi_2) sin^2((lambda_2 - lambda_1) / 2),
 $

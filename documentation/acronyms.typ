@@ -2,7 +2,6 @@
   API: "Application Programming Interface",
   APSP: "All-Pairs Shortest Path",
   BEV: "Battery Electric Vehicle",
-  CBC: "Coin-or branch and cut",
   "CI/CD": "Continuous Integration / Continuous Deployment",
   CMND: "Capacitated Multicommodity Network Design",
   CSV: "Comma-Separated Values",
