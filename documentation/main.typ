@@ -6,6 +6,14 @@
 #import "abstract.typ": abstract
 #import "appendix.typ": appendix
 #import "@preview/callisto:0.2.5"
+#import "flex.typ": in-outline, flex-caption
+
+// Kurztitel im Abbildungs-/Tabellenverzeichnis (siehe flex.typ)
+#show outline: it => {
+  in-outline.update(true)
+  it
+  in-outline.update(false)
+}
 
 #set heading(numbering: "1.", supplement: [Kapitel])
 #let language = "de" // "de" or "en"

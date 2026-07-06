@@ -54,7 +54,7 @@
         [Lucide], [0.511.0], [Icon-Bibliothek im Web-Dashboard],
         [Typst], [0.15.0], [Textsatzsystem zur Erstellung dieser Arbeit],
       ),
-      caption: [Softwareverzeichnis: In diesem Projekt eingesetzte Software und Bibliotheken],
+      caption: [Softwareverzeichnis des Projekts],
     ) <tab:software-directory>
 
     = Aufgabenverteilung und individuelle Beiträge <sec:contributions>
@@ -93,8 +93,9 @@
 
       [Laurens Rüther \ (`LaurensRuether`)],
       [
-        - *Datensammlung:* Händische Extraktion von ersten Geodaten, Erarbeiten von realen kosten.
-        - *Projektkoordination:* Pflege des Fortschrittsberichts (`Fortschritt Begleitung.md`), und anlegen der README.md.
+        - *Datensammlung:* Händische Extraktion von ersten Geodaten, Erarbeiten von realen Kosten, Aufbau eines ersten exemplarischen multimodalen Netzwerks mit Hubs, Umschlagspunkten und Kanten
+        - *Projektkoordination:* Pflege des Fortschrittsberichts (`Fortschritt Begleitung.md`), und Anlegen der README.md.
+
       ],
 
       [Minglu Li \ (`Sam18069272581`)],
