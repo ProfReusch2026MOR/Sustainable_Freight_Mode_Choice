@@ -315,65 +315,19 @@ Als Solver wird *HiGHS* über die PuLP-Schnittstelle eingesetzt. HiGHS löst das
 ) <lst:solver-execution>
 Nach der Lösung werden die Entscheidungsvariablen mit einem Schwellwert von $0{,}5$ ausgelesen, um Gleitkomma-Toleranzen des Solvers zu kompensieren. Aus den aktivierten Kanten werden die Routen je Sendung rekonstruiert und als `RoutingResult` zurückgegeben. Eventuelle Slack-Variablen-Verletzungen werden in einem diagnostischen Report ausgegeben.
 
-
 == Heuristische Lösungsverfahren <sec:heuristic-implementation>
 
-Dieses Unterkapitel beschreibt die Implementierung der in @ch:heuristic-approach mathematisch definierten heuristischen Verfahren. Alle Klassen befinden sich im Modul `heuristics/dijkstra_router.py` und operieren auf demselben zeitexpandierten Netzwerk (`TimeExpandedNetwork`), das auch der MILP-Solver verwendet. Die zentrale Architektur besteht aus einer Basisklasse `DijkstraRouter` und der davon abgeleiteten Klasse `AStarRouter`.
+Dieses Unterkapitel beschreibt die softwareseitige Umsetzung der in @ch:heuristic-approach vorgestellten heuristischen Lösungsverfahren. Alle Klassen befinden sich im Modul `heuristics/dijkstra_router.py` und greifen auf dieselbe zeitexpandierte Netzwerkstruktur (`TimeExpandedNetwork`) zurück, die auch der exakte MILP-Solver verwendet. Die Architektur baut auf der Basisklasse `DijkstraRouter` auf, von der die Klasse `AStarRouter` erbt, um die modusspezifische Heuristikfunktion bereitzustellen.
 
-=== Architektur und Hilfsstrukturen
+=== Architektur und Datenhaltung
+Zur Verwaltung des Suchzustands und zur Effizienzsteigerung nutzt die Implementierung drei interne Datenstrukturen, die als Python-Dataclasses realisiert sind:
+- `_NetworkIndex`: Baut eine Adjazenzliste aller ausgehenden Kanten auf und indiziert Knoten nach Hubs sowie nach Hub-Zeit-Kombinationen. Dieser Index wird beim ersten Routing-Aufruf erstellt und nur bei einem Netzwerkwechsel neu berechnet, wodurch Lokalisierungen von Startknoten in $O(1)$ möglich sind.
+- `_CapacityState`: Kapselt den Belegungszustand des Netzwerks. Er speichert die Anzahl aktiver Fahrzeuge sowie die verbleibende Restkapazität für jede zeitexpandierte Kante.
+- `_NormalizationContext`: Bündelt sendungsspezifische Normalisierungsgrenzen und Gewichtungsfaktoren, um bei jedem Suchschritt eine konsistente Skalierung sicherzustellen.
 
-Die Implementierung nutzt drei Hilfs-Dataclasses, die den Zustand während der Suche kapseln (siehe @lst:heuristic-dataclasses):
-#figure(
-  ```python
-  @dataclass
-  class _NetworkIndex:
-      outgoing: dict[NetworkNode, list[_TimedArc]]
-      arc_to_index: dict[_TimedArc, int]
-      nodes_by_hub_time: dict[tuple[str, int], list[NetworkNode]]
-      nodes_by_hub: dict[str, list[NetworkNode]]
+=== Dynamische Kantenbewertung (Arc Score)
+Die Methode `_arc_score` implementiert die Kantenbewertungsfunktion $sigma(a, k)$ (siehe @sec:arc-score). Sie ermittelt für eine Kante den kombinierten Score aus gewichteten Kosten, Fahrzeiten und Emissionen. Ein zentrales Element ist dabei die dynamische Kapazitätsprüfung: Ist eine Kante kapazitiv nicht mehr begehbar – etwa weil das Fahrzeuglimit der Kante überschritten würde –, wird die Kante verworfen (siehe @lst:arc-score-calc).
 
-  @dataclass
-  class _CapacityState:
-      active_vehicles: list[int]
-      remaining_capacity: list[float]
-
-  @dataclass
-  class _NormalizationContext:
-      bounds: dict[str, dict[str, tuple[float, float]]]
-      ranges: dict[str, dict[str, float]]
-      fixed_cost_coefficient: float
-      fixed_emissions_coefficient: float
-  ```,
-  caption: [Hilfsdatenklassen für den Zustand der heuristischen Suche],
-) <lst:heuristic-dataclasses>
-
-Der `_NetworkIndex` baut beim ersten Aufruf eine Adjazenzliste aller ausgehenden Kanten pro Knoten auf und indiziert die Knotenmenge nach `(hub_id, time_min)` sowie nach `hub_id`. Dieses Caching ermöglicht die Lokalisierung der Startknoten einer Sendung in $O(1)$ und vermeidet redundante Graphtraversierungen bei mehreren Sendungen. Der Index wird nur bei einem Netzwerkwechsel neu aufgebaut (siehe @lst:network-indexing):
-#figure(
-  ```python
-  def _get_network_index(self, network: TimeExpandedNetwork) -> _NetworkIndex:
-      if self._cached_network is not network or self._network_index is None:
-          outgoing = defaultdict(list)
-          arc_to_index = {}
-          for index, arc in enumerate(network.all_arcs):
-              outgoing[arc.from_node].append(arc)
-              arc_to_index[arc] = index
-
-          nodes_by_hub_time = defaultdict(list)
-          nodes_by_hub = defaultdict(list)
-          for node in network.nodes:
-              nodes_by_hub_time[(node.hub_id, node.time_min)].append(node)
-              nodes_by_hub[node.hub_id].append(node)
-          ...
-      return self._network_index
-  ```,
-  caption: [Methode zur Indizierung des zeitexpandierten Netzwerks],
-) <lst:network-indexing>
-
-Der `_NormalizationContext` bündelt die sendungsspezifischen Normalisierungsgrenzen und -bereiche sowie die gemittelten Fixkosten-Koeffizienten $alpha_C$ und $alpha_E$. Er wird einmalig vor dem Routing berechnet und an alle Suchmethoden weitergereicht, um konsistente Skalierung sicherzustellen.
-
-=== Kantenbewertung (Arc Score)
-
-Die Methode `_arc_score` setzt die in @sec:arc-score definierte Kantenbewertungsfunktion $sigma(a, k)$ um. Zunächst wird geprüft, ob die Kante kapazitiv noch begehbar ist – andernfalls gibt die Methode `None` zurück, wodurch die Kante aus der Suche ausgeschlossen wird (siehe @lst:arc-score-calc):
 #figure(
   ```python
   def _arc_score(self, network, arc, arc_index, shipment, capacity,
@@ -397,46 +351,16 @@ Die Methode `_arc_score` setzt die in @sec:arc-score definierte Kantenbewertungs
   caption: [Dynamische Kantenbewertung mit Kapazitätsprüfung],
 ) <lst:arc-score-calc>
 
-Die Berechnung der zusätzlich benötigten Fahrzeuge implementiert die in @eq:additional-vehicles definierte Fallunterscheidung (siehe @lst:additional-vehicles-calc):
+Die Methode `_additional_vehicles` berechnet dabei auf Basis der Restkapazität des aktuell aktiven Fahrzeugs, ob ein neues Fahrzeug bereitgestellt werden muss. Kann die Sendung auf dem bestehenden Fahrzeug konsolidiert werden, entstehen keine zusätzlichen Fixkosten ($0$ zusätzliche Fahrzeuge). Andernfalls wird die benötigte Anzahl neuer Fahrzeuge auf Basis der Maximalkapazität der Kante bestimmt. Für Straßenkanten ist die Fahrzeuganzahl nach oben unbegrenzt (`math.inf`), während für Schiene, Luft und See standardmäßig ein Fahrzeuglimit gilt.
+
+=== Kürzeste-Weg-Suche und Pruning
+Die Methode `_find_shortest_path` realisiert die eigentliche Routensuche als Best-First-Suche über eine Prioritätswarteschlange. Um die Leistung im zeitexpandierten Netzwerk zu optimieren, werden zwei Pruning-Verfahren eingesetzt:
+1. *Zeitbasiertes Pruning:* Knoten werden verworfen, wenn die aktuelle Reisezeit plus die minimale Restreisezeit zum Ziel die Deadline überschreitet. Diese minimale Restreisezeit wird vorab mittels eines Rückwärts-Dijkstra-Laufs auf dem statischen Netzwerk für alle Hubs berechnet.
+2. *Heuristikbasiertes Pruning (A\*):* Knoten, die rechnerisch keine zulässige Lösung zum Zielhub mehr erreichen können (Heuristikwert unendlich), werden verworfen (siehe @lst:pruning-logic).
+
 #figure(
   ```python
-  @staticmethod
-  def _additional_vehicles(
-      arc: _TimedArc, shipment_weight: float, remaining_capacity: float
-  ) -> int:
-      if remaining_capacity >= shipment_weight:
-          return 0  # Konsolidierung auf bestehendem Fahrzeug
-      return math.ceil(
-          (shipment_weight - remaining_capacity) / max(arc.capacity, 1e-9)
-      )
-  ```,
-  caption: [Bestimmung des zusätzlichen Fahrzeugbedarfs],
-) <lst:additional-vehicles-calc>
-
-Für Straßenkanten ist die Fahrzeuganzahl nach oben unbegrenzt (`math.inf`), da beliebig viele LKWs eingesetzt werden können. Für alle anderen Modi gilt standardmäßig ein Limit von einem Fahrzeug, sofern nicht explizit ein `max_vehicles`-Wert definiert ist.
-
-=== Kürzeste-Weg-Suche
-
-Die Kernmethode `_find_shortest_path` implementiert die in @sec:dijkstra-formulation formulierte Suche. Sie ist als generalisierter Best-First-Search konzipiert (siehe @lst:search-init) und unterstützt sowohl reines Dijkstra ($h(n) = 0$) als auch A\* ($h(n) > 0$):
-#figure(
-  ```python
-  def _find_shortest_path(self, network, shipment, capacity, normalization):
-      index = self._get_network_index(network)
-      start_nodes = sorted(
-          index.nodes_by_hub_time.get((shipment.start_hub, shipment.start_time), []),
-          key=lambda node: node.mode,
-      )
-      end_nodes = {
-          node for node in index.nodes_by_hub.get(shipment.end_hub, [])
-          if node.time_min <= shipment.deadline
-      }
-  ```,
-  caption: [Initialisierung der Kürzeste-Weg-Suche],
-) <lst:search-init>
-
-Das zeitbasierte Pruning (implementiert in `heuristics/dijkstra_router.py`) filtert Knoten, die den Zielhub zeitlich nicht mehr erreichen können (siehe @lst:pruning-logic):
-#figure(
-  ```python
+  # Hauptschleife der Routensuche (Ausschnitt)
   min_time = self._min_time_by_hub(network, shipment)
 
   for arc in index.outgoing.get(node, []):
@@ -450,133 +374,17 @@ Das zeitbasierte Pruning (implementiert in `heuristics/dijkstra_router.py`) filt
       if math.isinf(estimate_to_goal):
           continue
   ```,
-  caption: [Implementierung des zeit- und heuristikbasierten Prunings],
+  caption: [Pruning-Logik in der Kürzeste-Weg-Suche],
 ) <lst:pruning-logic>
 
-Die minimalen Fahrtzeiten `min_time` werden per Rückwärts-Dijkstra auf dem statischen Netzwerk vorberechnet und nach Zielhub gecacht (siehe @lst:backward-dijkstra):
-#figure(
-  ```python
-  def _min_time_by_hub(self, network, shipment) -> dict[str, float]:
-      reverse_graph = defaultdict(list)
-      for template in network_data.arc_templates:
-          if isinstance(template, TransportArcTemplate):
-              reverse_graph[template.to_hub].append(
-                  (template.from_hub, template.duration_min)
-              )
-      # Dijkstra vom Zielhub rückwärts
-      distance = {shipment.end_hub: 0.0}
-      queue = [(0.0, shipment.end_hub)]
-      while queue:
-          current_distance, hub = heapq.heappop(queue)
-          ...
-      return distance
-  ```,
-  caption: [Statische Entfernungsberechnung mittels Rückwärts-Dijkstra],
-) <lst:backward-dijkstra>
-
 === A\*-Router
+Die Klasse `AStarRouter` erweitert den `DijkstraRouter` und überschreibt die Heuristikmethode `_heuristic_by_hub`. Sie berechnet vorab die minimalen Restkosten zum Zielhub mittels Rückwärts-Dijkstra auf dem statischen Netzwerk. Anstelle der reinen Reisezeit wird hierfür der gewichtete und normierte Kanten-Score (Kosten, Zeit, Emissionen) herangezogen. Das Ergebnis wird gecacht, sodass wiederholte Suchen mit identischen Sendungsparametern keine Neuberechnung erfordern.
 
-Die Klasse `AStarRouter` erbt von `DijkstraRouter` und überschreibt ausschließlich die Methode `_heuristic_by_hub`, um die in @sec:astar-heuristic definierte Heuristikfunktion $h(n)$ bereitzustellen. Die Berechnung erfolgt analog zum zeitbasierten Pruning per Rückwärts-Dijkstra, verwendet jedoch den gewichteten Arc Score statt der reinen Fahrtdauer (siehe @lst:astar-heuristic-impl):
-#figure(
-  ```python
-  class AStarRouter(DijkstraRouter):
-      def _heuristic_by_hub(self, network, shipment, weights, ranges):
-          reverse_graph: dict[str, list[tuple[str, float]]] = defaultdict(list)
-          for template in network_data.arc_templates:
-              if not isinstance(template, TransportArcTemplate):
-                  continue
-              factor = network_data.mode_factors[template.mode]
-              cost = template.cost if template.cost is not None \
-                  else template.distance * factor.cost_per_ton_km
-              emissions = template.emissions if template.emissions is not None \
-                  else template.distance * factor.emissions_kg_per_ton_km
-              score = (
-                  weights.cost * cost * shipment.weight / ranges["cost"]
-                  + weights.time * template.duration_min / ranges["time"]
-                  + weights.emissions * emissions * shipment.weight / ranges["emissions"]
-              )
-              reverse_graph[template.to_hub].append((template.from_hub, score))
-          # Dijkstra liefert: dict[hub_id -> min_score_to_goal]
-          ...
-  ```,
-  caption: [Implementation der A\*-Heuristikfunktion auf dem statischen Netz],
-) <lst:astar-heuristic-impl>
+=== Multi-Sendungs-Routing und LNS-Optimierung
+Bei mehreren Sendungen (`solve_multiple`) sortiert der Router die Sendungen absteigend nach Gewicht. Dies stellt sicher, dass schwere Sendungen zuerst Kapazitäten belegen und leichtere Sendungen flexibler auf freie Restkapazitäten gebucht werden. Nach jeder Zuweisung wird der Belegungszustand über `_reserve_route` angepasst, um Konsolidierungen zu ermöglichen.
 
-Das Ergebnis wird nach den Parametern `(end_hub, weight, weights, ranges)` gecacht, sodass bei wiederholten Aufrufen mit denselben Sendungsparametern keine Neuberechnung stattfindet.
+Um die Abhängigkeit von dieser sequentiellen Reihenfolge aufzubrechen und lokale Optima zu verlassen, wird eine Large Neighborhood Search (LNS) als Ruin-and-Recreate-Heuristik eingesetzt (siehe @lst:lns-optimization):
 
-=== Einzelsendungs-Lösung
-
-Aus den gefundenen Kanten werden die finalen Metriken (Gesamtkosten, Emissionen, Transportzeit) berechnet und als `RoutingResult` mit Status `"Optimal"` zurückgegeben (siehe @lst:single-shipment-solve):
-#figure(
-  ```python
-  def solve(self, network: TimeExpandedNetwork) -> RoutingResult:
-      shipment = network.shipments[0]
-      normalization = self._normalization_context(network, [shipment])
-      route_arcs = self._find_shortest_path(
-          network=network,
-          shipment=shipment,
-          capacity=self._empty_capacity_state(network),
-          normalization=normalization,
-      )
-      # Metriken berechnen
-      total_cost = sum(network._get_fixed_cost(arc) * network._required_vehicles(...)
-                       for arc in route_arcs)
-                   + sum(arc.cost * shipment.weight for arc in route_arcs)
-      ...
-      return RoutingResult(status="Optimal", is_optimal=True, ...)
-  ```,
-  caption: [Routing-Ablauf für eine Einzelsendung],
-) <lst:single-shipment-solve>
-
-Da der Router das vollständige zeitexpandierte Netzwerk ohne Suchraumbegrenzung durchsucht, ist das Ergebnis für Einzelsendungen mathematisch identisch zum MILP-Solver.
-
-=== Sequentielle Multi-Sendungs-Lösung
-
-Die Sendungen werden absteigend nach Gewicht sortiert, um schwere Sendungen bevorzugt auf den kapazitiv besten Kanten zu platzieren (siehe @lst:solve-multiple):
-#figure(
-  ```python
-  def solve_multiple(self, network, show_progress=False) -> RoutingResult:
-      normalization = self._normalization_context(network, shipments)
-      sorted_shipments = sorted(shipments, key=lambda s: s.weight, reverse=True)
-      capacity = self._empty_capacity_state(network)
-      shipment_routes = {}
-
-      for shipment in sorted_shipments:
-          route_arcs = self._find_shortest_path(
-              network=network,
-              shipment=shipment,
-              capacity=capacity,
-              normalization=normalization,
-          )
-          if route_arcs is None:
-              diagnostics.append(f"Shipment {shipment.id}: No feasible path found.")
-              continue
-
-          self._reserve_route(network, route_arcs, shipment, capacity)
-          shipment_routes[shipment.id] = tuple(route_arcs)
-  ```,
-  caption: [Sequentielles Greedy-Routing für mehrere Sendungen],
-) <lst:solve-multiple>
-
-Nach jedem erfolgreichen Routing wird `_reserve_route` aufgerufen, die den `_CapacityState` gemäß @eq:additional-vehicles aktualisiert (siehe @lst:reserve-route). Dadurch können nachfolgende Sendungen auf Kanten mit Restkapazität konsolidiert werden, ohne zusätzliche Fixkosten zu verursachen:
-#figure(
-  ```python
-  def _reserve_route(self, network, route, shipment, capacity):
-      for arc in route:
-          arc_index = arc_to_index[arc]
-          needed = self._additional_vehicles(
-              arc, shipment.weight, capacity.remaining_capacity[arc_index]
-          )
-          capacity.active_vehicles[arc_index] += needed
-          capacity.remaining_capacity[arc_index] += needed * arc.capacity
-          capacity.remaining_capacity[arc_index] -= shipment.weight
-  ```,
-  caption: [Kapazitätsreservierung und Konsolidierungslogik],
-) <lst:reserve-route>
-
-=== Ruin-and-Recreate-Optimierung (LNS)
-
-Die Methode `optimize_multiple()` implementiert die in @sec:lns definierte Large Neighbourhood Search (siehe @lst:lns-optimization). Sie erhält eine initiale Lösung (z.B. aus `solve_multiple`) und verbessert diese iterativ:
 #figure(
   ```python
   def optimize_multiple(self, initial_result, network,
@@ -587,15 +395,15 @@ Die Methode `optimize_multiple()` implementiert die in @sec:lns definierte Large
       num_to_ruin = max(1, int(len(shipments) * ruin_fraction))
 
       for _ in range(iterations):
-          # Ruin: zufällige Sendungen entfernen
+          # Ruin: zufällige Auswahl und Entfernung von Sendungsrouten
           ruined_ids = rng.sample(list(best_routes.keys()), num_to_ruin)
 
-          # Kapazitäten der verbleibenden Routen wiederherstellen
+          # Kapazitäten der verbleibenden Routen wiederaufbauen
           capacity = self._empty_capacity_state(network)
           for s_id in remaining_ids:
               self._reserve_route(network, best_routes[s_id], ...)
 
-          # Recreate: entfernte Sendungen absteigend nach Gewicht neu routen
+          # Recreate: entfernte Sendungen nach Gewicht sortiert neu routen
           ruined_shipments.sort(key=lambda s: s.weight, reverse=True)
           for shipment in ruined_shipments:
               route = self._find_shortest_path(network, shipment, capacity, ...)
@@ -604,29 +412,15 @@ Die Methode `optimize_multiple()` implementiert die in @sec:lns definierte Large
                   break
               self._reserve_route(network, route, shipment, capacity)
 
-          # Akzeptiere bessere Lösungen
+          # Akzeptiere Kandidaten mit besserem Gesamtzielwert
           if candidate.objective_value < best_obj:
               best_result = candidate
   ```,
-  caption: [Large-Neighborhood-Search (LNS) für die Metaheuristik],
+  caption: [Ruin-and-Recreate-Optimierungsschleife (LNS)],
 ) <lst:lns-optimization>
 
-Die Ruin-Phase wählt zufällig einen Anteil $rho$ (Standard: 20%) der Sendungen aus und entfernt ihre Routen aus dem Kapazitätszustand. Die Recreate-Phase routet diese Sendungen unter Berücksichtigung der verbleibenden Belegung neu. Durch die Zufallsauswahl und die Neuberechnung der Kapazitäten wird die sequentielle Reihenfolge-Abhängigkeit des Greedy-Verfahrens effektiv aufgebrochen, was insbesondere bei Konsolidierungseffekten zu verbesserten Lösungen führt.
-
 === Ergebnisaggregation
-
-Die Methode `_build_combined_result` berechnet die aggregierten Metriken für Multi-Sendungs-Lösungen. Die Fixkosten werden aus den aktivierten Fahrzeugen über alle Kanten summiert und nicht einzelnen Sendungen zugerechnet, was das Konsolidierungsmodell des MILP korrekt widerspiegelt (siehe @lst:fixed-cost-aggregation):
-#figure(
-  ```python
-  total_fixed_cost = sum(
-      network._get_fixed_cost(arc) * active_vehicles[idx]
-      for idx, arc in enumerate(network.all_arcs)
-  )
-  ```,
-  caption: [Aggregationslogik der fixen Transportkosten],
-) <lst:fixed-cost-aggregation>
-
-Der Zielfunktionswert wird analog zur MILP-Zielfunktion (@eq:routing) berechnet, wobei die gemittelten Fixkosten-Koeffizienten $alpha_C$ und $alpha_E$ sowie die sendungsspezifischen variablen Komponenten addiert werden. Dies gewährleistet, dass die Lösungsqualität des heuristischen Verfahrens direkt mit der des exakten Solvers verglichen werden kann.
+Nach Abschluss des Routings aggregiert `_build_combined_result` alle Pfadmetriken. Die Fixkosten der aktivierten Fahrzeuge werden über das gesamte Netzwerk hinweg summiert und nicht prozentual auf einzelne Sendungen umgelegt. Dies garantiert eine exakte methodische Vergleichbarkeit mit der Zielfunktionsstruktur des exakten MILP-Solvers. Der Zielfunktionswert wird analog zur MILP-Zielfunktion (@eq:routing) berechnet, wobei die gemittelten Fixkosten-Koeffizienten $alpha_C$ und $alpha_E$ sowie die sendungsspezifischen variablen Komponenten addiert werden. Dies gewährleistet, dass die Lösungsqualität des heuristischen Verfahrens direkt mit der des exakten Solvers verglichen werden kann.
 
 == Weboberfläche <sec:web-app>
 
