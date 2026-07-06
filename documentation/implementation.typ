@@ -211,7 +211,7 @@ Für jeden Transportmodus werden die Verbindungen nach spezifischen Regeln erzeu
 An jedem Hub mit mindestens zwei unterstützten Modi werden Transfer-Kanten für alle Moduskombinationen erzeugt. Die Umschlagdauer variiert je nach Moduskombination (z.B. 60 Minuten für Straße↔Schiene, 480 Minuten für Luft↔Schiff) und reflektiert die realen Umschlagprozesse.
 
 === Plausibilitätsprüfung der generierten Daten <sec:plausibility>
-Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusammengesetzt wird, werden die erzeugten Parameter vor der Optimierung gegen einfache Plausibilitätsregeln geprüft. @tab:plausibility fasst die wichtigsten Prüfaspekte und ihre Ausprägung im generierten Netzwerk zusammen. Alle Kosten- und Emissionsfaktoren sind nichtnegativ, sämtliche Distanzen positiv, und die modusspezifischen Kennzahlen folgen der aus der Praxis erwarteten Rangfolge.
+Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusammengesetzt wird, werden die erzeugten Parameter vor der Optimierung gegen einfache Plausibilitätsregeln geprüft. Diese Prüfungen sind im Notebook `notebooks/data_plausibility_check.ipynb` implementiert und werden dort für alle drei Datensatzgrößen (Small, Medium, Large) automatisiert ausgeführt; sämtliche Regeln werden bestanden. @tab:plausibility fasst die Prüfaspekte und ihre Ausprägung zusammen.
 
 #figure(
   table(
@@ -220,20 +220,13 @@ Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusa
     stroke: 0.5pt,
     inset: 7pt,
     [*Prüfaspekt*], [*Regel bzw. Wert im Datensatz*], [*Status*],
-    [Distanzen positiv],
-    [Alle Kantendistanzen $> 0$; Modusgrenzen: Straße $<= 800$ km, Schiene $<= 1.500$ km, Schiff $200$--$15.000$ km],
-    [OK],
-
-    [Geschwindigkeit ↔ Modus],
-    [Schiene $approx 50$ km/h, Schiff $approx 22$ km/h (12 kn), Straße via OSRM-Realdistanz, Luft am schnellsten],
-    [OK],
-
-    [Umwegfaktoren realistisch], [Straße $1{,}2$, Schiene $1{,}25$, Schiff $1{,}35$ gegenüber der Luftlinie], [OK],
-    [Kapazitäten fahrzeugtypisch \[t\]], [Straße $40$, Luft $50$, Schiene $1.000$, Schiff $8.000$], [OK],
-    [Kostenrangfolge \[€/t·km\]], [Schiff $0{,}4 <$ Schiene $0{,}7 <$ Straße $1{,}2 <$ Luft $3{,}5$], [OK],
-    [Emissionsrangfolge \[kg CO₂/t·km\]], [Schiff $0{,}015 <$ Schiene $0{,}025 <$ Straße $0{,}09 <$ Luft $0{,}6$], [OK],
-    [Nichtnegativität], [Alle variablen und fixen Kosten- sowie Emissionswerte $>= 0$], [OK],
-    [Modale Erreichbarkeit], [Luft/See nur, wenn Flughafen bzw. Seehafen innerhalb $50$ km liegt], [OK],
+    [Distanzen positiv], [Alle Transportdistanzen > 0], [OK],
+    [Fahrzeiten positiv], [Alle Kantendauern > 0], [OK],
+    [Geschwindigkeit ≤ physikal. Grenze \[km/h\]], [Straße ≤ 130, Schiene ≤ 120, Schiff ≤ 40, Luft ≤ 950], [OK],
+    [Kapazitäten fahrzeugtypisch \[t\]], [Straße 40, Luft 50, Schiene 1.000, Schiff 8.000 (alle > 0)], [OK],
+    [Kostenrangfolge \[€/t·km\]], [Schiff 0,4 < Schiene 0,7 < Straße 1,2 < Luft 3,5], [OK],
+    [Emissionsrangfolge \[kg CO₂/t·km\]], [Schiff 0,015 < Schiene 0,025 < Straße 0,09 < Luft 0,6], [OK],
+    [Nichtnegativität], [Alle Kosten- und Emissionsfaktoren ≥ 0], [OK],
   ),
   caption: [Plausibilitätsprüfung der generierten Netzwerkdaten.],
 ) <tab:plausibility>
