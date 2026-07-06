@@ -111,22 +111,18 @@ Die drei Optimierungsziele -- Kosten, Zeit und Emissionen -- stehen im Konflikt 
   jedoch längere Transportzeiten und zusätzliche Umschlagprozesse
   verursacht.
 
-Das Modell ermöglicht es, diese Zielkonflikte über sendungsspezifische
-Gewichtungsfaktoren transparent abzuwägen. Durch Variation der Gewichte
-lassen sich Pareto-optimale Transportstrategien identifizieren und die
-Auswirkungen einer stärkeren Nachhaltigkeitsorientierung auf Kosten und
-Lieferzeiten quantifizieren.
-
 == Einordnung in die Problemklasse
 
-Das beschriebene Planungsproblem lässt sich der Klasse des *Service Network
-Design* zuordnen, die in @ch:theory eingeführt wurde. Im Unterschied zu
+Das beschriebene Planungsproblem lässt sich der Klasse des Service Network
+Design zuordnen, die in @ch:theory eingeführt wird. Im Unterschied zu
 reinen Netzwerkflussproblemen, bei denen die Infrastruktur als gegeben
 betrachtet wird, umfasst die Entscheidung hier sowohl die Aktivierung von
 Transportverbindungen (Fahrzeugbereitstellung) als auch die Zuweisung der
 Sendungsflüsse auf diese Verbindungen. Die Fixkosten der Aktivierung und
 die variablen Transportkosten bilden zusammen die ökonomische Zielfunktion.
-Darüber hinaus erweitert das Modell die klassische CMND-Formulierung um
+Darüber hinaus erweitert das Modell die klassische CMND-Formulierung (siehe TODO Kapitel)
+
+um
 eine zeitliche Dimension (zeitexpandiertes Netzwerk), eine
 Mehrzieloptimierung (Kosten, Zeit, Emissionen) sowie weiche Restriktionen
 für Lieferfristen und Budgets.
@@ -137,9 +133,9 @@ für Lieferfristen und Budgets.
 
 Für eine zulässige Transportplanung müssen im Modell verschiedene betriebliche und physische Restriktionen eingehalten werden:
 
-- *Flusserhaltung (Flow Conservation):* Jede Sendung muss lückenlos vom Start-Hub über Zwischenstationen zum Ziel-Hub geleitet werden. Es darf kein Frachtgut im Netzwerk verloren gehen oder unkontrolliert entstehen.
+- *Flusserhaltung:* Jede Sendung muss lückenlos vom Start-Hub über Zwischenstationen zum Ziel-Hub geleitet werden. Es darf kein Frachtgut im Netzwerk verloren gehen oder unkontrolliert entstehen.
 - *Kapazitätsgrenzen:* Die Summe der Gewichte aller Sendungen, die gleichzeitig auf einer Kante transportiert werden, darf die maximale Kapazität der aktivierten Fahrzeuge nicht überschreiten. Dies limitiert die maximale Konsolidierungsrate.
-- *Lieferfristen (Deadlines):* Jede Sendung hat eine individuelle Frist, bis zu der sie am Zielort eintreffen muss. Dies erfordert eine präzise zeitliche Koordination und schließt langsame Transportmittel aus, wenn die verbleibende Zeit knapp ist.
+- *Lieferfristen:* Jede Sendung hat eine individuelle Frist, bis zu der sie am Zielort eintreffen muss. Dies erfordert eine präzise zeitliche Koordination und schließt langsame Transportmittel aus, wenn die verbleibende Zeit knapp ist.
 - *Moduswechselregeln:* Umschlagprozesse sind nur an dafür ausgestatteten Hubs möglich (z. B. Seehafen für Schiffsfracht, Flughafen für Luftfracht). Zudem müssen die anfallenden Transferzeiten beim Wechsel der Verkehrsträger berücksichtigt werden.
 
 == Methodische Herausforderung und heuristischer Fokus
