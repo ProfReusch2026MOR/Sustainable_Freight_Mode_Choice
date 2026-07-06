@@ -149,6 +149,60 @@ $0,33$ Mio. (2 Tage, $N=1$) über $2,5$ Mio. (3 Tage, $N=5$) bis zu etwa
 $4,3$ Mio. (5 Tage, $N=5$); hinzu kommen je $|A^T|$ ganzzahlige
 Fahrzeugvariablen sowie die Schlupfvariablen der weichen Restriktionen.
 
+== Heuristik-Skalierungstest auf dem großen Netzwerk <sec:heuristic-scaling>
+
+Während der Solver-Stresstest die Grenzen des exakten Verfahrens aufzeigt,
+stellt sich die komplementäre Frage: Wie verhält sich die A\*-Heuristik,
+wenn die Sendungsanzahl um mehrere Größenordnungen über die MILP-Grenze
+hinaus wächst? Dazu wurde der A\*-Router auf dem großen Netzwerk
+( 870 Hubs, 36 272 statische Kanten) mit einem
+30-Tage-Horizont und Sendungsmengen von 1 bis 5 000 getestet. Jede Sendung erhielt
+zufällig generierte Zielgewichte (Kosten, Zeit, Emissionen); Start- und
+Zielhubs wurden gleichverteilt aus dem Netzwerk gezogen.
+
+#figure(
+  image("assets/dijkstra_performance_plots.png", width: 75%),
+  caption: [
+    Skalierungsverhalten des A\*-Routers auf dem großen Netzwerk (870 Hubs,
+    30-Tage-Horizont). *Oben:* Durchschnittliche Berechnungsdauer pro
+    Sendung. *Mitte:* Konsolidierungsrate (Anteil der Sendungen, die
+    mindestens eine Transportkante mit einer anderen Sendung teilen).
+    *Unten:* Anteil unlösbarer Sendungen.
+  ],
+) <fig:heuristic-scaling>
+
+@fig:heuristic-scaling zeigt drei zentrale Befunde:
+
++ *Sublineare Laufzeitskalierung:* Die durchschnittliche Berechnungsdauer
+  pro Sendung sinkt mit steigender Sendungsanzahl deutlich -- von rund
+  47 Sekunden bei einer einzelnen Sendung auf unter 3 Sekunden ab
+  500 Sendungen. Dieser Effekt entsteht, weil der Aufbau des
+  zeitexpandierten Netzwerks (~30 s) und die Vorberechnung der
+  A\*-Heuristikfunktion (Rückwärts-Dijkstra, vgl. @sec:astar-heuristic)
+  einmalige Fixkosten darstellen, die sich auf viele Sendungen
+  amortisieren. Die reine Routingzeit wächst dabei annähernd linear mit
+  der Sendungsanzahl (10 Sendungen: 14 s, 100 Sendungen: 24 s,
+  1 000 Sendungen: 287 s).
+
++ *Steigende Konsolidierungsrate:* Der Anteil konsolidierter Sendungen
+  wächst von 0 % (bei wenigen Sendungen, die keine Kanten teilen) auf
+  über 90 % ab 500 Sendungen. Dieses Verhalten ist plausibel: Je mehr
+  Sendungen das Netzwerk durchlaufen, desto wahrscheinlicher nutzen
+  mehrere Sendungen dieselben Transportkanten und können sich Fahrzeuge
+  teilen. Die hohe Konsolidierungsrate bei großen Sendungsmengen bestätigt,
+  dass der sequentielle Greedy-Ansatz (vgl. @sec:capacity-tracking) die
+  Bündelungspotenziale des Netzwerks effektiv ausnutzt.
+
++ *Robuste Feasibility:* Der Anteil unlösbarer Sendungen bleibt über alle
+  getesteten Größen nahe null. Das 870-Hub-Netzwerk mit 30-Tage-Horizont
+  bietet ausreichend alternative Routen, sodass praktisch jede zufällig
+  generierte Sendung innerhalb der Deadline zugestellt werden kann.
+
+Zusammen mit den MILP-Ergebnissen aus @sec:stress-test ergibt sich ein
+klares Bild: Der exakte Solver ist bei 55 Sendungen auf dem kleinen
+Netzwerk bereits nach 2,4 Stunden am Limit, während die Heuristik auf dem
+deutlich größeren Netzwerk 1 000 Sendungen in unter 5 Minuten bei
+gleichzeitig hoher Konsolidierung löst.
 
 == Evaluierung der LNS-Optimierung
 In @fig:lns_convergence wird die Leistung des LNS-Verfahrens über 50 Optimierungsschritte (Iterationen) hinweg für ein Szenario mit 50 europäischen Sendungen dargestellt.
