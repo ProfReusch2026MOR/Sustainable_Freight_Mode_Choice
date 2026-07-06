@@ -21,11 +21,11 @@ unabhängig voneinander.
   image("assets/solver_stress_test.svg", width: 100%),
   caption: flex-caption(
     [Laufzeitskalierung des HiGHS-MILP-Solvers im Vergleich zur Heuristik
-     (Greedy-Konstruktion + LNS). *Links:* Sendungsanzahl-Sweep auf
-     `small_network.json` (Planungshorizont 15 Tage, Zielgewichte
-     $lambda^C=0.4$, $lambda^E=0.4$, $lambda^T=0.2$, je Instanzgröße ein
-     eigener Zufalls-Seed). *Rechts:* Horizont-Sweep auf
-     `large_network.json` (870 Hubs) bei konstant 5 Sendungen.],
+      (Greedy-Konstruktion + LNS). *Links:* Sendungsanzahl-Sweep auf
+      `small_network.json` (Planungshorizont 15 Tage, Zielgewichte
+      $lambda^C=0.4$, $lambda^E=0.4$, $lambda^T=0.2$, je Instanzgröße ein
+      eigener Zufalls-Seed). *Rechts:* Horizont-Sweep auf
+      `large_network.json` (870 Hubs) bei konstant 5 Sendungen.],
     [Laufzeitskalierung von MILP-Solver und Heuristik],
   ),
 ) <fig:stress-test>
@@ -88,9 +88,9 @@ teilen sich denselben Korridor (`ALG_185 -> ANT_1109`) mit mittleren Lasten (\~1
   image("assets/consolidation_stress_benchmark.png", width: 100%),
   caption: flex-caption(
     [Genauigkeit und Rechenzeit unter Konsolidierungsdruck: viele Sendungen auf
-     einem gemeinsamen Korridor mit Lasten in Kapazitätsgröße. *Links:* echter
-     Optimality Gap der Heuristik (Greedy- und LNS-Kurve nahezu deckungsgleich).
-     *Rechts:* Rechenzeit-Skalierung (logarithmische Skala).],
+      einem gemeinsamen Korridor mit Lasten in Kapazitätsgröße. *Links:* echter
+      Optimality Gap der Heuristik (Greedy- und LNS-Kurve nahezu deckungsgleich).
+      *Rechts:* Rechenzeit-Skalierung (logarithmische Skala).],
     [Genauigkeit und Rechenzeit unter Konsolidierungsdruck],
   ),
 ) <fig:consolidation-gap>
@@ -130,8 +130,8 @@ Netzwerk `large_network.json`.
   ),
   caption: flex-caption(
     [HiGHS-MILP-Laufzeit bei wachsendem Planungshorizont auf dem großen
-     Netzwerk (`large_network.json`, 870 Hubs). Alle Läufe erreichten Status
-     `Optimal` ohne Zeitlimit.],
+      Netzwerk (`large_network.json`, 870 Hubs). Alle Läufe erreichten Status
+      `Optimal` ohne Zeitlimit.],
     [MILP-Laufzeit bei wachsendem Planungshorizont],
   ),
 ) <tab:stress-horizon>
@@ -161,7 +161,7 @@ stellt sich die komplementäre Frage: Wie verhält sich die A\*-Heuristik,
 wenn die Sendungsanzahl um mehrere Größenordnungen über die MILP-Grenze
 hinaus wächst? Dazu wurde der A\*-Router auf dem großen Netzwerk
 ( 870 Hubs, 36 272 statische Kanten) mit einem
-30-Tage-Horizont und Sendungsmengen von 1 bis 5 000 getestet. Jede Sendung erhielt
+30-Tage-Horizont und Sendungsmengen von 1 bis 5000 getestet. Jede Sendung erhielt
 zufällig generierte Zielgewichte (Kosten, Zeit, Emissionen); Start- und
 Zielhubs wurden gleichverteilt aus dem Netzwerk gezogen.
 
@@ -256,9 +256,9 @@ zwei eindimensionale Sweeps durch den Gewichts-Simplex.
   image("assets/fig_weights.png", width: 100%),
   caption: flex-caption(
     [Sensitivität gegenüber den Zielgewichten. *Links:* Kosten gegen
-     Emissionen bei reiner Kosten-Emissions-Abwägung (Zeitgewicht null).
-     *Mitte:* Zielkonflikt zwischen Lieferzeit und Emissionen mit steigendem
-     Zeitgewicht. *Rechts:* zugehörige Verschiebung des Modal Split.],
+      Emissionen bei reiner Kosten-Emissions-Abwägung (Zeitgewicht null).
+      *Mitte:* Zielkonflikt zwischen Lieferzeit und Emissionen mit steigendem
+      Zeitgewicht. *Rechts:* zugehörige Verschiebung des Modal Split.],
     [Sensitivität gegenüber den Zielgewichten],
   ),
 ) <fig:sens-weights>
