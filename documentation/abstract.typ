@@ -1,11 +1,6 @@
+// Bei Projektarbeiten nicht erforderlich; wird in main.typ derzeit nicht gerendert.
 #let abstract-content = {
-  [
-  *0,5 S.*
-  
-  #text(red, [Achtung]): Nur bei Bachelor- und Masterarbeiten üblich. Das Kapitel sollten bei Haus- und Projektarbeiten gelöscht werden.
-
-  #lorem(100);
-  ]
+  []
 }
 
 #let _to-content(x) = if type(x) == function { x() } else { x }

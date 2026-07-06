@@ -56,6 +56,45 @@
     ),
     caption: [Softwareverzeichnis: In diesem Projekt eingesetzte Software und Bibliotheken],
   ) <tab:software-directory>
+
+  = Aufgabenverteilung und individuelle Beiträge <sec:contributions>
+  Zur Herstellung von Transparenz über die individuellen Beiträge im Rahmen des Projekts sind die tatsächlichen Hauptaufgabenbereiche der Teammitglieder auf Basis der Repository-Commit-Historie in der folgenden Tabelle zusammengefasst:
+
+  #table(
+    columns: (1.5fr, 4fr),
+    inset: 8pt,
+    stroke: 0.5pt + luma(150),
+    fill: (x, y) => if y == 0 { luma(230) } else { none },
+    [*Teammitglied (Git-Author)*], [*Tatsächliche Beiträge (Repository-Historie)*],
+    [Benedikt Wehner \ (`bennetwehn`)], [
+      - *MILP-Modell & Solver-Implementierung:* Formulierung des mathematischen Modells auf dem zeitexpandierten Netzwerk und Implementierung des exakten Solvers (PuLP/HiGHS) inkl. Normalisierung der Zielfunktion und Infeasibility-Diagnose.
+      - *Software-Engineering:* Erstellung des Dockerfiles, CI/CD-Pipelines (GitHub Actions) sowie des interaktiven Web-Dashboards.
+      - *Dokumentation:* Schreiben der Mathematischen Definition, Solver-Beschreibung, Web-Dashboards, Diskussion, Literaturrecherche.
+    ],
+    [Phil Kahlert \ (`Phil-kl`)], [
+      - *Heuristik-Optimierung:* Konzeption und Implementierung des $A^*$-Routers, Optimierung des Suchraums (Pruning-Strategien, bedarfsgesteuerte APSP-Vorberechnung) und Performanz-Tuning.
+      - *Experimente & Analyse:* Erstellung und Ausführung von Skalierungs- Performanz-Notebooks, sowie fertigstellung der Sensitivitätsanalyse.
+      - *MILP-Modell:* Mitentwicklung erster Ideen zur Solver Modellierung
+      - *Datensammlung:* Implementierung der automatisierten Extraktion von Geodaten und daraus resultierendem Datensatzaufbau. 
+      - *Dokumentation:* Schreiben der Einleitung und Problemstellung (Klarheit, Struktur), Heuristik-Beschreibung, Fazit, Datensammlung.
+    ],
+    [Luis Kruse \ (`lkruse301`)], [
+      - *Problemstellung und Zielsetzung:* Anlegen der konkreten Problemstellung und Zielsetzung.
+      - *Recherche nach geeigneten heuristischen Lösungsansätzen:* Informatiosnaufnahme von passenden heuristischen Lösungsverfahren im Bezug auf das Kernproblem.
+      - *Entwicklung heuristischer Ansätze:*  Entwürfe und Implementierung einer Tabu-Search- und Dijkstra-Heuristik. Vergleich und Funktionsanalyse der Heuristiken.
+      - *Datenrecherche:* Recherche nach geeigneten Datensätzen und Datenmodellen. 
+      - *Datenvorbereitung:* Erste Entwürfe von Straßen-, Bahn-, Schiff- und  Luftfrachtverbindungen als CSV-Dateien.
+      - *Dokumentation:* Erste Entwürfe einer theoretischen Ausarbeitung des heuristischen Lösungsverfahrens. 
+    ],
+    [Laurens Rüther \ (`LaurensRuether`)], [
+      - *Datensammlung:* Händische Extraktion von ersten Geodaten, Erarbeiten von realen kosten.  
+      - *Projektkoordination:* Pflege des Fortschrittsberichts (`Fortschritt Begleitung.md`), und anlegen der README.md.
+    ],
+    [Minglu Li \ (`Sam18069272581`)], [
+      - *Analysen:* Entwurf der Sensitivitätsanalyse (Modal Shift Profile).
+      - *Dokumentation:* Schreiben eines ersten Entwurfs der Analyse und Diskussion
+    ]
+  )  
   ]
 }
 

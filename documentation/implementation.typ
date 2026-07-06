@@ -208,6 +208,30 @@ Für jeden Transportmodus werden die Verbindungen nach spezifischen Regeln erzeu
 
 === Transfer-Kanten
 An jedem Hub mit mindestens zwei unterstützten Modi werden Transfer-Kanten für alle Moduskombinationen erzeugt. Die Umschlagdauer variiert je nach Moduskombination (z.B. 60 Minuten für Straße↔Schiene, 480 Minuten für Luft↔Schiff) und reflektiert die realen Umschlagprozesse.
+
+=== Plausibilitätsprüfung der generierten Daten <sec:plausibility>
+Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusammengesetzt wird, werden die erzeugten Parameter vor der Optimierung gegen einfache Plausibilitätsregeln geprüft. @tab:plausibility fasst die wichtigsten Prüfaspekte und ihre Ausprägung im generierten Netzwerk zusammen. Alle Kosten- und Emissionsfaktoren sind nichtnegativ, sämtliche Distanzen positiv, und die modusspezifischen Kennzahlen folgen der aus der Praxis erwarteten Rangfolge.
+
+#figure(
+  table(
+    columns: (auto, 1fr, auto),
+    align: (left, left, center),
+    stroke: 0.5pt,
+    inset: 7pt,
+    [*Prüfaspekt*], [*Regel bzw. Wert im Datensatz*], [*Status*],
+    [Distanzen positiv], [Alle Kantendistanzen $> 0$; Modusgrenzen: Straße $<= 800$ km, Schiene $<= 1.500$ km, Schiff $200$--$15.000$ km], [OK],
+    [Geschwindigkeit ↔ Modus], [Schiene $approx 50$ km/h, Schiff $approx 22$ km/h (12 kn), Straße via OSRM-Realdistanz, Luft am schnellsten], [OK],
+    [Umwegfaktoren realistisch], [Straße $1{,}2$, Schiene $1{,}25$, Schiff $1{,}35$ gegenüber der Luftlinie], [OK],
+    [Kapazitäten fahrzeugtypisch \[t\]], [Straße $40$, Luft $50$, Schiene $1.000$, Schiff $8.000$], [OK],
+    [Kostenrangfolge \[€/t·km\]], [Schiff $0{,}4 <$ Schiene $0{,}7 <$ Straße $1{,}2 <$ Luft $3{,}5$], [OK],
+    [Emissionsrangfolge \[kg CO₂/t·km\]], [Schiff $0{,}015 <$ Schiene $0{,}025 <$ Straße $0{,}09 <$ Luft $0{,}6$], [OK],
+    [Nichtnegativität], [Alle variablen und fixen Kosten- sowie Emissionswerte $>= 0$], [OK],
+    [Modale Erreichbarkeit], [Luft/See nur, wenn Flughafen bzw. Seehafen innerhalb $50$ km liegt], [OK],
+  ),
+  caption: [Plausibilitätsprüfung der generierten Netzwerkdaten.],
+) <tab:plausibility>
+
+Diese Prüfungen stellen sicher, dass die kombinatorische Schwierigkeit der großen Instanzen aus der Problemstruktur und nicht aus fehlerhaften oder unrealistischen Eingabedaten resultiert.
 == Exakte Lösung mit Python PuLP <sec:solver-implementation>
 Das in @ch:mathematical-model formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Implementierung gliedert sich in zwei zentrale Klassen: `TimeExpandedNetwork` für den Graphaufbau und `TimeExpandedFreightRoutingModel` für die MILP-Formulierung.
 === Aufbau des zeitexpandierten Netzwerks
