@@ -220,71 +220,16 @@ Kosten und Emissionen einhergeht. @tab:sens-weights fasst die Extrempunkte zusam
   caption: [Extrempunkte des Zeit-Nachhaltigkeit-Zielkonflikts.],
 ) <tab:sens-weights>
 
-=== CO₂-Preis und Faktor-Sensitivität <sec:sensitivity-carbon>
-
-@fig:sens-carbon untersucht zwei häufig diskutierte Stellhebel: einen
-internalisierten CO₂-Preis sowie eine Störung einzelner modusspezifischer Faktoren
-um $plus.minus 30 %$. _Internalisiert_ bedeutet dabei, dass die zuvor externen
-Umweltkosten dem Verursacher direkt angelastet werden: Jedes Kilogramm
-CO₂-Ausstoß wird mit einem Preis belegt und als zusätzlicher Kostenposten in die
-Transportkosten eingerechnet. Die Zielfunktion bleibt dabei rein kostenminimierend,
-sodass sich zeigt, ob allein das Preissignal ausreicht, um die Modalwahl in
-Richtung emissionsärmerer Verkehrsträger zu lenken.
-
-#figure(
-  image("assets/fig_carbon_factors.png", width: 100%),
-  caption: [Links: Wirkung eines internalisierten CO₂-Preises auf Gesamtemissionen
-    und Luftanteil der kostenminimierenden Lösung. Rechts: Änderung der
-    Gesamtemissionen bei $plus.minus 30 %$-Störung einzelner Faktoren.],
-) <fig:sens-carbon>
-
-Auch hier ergibt sich ein für die Praxis wichtiger Befund: Selbst ein hoher
-CO₂-Preis von bis zu 2 €/kg lässt den Modal Split nahezu *unverändert* und senkt
-die Gesamtemissionen nicht. Der verbleibende Luftanteil von rund 22 % ist durch
-die Zulässigkeit erzwungen: Für diese Relationen existiert innerhalb der
-Lieferfrist schlicht keine emissionsärmere Alternative, sodass der Preis keine
-Ausweichoption belohnen kann. Ein reines Preissignal ist hier
-wirkungslos; wirksam wären allein längere Vorlaufzeiten oder eine bessere
-Netzanbindung. Gegenüber Störungen einzelner Kosten- und Emissionsfaktoren ist der
-Modal Split stabil; lediglich eine flächige Erhöhung des Emissionsfaktors skaliert
-die berechneten Gesamtemissionen mechanisch mit.
-
-=== Sensitivität gegenüber der Fahrzeugkapazität <sec:sensitivity-capacity>
-
-@fig:sens-capacity variiert die Fahrzeugkapazitäten aller Modi zwischen dem
-0,25- und dem Vierfachen des Referenzwerts.
-
-#figure(
-  image("assets/fig_capacity.png", width: 100%),
-  caption: [Konsolidierungsrate und Sendungsabdeckung (links) sowie Modal Split
-    (rechts) in Abhängigkeit von der Fahrzeugkapazität.],
-) <fig:sens-capacity>
-
-Für Kapazitäten oberhalb des Referenzwerts ist die Lösung vollständig robust:
-Konsolidierungsrate und Modal Split bleiben konstant, da die Fahrzeuge bereits
-ausreichend dimensioniert sind. Erst eine drastische Reduktion auf das 0,25-fache
-bricht sowohl die Konsolidierung als auch die *Abdeckung* ein — nur noch 17 der
-30 Sendungen sind lösbar. Die dort ausgewiesenen Kosten- und Modal-Split-Werte
-beruhen folglich auf einer kleineren Sendungsmenge und sind nicht direkt mit den
-übrigen Szenarien vergleichbar.
-
 === Interpretation und Handlungsempfehlung <sec:sensitivity-interpretation>
 
 Aus der Sensitivitätsanalyse lassen sich mehrere Entscheidungshinweise ableiten:
 
-- *Kosten und Emissionen sind kein Gegensatz.* Solange keine engen Lieferfristen
+- *Kosten und Emissionen sind kein Gegensatz:* Solange keine engen Lieferfristen
   bestehen, ist die schiffsbasierte, konsolidierte Lösung sowohl kostenoptimal als
   auch emissionsarm. Das Kostengewicht kann hier ohne ökologischen Zielkonflikt
   erhöht werden.
-- *Der kritische Hebel ist die Zeit.* Die Empfehlung reagiert am empfindlichsten
+- *Der kritische Hebel ist die Zeit:* Die Empfehlung reagiert am empfindlichsten
   auf das Zeitgewicht. Zeitkritische Sendungen sollten daher gezielt und einzeln
   auf die Luftfracht gelegt werden, nicht pauschal über ein hohes globales
   Zeitgewicht — Letzteres verlagert unnötig viel Volumen auf den teuersten und
   emissionsintensivsten Modus.
-- *Ein CO₂-Preis allein genügt nicht.* Wo schnelle, emissionsarme Alternativen
-  fehlen, verlagert auch ein hoher Preis nichts. Wirksamer sind längere
-  Vorlaufzeiten und eine bessere multimodale Anbindung.
-- *Die Empfehlung ist robust.* Gegenüber $plus.minus 30 %$-Störungen der Kosten-
-  und Emissionsfaktoren sowie gegenüber der Fahrzeuggröße bleibt der Modal Split
-  weitgehend stabil, sodass die abgeleitete Entscheidung nicht an unsicheren
-  Einzelannahmen hängt.

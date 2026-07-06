@@ -89,27 +89,3 @@ und könnten das Routing auf langen Straßenverbindungen einschränken.
 Kundenpräferenzen (z. B. Ausschluss der Luftfracht aus
 Nachhaltigkeitsgründen) könnten als zusätzliche Restriktionen modelliert
 werden.
-
-== Grenzen der Handlungsempfehlung <sec:trust-boundaries>
-
-Die Empfehlung aus @sec:sensitivity-interpretation -- Seefracht als
-Standard und Luftfracht gezielt für zeitkritische Sendungen -- ist unter
-folgenden Bedingungen _nicht vertrauenswürdig_:
-
-+ *Stark gestörte Netzwerke:* Bei Ausfällen ganzer Korridore (z. B.
-  Sperrung des Suezkanals) verliert die statische Planung ihre Gültigkeit.
-+ *Abweichende Kostenstruktur:* Hafengebühren, Zölle oder
-  Versicherungskosten, die die pauschalen Parameter übersteigen,
-  verschieben die Kostenoptimalität der Seefracht.
-+ *Kapazitätskritische Szenarien:* Bei starkem Konsolidierungsdruck
-  beruht die Empfehlung auf einer Heuristiklösung mit bis zu 4 % Gap.
-+ *Extreme Gewichtungen:* Ein global hohes Zeitgewicht verschiebt
-  unnötig viel Volumen auf die Luftfracht.
-+ *Technologiewandel:* Alternative Antriebe (BEV-LKW, Wasserstoff,
-  LNG-Schifffahrt) könnten die relative Emissionsposition der Modi
-  innerhalb weniger Jahre verändern.
-
-Die Modellergebnisse sollten daher als _strukturelle Orientierung_
-verstanden werden: Sie zeigen zuverlässig die Richtung der Zielkonflikte,
-die konkreten Zahlenwerte sind aber im Licht dieser Einschränkungen zu
-interpretieren.
