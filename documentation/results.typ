@@ -1,3 +1,5 @@
+#import "flex.typ": flex-caption
+
 = Numerische Ergebnisse & Evaluierung <ch:results>
 
 Dieses Kapitel evaluiert die in @ch:implementation umgesetzten Verfahren. Ein wichtiges Anliegen ist dabei der Nachweis, dass das exakte
@@ -17,14 +19,15 @@ unabhängig voneinander.
 
 #figure(
   image("assets/solver_stress_test.svg", width: 100%),
-  caption: [
-    Laufzeitskalierung des HiGHS-MILP-Solvers im Vergleich zur Heuristik
-    (Greedy-Konstruktion + LNS). *Links:* Sendungsanzahl-Sweep auf
-    `small_network.json` (Planungshorizont 15 Tage, Zielgewichte
-    $lambda^C=0.4$, $lambda^E=0.4$, $lambda^T=0.2$, je Instanzgröße ein
-    eigener Zufalls-Seed). *Rechts:* Horizont-Sweep auf
-    `large_network.json` (870 Hubs) bei konstant 5 Sendungen.
-  ],
+  caption: flex-caption(
+    [Laufzeitskalierung des HiGHS-MILP-Solvers im Vergleich zur Heuristik
+     (Greedy-Konstruktion + LNS). *Links:* Sendungsanzahl-Sweep auf
+     `small_network.json` (Planungshorizont 15 Tage, Zielgewichte
+     $lambda^C=0.4$, $lambda^E=0.4$, $lambda^T=0.2$, je Instanzgröße ein
+     eigener Zufalls-Seed). *Rechts:* Horizont-Sweep auf
+     `large_network.json` (870 Hubs) bei konstant 5 Sendungen.],
+    [Laufzeitskalierung von MILP-Solver und Heuristik],
+  ),
 ) <fig:stress-test>
 
 === Skalierung nach Sendungsanzahl
@@ -83,12 +86,13 @@ teilen sich denselben Korridor (`ALG_185 -> ANT_1109`) mit mittleren Lasten (\~1
 
 #figure(
   image("assets/consolidation_stress_benchmark.png", width: 100%),
-  caption: [
-    Genauigkeit und Rechenzeit unter Konsolidierungsdruck: viele Sendungen auf
-    einem gemeinsamen Korridor mit Lasten in Kapazitätsgröße. *Links:* echter
-    Optimality Gap der Heuristik (Greedy- und LNS-Kurve nahezu deckungsgleich).
-    *Rechts:* Rechenzeit-Skalierung (logarithmische Skala).
-  ],
+  caption: flex-caption(
+    [Genauigkeit und Rechenzeit unter Konsolidierungsdruck: viele Sendungen auf
+     einem gemeinsamen Korridor mit Lasten in Kapazitätsgröße. *Links:* echter
+     Optimality Gap der Heuristik (Greedy- und LNS-Kurve nahezu deckungsgleich).
+     *Rechts:* Rechenzeit-Skalierung (logarithmische Skala).],
+    [Genauigkeit und Rechenzeit unter Konsolidierungsdruck],
+  ),
 ) <fig:consolidation-gap>
 
 @fig:consolidation-gap zeigt, dass die Heuristik hier -- anders als bei den
@@ -124,11 +128,12 @@ Netzwerk `large_network.json`.
     [3 Tage, $N=5$], [279 907], [499 862], [2,2 s], [613,4 s],
     [5 Tage, $N=5$], [474 155], [851 334], [5,2 s], [5 047,8 s (84,1 min)],
   ),
-  caption: [
-    HiGHS-MILP-Laufzeit bei wachsendem Planungshorizont auf dem großen
-    Netzwerk (`dataset/large_network.json`, 870 Hubs). Alle Läufe
-    erreichten Status `Optimal` ohne Zeitlimit.
-  ],
+  caption: flex-caption(
+    [HiGHS-MILP-Laufzeit bei wachsendem Planungshorizont auf dem großen
+     Netzwerk (`large_network.json`, 870 Hubs). Alle Läufe erreichten Status
+     `Optimal` ohne Zeitlimit.],
+    [MILP-Laufzeit bei wachsendem Planungshorizont],
+  ),
 ) <tab:stress-horizon>
 
 Der Vergleich der ersten beiden Zeilen zeigt den Effekt der Sendungsanzahl
@@ -155,7 +160,10 @@ In @fig:lns_convergence wird die Leistung des LNS-Verfahrens über 50 Optimierun
 
 #figure(
   image("assets/lns_convergence_plots.png", width: 90%),
-  caption: [Konvergenzverlauf der LNS-Optimierung: Zielwert (links) und Konsolidierungsrate (rechts)],
+  caption: flex-caption(
+    [Konvergenzverlauf der LNS-Optimierung: Zielwert (links) und Konsolidierungsrate (rechts).],
+    [Konvergenzverlauf der LNS-Optimierung],
+  ),
 ) <fig:lns_convergence>
 
 *Erkenntnisse zum Optimierungsverlauf:*
@@ -192,10 +200,13 @@ zwei eindimensionale Sweeps durch den Gewichts-Simplex.
 
 #figure(
   image("assets/fig_weights.png", width: 100%),
-  caption: [Sensitivität gegenüber den Zielgewichten. Links: Kosten gegen
-    Emissionen bei reiner Kosten-Emissions-Abwägung (Zeitgewicht null). Mitte:
-    Zielkonflikt zwischen Lieferzeit und Emissionen mit steigendem Zeitgewicht.
-    Rechts: zugehörige Verschiebung des Modal Split.],
+  caption: flex-caption(
+    [Sensitivität gegenüber den Zielgewichten. *Links:* Kosten gegen
+     Emissionen bei reiner Kosten-Emissions-Abwägung (Zeitgewicht null).
+     *Mitte:* Zielkonflikt zwischen Lieferzeit und Emissionen mit steigendem
+     Zeitgewicht. *Rechts:* zugehörige Verschiebung des Modal Split.],
+    [Sensitivität gegenüber den Zielgewichten],
+  ),
 ) <fig:sens-weights>
 
 Zu erkennen ist, dass zwischen Kosten und Emissionen
