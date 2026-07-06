@@ -12,7 +12,7 @@ Optional können darüber hinaus eine Preisobergrenze, eine maximale
 CO₂-Emissionsgrenze und individuelle Präferenzgewichte für Kosten, Transportzeit
 und Emissionen angegeben werden.
 
-Das zentrale Ziel besteht darin, für jede Sendung eine Route durch das
+Das Ziel besteht darin, für jede Sendung eine Route durch das
 Transportnetzwerk zu bestimmen, die eine gewichtete Kombination aus
 Transportkosten, Transportzeit und CO₂-Emissionen minimiert und dabei
 gleichzeitig die gegebenen Kapazitäts- und Zeitrestriktionen einhält. Da mehrere
@@ -61,13 +61,6 @@ Modellierungsentscheidungen hat:
   eines einzelnen Slots hart limitiert; zusätzliche Flugzeuge können nicht
   kurzfristig auf eine Route geschickt werden.
 
-Diese verkehrsträgerspezifischen Unterschiede in der Kapazitätsflexibilität
-beeinflussen die Modellierung unmittelbar: Während bei Straßenkanten die
-Anzahl einsetzbarer Fahrzeuge als freie ganzzahlige Variable modelliert wird,
-beschränkt sich die Aktivierungsentscheidung bei fahrplangebundenen
-Verkehrsträgern auf eine binäre Wahl (Nutzung oder Nicht-Nutzung der
-vorhandenen Kapazität).
-
 === Transferprozesse an Hubs
 
 Beim Wechsel zwischen zwei Verkehrsträgern an einem Hub -- etwa beim Umladen
@@ -105,8 +98,7 @@ Aktivierung insgesamt günstiger und emissionsärmer sein.
 
 == Zielkonflikte und Abwägungen
 
-Die drei Optimierungsziele -- Kosten, Zeit und Emissionen -- stehen in einem
-inhärenten Spannungsverhältnis:
+Die drei Optimierungsziele -- Kosten, Zeit und Emissionen -- stehen im Konflikt zueinander:
 
 - Die *kostengünstigste* Route nutzt häufig den Straßentransport, da hier
   keine hohen Fixkosten für die Fahrzeugbereitstellung anfallen und die
