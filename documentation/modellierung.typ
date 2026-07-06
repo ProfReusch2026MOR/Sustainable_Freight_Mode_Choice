@@ -1,5 +1,11 @@
 = Modellierung und Optimierung <ch:modelling-and-optimization>
-// TODO: Text hier
+Dieses Kapitel überführt das in @ch:problem-description beschriebene
+Planungsproblem in lösbare Optimierungsverfahren. Zunächst wird das Problem in
+@ch:mathematical-model als gemischt-ganzzahliges lineares Programm (MILP)
+formalisiert, das eine exakte Lösung liefert. Anschließend werden in
+@ch:heuristic-approach die heuristischen Verfahren definiert, die dasselbe Modell
+für große Instanzen näherungsweise, aber in Sekundenbruchteilen lösen.
+
 == Exakte mathematische Formulierung <ch:mathematical-model>
 
 Dieser Abschnitt formalisiert das in @ch:problem-description beschriebene

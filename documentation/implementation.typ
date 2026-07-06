@@ -1,9 +1,13 @@
 = Umsetzung <ch:implementation>
 Dieses Kapitel beschreibt die softwaretechnische Umsetzung des in @ch:mathematical-model formulierten Optimierungsmodells. Die Implementierung gliedert sich in vier Bereiche: zunächst die Spezifikation des Datensatzes (@sec:dataset), dann die automatisierte Datenbeschaffung (@sec:data-collection), anschließend die exakte Lösung mittels MILP-Solver (@sec:solver-implementation) und schließlich die heuristische Lösung (@sec:heuristic-implementation). Sämtlicher Quellcode ist in Python umgesetzt.
 == Datensatz und Datenmodell <sec:dataset>
-// TODO: text hier
+Grundlage aller Experimente ist ein multimodales Transportnetzwerk, das
+vollständig in einer JSON-Datei beschrieben wird. Dieser Abschnitt stellt das
+Datenformat und die enthaltenen Objekttypen (Hubs, Verbindungsvorlagen und
+Kostenparameter) vor, erläutert die drei bereitgestellten Instanzgrößen und
+dokumentiert die Plausibilitätsprüfung der generierten Daten.
 === JSON-Datenformat
-Das multimodale Transportnetzwerk wird in einer zentralen JSON-Datei gespeichert. Die Datei beschreibt die vollständige physische Infrastruktur – Hubs, Verbindungen, Fahrpläne und Kostenparameter – und dient als einzige Datenquelle für Solver und Heuristiken.
+Das multimodale Transportnetzwerk wird in einer zentralen JSON-Datei gespeichert. Die Datei beschreibt die vollständige physische Infrastruktur, also Hubs, Verbindungen, Fahrpläne und Kostenparameter, und dient als einzige Datenquelle für Solver und Heuristiken.
 Die JSON-Datei enthält die folgenden Toplevel-Schlüssel:
 #figure(
   table(
@@ -22,7 +26,7 @@ Die JSON-Datei enthält die folgenden Toplevel-Schlüssel:
   caption: [Toplevel-Struktur der JSON-Netzwerkdatei],
 ) <tab:json-structure>
 === Hubs
-Jeder Hub repräsentiert einen physischen Knotenpunkt im Netzwerk – beispielsweise einen Containerhafen, ein Güterterminal oder einen Flughafen. Neben einer eindeutigen ID und geographischen Koordinaten definiert jeder Hub die an diesem Standort verfügbaren Transportmodi, wie in @lst:json-hub beispielhaft dargestellt:
+Jeder Hub repräsentiert einen physischen Knotenpunkt im Netzwerk, beispielsweise einen Containerhafen, ein Güterterminal oder einen Flughafen. Neben einer eindeutigen ID und geographischen Koordinaten definiert jeder Hub die an diesem Standort verfügbaren Transportmodi, wie in @lst:json-hub beispielhaft dargestellt:
 #figure(
   ```json
   {
@@ -235,7 +239,7 @@ Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusa
 Das in @ch:mathematical-model formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Implementierung gliedert sich in zwei zentrale Klassen: `TimeExpandedNetwork` für den Graphaufbau und `TimeExpandedFreightRoutingModel` für die MILP-Formulierung.
 === Aufbau des zeitexpandierten Netzwerks
 Die Klasse `TimeExpandedNetwork` transformiert die statischen Arc Templates aus der JSON-Datei in einen vollständigen zeitexpandierten Graphen. Die Konstruktion erfolgt im Rahmen der `_build()`-Methode in drei Phasen:
-+ *Ereigniszeitpunkte registrieren*: Für jede (Hub, Modus)-Kombination werden die relevanten Zeitpunkte gesammelt – Abfahrten, Ankünfte, Sendungsfreigaben und Deadlines.
++ *Ereigniszeitpunkte registrieren*: Für jede (Hub, Modus)-Kombination werden die relevanten Zeitpunkte gesammelt: Abfahrten, Ankünfte, Sendungsfreigaben und Deadlines.
 + *Transport- und Transfer-Kanten instanziieren*: Jedes Arc Template wird für jeden Tag des Planungshorizonts und jede Abfahrtszeit zu einer konkreten `_TimedArc`-Instanz expandiert.
 + *Wartekanten erzeugen*: Zwischen aufeinanderfolgenden Ereigniszeitpunkten desselben (Hub, Modus)-Paares werden Wartekanten eingefügt.
 Ein zentraler Entwurf ist die ereignisbasierte Zeitexpansion, die nur tatsächlich benötigte Zeitpunkte erzeugt. Dies hält die Knotenmenge kompakt im Vergleich zu einer gleichmäßigen Zeitdiskretisierung (siehe @lst:event-time-expansion):
@@ -343,7 +347,7 @@ Zur Verwaltung des Suchzustands und zur Effizienzsteigerung nutzt die Implementi
 - `_NormalizationContext`: Bündelt sendungsspezifische Normalisierungsgrenzen und Gewichtungsfaktoren, um bei jedem Suchschritt eine konsistente Skalierung sicherzustellen.
 
 === Dynamische Kantenbewertung (Arc Score)
-Die Methode `_arc_score` implementiert die Kantenbewertungsfunktion $sigma(a, k)$ (siehe @sec:arc-score). Sie ermittelt für eine Kante den kombinierten Score aus gewichteten Kosten, Fahrzeiten und Emissionen. Ein zentrales Element ist dabei die dynamische Kapazitätsprüfung: Ist eine Kante kapazitiv nicht mehr begehbar – etwa weil das Fahrzeuglimit der Kante überschritten würde –, wird die Kante verworfen (siehe @lst:arc-score-calc).
+Die Methode `_arc_score` implementiert die Kantenbewertungsfunktion $sigma(a, k)$ (siehe @sec:arc-score). Sie ermittelt für eine Kante den kombinierten Score aus gewichteten Kosten, Fahrzeiten und Emissionen. Ein zentrales Element ist dabei die dynamische Kapazitätsprüfung: Ist eine Kante kapazitiv nicht mehr begehbar, etwa weil das Fahrzeuglimit der Kante überschritten würde, wird die Kante verworfen (siehe @lst:arc-score-calc).
 
 #figure(
   ```python
@@ -425,7 +429,7 @@ Nach Abschluss des Routings aggregiert `_build_combined_result` alle Pfadmetrike
 
 Für die interaktive Nutzung steht das Dashboard OptiFreight zur Verfügung, das die Routingplanung ohne direkten Code-Zugriff ermöglicht (@fig:dashboard). Über das Dashboard lässt sich ein Netzwerkdatensatz laden, eine oder mehrere Sendungen mit Start, Ziel, Gewicht und Zeitfenster anlegen und zwischen exaktem MILP-Solver und heuristischem Routing wählen. Die Gewichtung der Zielfunktion (Kosten, Zeit, Emissionen) kann direkt über Schieberegler angepasst werden.
 
-Nach dem Start der Routenberechnung zeigt die Karte die gewählte Route eingefärbt nach Transportmodus (Straße, Schiene, Luft, Schiff). Das rechte Panel listet den Routenverlauf Station für Station mit Distanz, Kosten und Gewicht auf, während unten die aggregierten Ergebnisse – Gesamtkosten, CO2-Emissionen, Transportzeit und Konsolidierungsgrad – sowie ein Konsolenprotokoll des Lösungsvorgangs angezeigt werden.
+Nach dem Start der Routenberechnung zeigt die Karte die gewählte Route eingefärbt nach Transportmodus (Straße, Schiene, Luft, Schiff). Das rechte Panel listet den Routenverlauf Station für Station mit Distanz, Kosten und Gewicht auf, während unten die aggregierten Ergebnisse (Gesamtkosten, CO2-Emissionen, Transportzeit und Konsolidierungsgrad) sowie ein Konsolenprotokoll des Lösungsvorgangs angezeigt werden.
 
 #figure(
   image("assets/dashboard_screenshot.png", width: 100%),
