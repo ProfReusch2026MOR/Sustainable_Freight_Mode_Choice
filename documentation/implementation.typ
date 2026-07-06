@@ -1,6 +1,7 @@
 = Umsetzung <ch:implementation>
 Dieses Kapitel beschreibt die softwaretechnische Umsetzung des in @ch:mathematical-model formulierten Optimierungsmodells. Die Implementierung gliedert sich in vier Bereiche: zunächst die Spezifikation des Datensatzes (@sec:dataset), dann die automatisierte Datenbeschaffung (@sec:data-collection), anschließend die exakte Lösung mittels MILP-Solver (@sec:solver-implementation) und schließlich die heuristische Lösung (@sec:heuristic-implementation). Sämtlicher Quellcode ist in Python umgesetzt.
 == Datensatz und Datenmodell <sec:dataset>
+// TODO: text hier
 === JSON-Datenformat
 Das multimodale Transportnetzwerk wird in einer zentralen JSON-Datei gespeichert. Die Datei beschreibt die vollständige physische Infrastruktur – Hubs, Verbindungen, Fahrpläne und Kostenparameter – und dient als einzige Datenquelle für Solver und Heuristiken.
 Die JSON-Datei enthält die folgenden Toplevel-Schlüssel:
@@ -219,8 +220,14 @@ Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusa
     stroke: 0.5pt,
     inset: 7pt,
     [*Prüfaspekt*], [*Regel bzw. Wert im Datensatz*], [*Status*],
-    [Distanzen positiv], [Alle Kantendistanzen $> 0$; Modusgrenzen: Straße $<= 800$ km, Schiene $<= 1.500$ km, Schiff $200$--$15.000$ km], [OK],
-    [Geschwindigkeit ↔ Modus], [Schiene $approx 50$ km/h, Schiff $approx 22$ km/h (12 kn), Straße via OSRM-Realdistanz, Luft am schnellsten], [OK],
+    [Distanzen positiv],
+    [Alle Kantendistanzen $> 0$; Modusgrenzen: Straße $<= 800$ km, Schiene $<= 1.500$ km, Schiff $200$--$15.000$ km],
+    [OK],
+
+    [Geschwindigkeit ↔ Modus],
+    [Schiene $approx 50$ km/h, Schiff $approx 22$ km/h (12 kn), Straße via OSRM-Realdistanz, Luft am schnellsten],
+    [OK],
+
     [Umwegfaktoren realistisch], [Straße $1{,}2$, Schiene $1{,}25$, Schiff $1{,}35$ gegenüber der Luftlinie], [OK],
     [Kapazitäten fahrzeugtypisch \[t\]], [Straße $40$, Luft $50$, Schiene $1.000$, Schiff $8.000$], [OK],
     [Kostenrangfolge \[€/t·km\]], [Schiff $0{,}4 <$ Schiene $0{,}7 <$ Straße $1{,}2 <$ Luft $3{,}5$], [OK],
@@ -231,7 +238,6 @@ Da der Datensatz teils aus realen Geodaten, teils aus analytischen Annahmen zusa
   caption: [Plausibilitätsprüfung der generierten Netzwerkdaten.],
 ) <tab:plausibility>
 
-Diese Prüfungen stellen sicher, dass die kombinatorische Schwierigkeit der großen Instanzen aus der Problemstruktur und nicht aus fehlerhaften oder unrealistischen Eingabedaten resultiert.
 == Exakte Lösung mit Python PuLP <sec:solver-implementation>
 Das in @ch:mathematical-model formulierte gemischt-ganzzahlige Optimierungsproblem wird in Python mit dem Modellierungs-Framework *PuLP* implementiert. Die Implementierung gliedert sich in zwei zentrale Klassen: `TimeExpandedNetwork` für den Graphaufbau und `TimeExpandedFreightRoutingModel` für die MILP-Formulierung.
 === Aufbau des zeitexpandierten Netzwerks
