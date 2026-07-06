@@ -62,7 +62,7 @@ Durch die von uns implementierten Suchraumoptimierungen (flaches Indexing, ellip
     fill: (x, y) => if y == 0 { rgb("e0e0e0") } else { none },
     stroke: 0.5pt + rgb("b0b0b0"),
     [*Metrik*], [*Dijkstra-Router*], [*A\*-Router*], [*Veränderung*],
-    [Gesamtlaufzeit], [139,15 s], [78,35 s], [- 43,69 %],
+    [Gesamtlaufzeit], [139,15 s], [78,35 s], [-43,69 %],
     [Zeit pro Sendung (Schnitt)], [1,39 s], [0,78 s], [1,78x Speedup],
     [Gelöste Sendungen], [100 / 100], [100 / 100], [0,00 %],
     [Konsolidierungsrate], [54,00 %], [54,00 %], [Identisch],
@@ -75,12 +75,41 @@ Durch die von uns implementierten Suchraumoptimierungen (flaches Indexing, ellip
 1. *Mathematische Äquivalenz:* Beide Heuristiken liefern exakt dieselben optimalen Pfade und denselben kombinierten Zielfunktionswert (*2,074501*). Die Beschleunigung durch $A^*$ geht somit mit keinerlei Qualitätsverlusten einher (Optimality Gap = 0,00 %).
 2. *Beschleunigungsfaktor:* Der A\*-Router reduziert die Rechenzeit um *44 %* und erreicht einen Beschleunigungsfaktor von *1,78x*. Dies liegt vor allem am elliptischen Korridor-Pruning, das die Expansion irrelevanter Hub-Kombinationen (z. B. Detours über Asien bei europäischen Quell-Ziel-Beziehungen) verhindert.
 
+== Evaluierung der LNS-Optimierung
+Um die Qualität der gierigen Erstzuweisung nachträglich zu verbessern, wurde das LNS-Verfahren (Large Neighborhood Search) evaluiert. Das Ziel ist es, durch wiederholtes Aufbrechen (Ruin) und Neuverplanen (Recreate) von Sendungsteilplänen bessere Synergien und Konsolidierungseffekte zu erzielen.
+
+Wir vergleichen in @fig:lns_convergence den Zielfunktionswert sowie die Konsolidierungsrate über 50 Iterationen hinweg für ein Szenario mit 50 europäischen Sendungen.
+
+#figure(
+  image("assets/lns_convergence_plots.png", width: 90%),
+  caption: [Konvergenzverlauf der LNS-Optimierung: Zielwert (links) und Konsolidierungsrate (rechts)],
+) <fig:lns_convergence>
+
+*Erkenntnisse zum Konvergenzverlauf:*
+1. *Konsolidierungs-Schub:* Die Konsolidierungsrate (Bündelung von Sendungen auf gemeinsamen Kanten) steigt von *42,00 %* auf *50,00 %* (+8,00 Prozentpunkte). LNS findet somit erfolgreich Wege, um Sendungen räumlich und zeitlich zusammenzulegen.
+2. *Multi-Objective Trade-off:* Während die Konsolidierung steigt, steigen die Gesamtkosten minimal um 0,05 % (von 5.572.445 € auf 5.575.352 €) und die Emissionen um 0,12 %. Dennoch sinkt der kombinierte Zielfunktionswert von 10,753 auf *10,747*, da LNS signifikante Verbesserungen bei der Transportdauer erzielt, was den gewichteten Zielwert optimiert.
+
+In @fig:lns_ruin wird der Einfluss der Zerstörungsrate (Ruin-Fraction) auf die Lösungsqualität und die benötigte Rechenzeit dargestellt.
+
+#figure(
+  image("assets/lns_ruin_plots.png", width: 90%),
+  caption: [Lösungsqualität und Rechenzeit in Abhängigkeit der Ruin-Fraction],
+) <fig:lns_ruin>
+
+*Erkenntnisse zur Ruin-Fraction:*
+1. *Sinnhaftigkeit mittlerer Zerstörungsraten:* Kleinere Ruin-Fractions (10 %) führen zu einer schnellen Konvergenz, verharren jedoch oft in lokalen Minima. Größere Ruin-Fractions (30 % - 40 %) bieten dem Router mehr Flexibilität bei der Neuverplanung, erhöhen jedoch die Rechenzeit signifikant, da größere Teilprobleme gelöst werden müssen. Eine Ruin-Fraction von *20 %* stellt den besten Kompromiss dar.
+
 == Sensitivitätsanalyse der Verkehrsmittelwahl
 Eine zentrale Anforderung an ein nachhaltiges Entscheidungsunterstützungssystem (DSS) ist die Sensitivität des Modells gegenüber ökologischen Zielsetzungen. Hierzu wurde untersucht, wie sich der Modal Split (Anteil der Straße, Schiene und Luftfahrt an den gesamten Tonnenkilometern) verschiebt, wenn das Gewicht für CO₂-Emissionen ($w_("emissions")$) systematisch von 0,0 auf 1,0 erhöht wird (bei konstantem Zeitgewicht von 0,0 und $w_("cost") = 1.0 - w_("emissions")$).
 
 Als Szenario wurde eine europäische Instanz mit schweren Sendungen (80 Tonnen) gewählt, um die hohe Kapazität der Schiene auszunutzen.
 
+#figure(
+  image("assets/sensitivity_weights.png", width: 90%),
+  caption: [Verschiebung des Modal Splits bei Variation des Emissions-Gewichts],
+) <fig:sensitivity_weights>
+
 *Ergebnisse der Sensitivitätsanalyse:*
 - *Reine Kostenoptimierung ($w_("emissions") = 0.0$):* Der Straßentransport dominiert bei kleineren Sendungsgewichten (< 15 Tonnen) aufgrund der geringeren fahrzeugbezogenen Fixkosten (150 € für Lkw vs. 500 € für Züge).
-- *Tipping Point:* Sobald das Gewicht für Emissionen $w_("emissions") \ge 0.4$ übersteigt (was einem impliziten CO₂-Preis entspricht), verlagert das Modell schwere Sendungen vollständig auf die Schiene. Die Schiene profitiert hier von ihren extrem niedrigen variablen CO₂-Emissionen (0,025 kg/tkm vs. 0,09 kg/tkm beim Lkw) und den geringeren spezifischen Kosten bei hoher Auslastung.
+- *Tipping Point:* Sobald das Gewicht für Emissionen $w_("emissions") \ge 0.4$ übersteigt (was einem impliziten CO₂-Preis entspricht), verlagert das Modell schwere Sendungen vollständig auf die Schiene (@fig:sensitivity_weights). Die Schiene profitiert hier von ihren extrem niedrigen variablen CO₂-Emissionen (0,025 kg/tkm vs. 0,09 kg/tkm beim Lkw) und den geringeren spezifischen Kosten bei hoher Auslastung.
 - *Deadline-Sensitivität:* Tightere Fristen (Deadline-Multiplikator < 0.8x) erzwingen eine Rückverlagerung auf die Straße, da Zugfahrpläne starr sind und längere Transitzeiten aufweisen. Das Modell macht diesen zeitlich-ökologischen Konflikt mathematisch transparent.
