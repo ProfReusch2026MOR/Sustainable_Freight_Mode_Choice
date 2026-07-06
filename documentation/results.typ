@@ -182,8 +182,7 @@ Satz von 30 Sendungen. Entscheidend ist ein realistischer Planungshorizont von
 mehrere Wochen. Bei zu kurzen Fristen wäre für weite Relationen ausschließlich die
 Luftfracht zulässig — der Modal Split wäre dann ein reines Feasibility-Artefakt und
 nicht das Ergebnis einer echten Abwägung. Die dichten Parameter-Sweeps werden mit
-der schnellen A\*-Heuristik gerechnet; der exakte MILP-Solver dient an ausgewählten
-Stützpunkten zur Validierung (@sec:sensitivity-validation).
+der schnellen A\*-Heuristik gerechnet.
 
 === Sensitivität gegenüber den Zielgewichten <sec:sensitivity-weights>
 
@@ -268,30 +267,6 @@ bricht sowohl die Konsolidierung als auch die *Abdeckung* ein — nur noch 17 de
 30 Sendungen sind lösbar. Die dort ausgewiesenen Kosten- und Modal-Split-Werte
 beruhen folglich auf einer kleineren Sendungsmenge und sind nicht direkt mit den
 übrigen Szenarien vergleichbar.
-
-=== Validierung gegen den exakten Solver <sec:sensitivity-validation>
-
-Um sicherzustellen, dass die für die Sweeps eingesetzte Heuristik die
-Sensitivitäten korrekt abbildet, wird an zwei Gewichtungen der exakte MILP-Solver
-herangezogen. Aufgrund der Modellgröße geschieht dies auf einer kleinen,
-handhabbaren Instanz (6 Sendungen, kurzer Horizont). Wie @tab:sens-validation
-zeigt, trifft die Heuristik den exakten Zielwert in beiden Fällen, benötigt dafür
-aber nur einen Bruchteil der Rechenzeit.
-
-#figure(
-  table(
-    columns: (auto, auto, auto, auto, auto),
-    align: (left, left, right, right, right),
-    stroke: 0.5pt,
-    [*Szenario*], [*Verfahren*], [*Zielwert*], [*Emissionen (kg)*], [*Laufzeit (s)*],
-    [kostenorientiert], [Solver (optimal)], [3,165], [439.071], [128,3],
-    [kostenorientiert], [Heuristik], [3,165], [439.071], [0,4],
-    [ausgewogen], [Solver (optimal)], [2,932], [447.087], [97,5],
-    [ausgewogen], [Heuristik], [2,932], [447.087], [0,1],
-  ),
-  caption: [Validierung der Heuristik gegen den exakten Solver. Die Heuristik
-    erreicht denselben Zielwert (Abweichung null) rund 300- bis 700-mal schneller.],
-) <tab:sens-validation>
 
 === Interpretation und Handlungsempfehlung <sec:sensitivity-interpretation>
 
