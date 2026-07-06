@@ -167,13 +167,14 @@ Zielhubs wurden gleichverteilt aus dem Netzwerk gezogen.
 
 #figure(
   image("assets/dijkstra_performance_plots.png", width: 75%),
-  caption: [
-    Skalierungsverhalten des A\*-Routers auf dem großen Netzwerk (870 Hubs,
-    30-Tage-Horizont). *Oben:* Durchschnittliche Berechnungsdauer pro
-    Sendung. *Mitte:* Konsolidierungsrate (Anteil der Sendungen, die
-    mindestens eine Transportkante mit einer anderen Sendung teilen).
-    *Unten:* Anteil unlösbarer Sendungen.
-  ],
+  caption: flex-caption(
+    [Skalierungsverhalten des A\*-Routers auf dem großen Netzwerk (870 Hubs,
+     30-Tage-Horizont). *Oben:* Durchschnittliche Berechnungsdauer pro
+     Sendung. *Mitte:* Konsolidierungsrate (Anteil der Sendungen, die
+     mindestens eine Transportkante mit einer anderen Sendung teilen).
+     *Unten:* Anteil unlösbarer Sendungen.],
+    [Skalierungsverhalten des A\*-Routers auf dem großen Netzwerk],
+  ),
 ) <fig:heuristic-scaling>
 
 @fig:heuristic-scaling zeigt drei zentrale Befunde:
