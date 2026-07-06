@@ -49,7 +49,7 @@
   at-university: true, // if true the company name on the title page and the confidentiality statement are hidden
   bibliography: bibliography("../literature/sources.bib"),
   bib-style: "ieee",
-  date: datetime(day: 29, month: 06, year: 2026),
+  date: datetime.today(),
   header: (
     show-left-logo: false,
     show-right-logo: false,
