@@ -7,8 +7,8 @@ Und wann sollte der Empfehlung _nicht_ vertraut werden?
 
 == Modellannahmen und Vereinfachungen <sec:model-assumptions>
 
-*Determinismus.* Alle Parameter -- Fahrzeiten, Umschlagdauern, Kosten- und
-Emissionsfaktoren -- gelten als im Voraus bekannt. Reale Schwankungen
+*Determinismus.* Alle Parameter, also Fahrzeiten, Umschlagdauern, Kosten- und
+Emissionsfaktoren, gelten als im Voraus bekannt. Reale Schwankungen
 (Wetter, Streiks, Hafenstaus) können Transportzeiten um Stunden bis Tage
 verschieben. Die Ergebnisse sind daher _Soll-Planungen_ für den
 Normalbetrieb; für störungsanfällige Korridore sollten Sicherheitspuffer
@@ -16,14 +16,14 @@ bei Lieferfristen eingeplant werden.
 
 *Statisches Netzwerk.* Das Netzwerk wird einmalig aufgebaut und bleibt
 über den Planungshorizont unverändert. Ein dynamisches Re-Routing bei
-Störungen ist nicht vorgesehen -- besonders relevant bei langen Horizonten
-(mehrere Wochen), wo Netzwerkänderungen wahrscheinlicher werden.
+Störungen ist nicht vorgesehen; dies ist besonders bei langen Horizonten
+(mehrere Wochen) relevant, in denen Netzwerkänderungen wahrscheinlicher werden.
 
 *Vernachlässigte Kosten.* Nicht abgebildet sind u. a. mengenbezogene
 Lagergebühren an Hubs, Zölle und Hafengebühren bei interkontinentalem
 Transport sowie vertragliche Konventionalstrafen. Würden diese modelliert,
-könnte der in @sec:sensitivity-weights gezeigte Befund -- dass Kosten und
-Emissionen kaum konfligieren -- kippen, da Seefracht mit Hafengebühren und
+könnte der in @sec:sensitivity-weights gezeigte Befund, dass Kosten und
+Emissionen kaum konfligieren, kippen, da Seefracht mit Hafengebühren und
 Zöllen nicht mehr zwingend die günstigste Option wäre.
 
 == Skalierbarkeit und Rechengrenzen <sec:scalability-discussion>
@@ -49,9 +49,9 @@ zu 4 % mit real höheren Kosten, Emissionen und Lieferzeiten
 == Normalisierung <sec:normalization-discussion>
 
 Die analytische Min-Max-Skalierung (@sec:normalization) ist
-rechenzeiteffizient, bringt aber eine Einschränkungen mit sich.
+rechenzeiteffizient, bringt aber eine Einschränkung mit sich.
 Die Normalisierungsbereiche $Delta C_k$, $Delta T_k$, $Delta E_k$ hängen
-vom heuristisch gewählten Umwegfaktor $beta = 3$ ab -- liegt die optimale
+vom heuristisch gewählten Umwegfaktor $beta = 3$ ab: Liegt die optimale
 Route deutlich außerhalb der Schätzgrenzen, kann ein Zielkriterium
 unbeabsichtigt über- oder untergewichtet werden.
 

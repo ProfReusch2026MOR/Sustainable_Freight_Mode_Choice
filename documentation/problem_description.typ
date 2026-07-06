@@ -46,9 +46,9 @@ Modellierungsentscheidungen hat:
 
 - *Schienentransport:* vereint hohe Ladekapazität mit niedrigen
   Kosten und Emissionen, ist jedoch an feste Fahrpläne und bestehende
-  Infrastruktur gebunden. Je nach Betriebsmodell -- Charterverkehr mit
+  Infrastruktur gebunden. Je nach Betriebsmodell (Charterverkehr mit
   flexibler Waggonanzahl oder Stellplatzbuchung in einem
-  Liniengüterzug -- kann die verfügbare Kapazität variabel oder
+  Liniengüterzug) kann die verfügbare Kapazität variabel oder
   starr sein.
 
 - *Seefracht:* eignet sich besonders für große Volumina auf internationalen
@@ -63,8 +63,8 @@ Modellierungsentscheidungen hat:
 
 === Transferprozesse an Hubs
 
-Beim Wechsel zwischen zwei Verkehrsträgern an einem Hub -- etwa beim Umladen
-von der Schiene auf die Straße -- fallen Transferkosten, Transferemissionen
+Beim Wechsel zwischen zwei Verkehrsträgern an einem Hub, etwa beim Umladen
+von der Schiene auf die Straße, fallen Transferkosten, Transferemissionen
 und eine zeitliche Verzögerung an. Diese Umschlagprozesse bilden eine
 wesentliche Restriktion der multimodalen Transportplanung: Ein Moduswechsel
 lohnt sich nur dann, wenn die Einsparungen auf der nachfolgenden
@@ -73,16 +73,16 @@ Transportstrecke die zusätzlichen Umschlagkosten und -zeiten kompensieren.
 === Wartezeiten an Hubs
 
 Sendungen können an einem Hub verweilen, etwa um eine spätere Abfahrt
-abzuwarten. Auch das Warten ist mit Kosten verbunden -- beispielsweise durch
-Lagergebühren -- und kann gegebenenfalls Emissionen verursachen.
+abzuwarten. Auch das Warten ist mit Kosten verbunden, beispielsweise durch
+Lagergebühren, und kann gegebenenfalls Emissionen verursachen.
 
 == Konsolidierung
 
 Ein zentrales Merkmal des Modells ist die Fähigkeit zur Frachtbündelung
 (Konsolidierung). Nutzen mehrere Sendungen gleichzeitig dieselbe zeitlich
 konkrete Transportverbindung, teilen sie sich die aktivierte
-Fahrzeugkapazität. Die Fixkosten und Fixemissionen der Bereitstellung --
-beispielsweise Trassengebühren, Fahrzeugmiete oder Hafengebühren -- fallen
+Fahrzeugkapazität. Die Fixkosten und Fixemissionen der Bereitstellung,
+beispielsweise Trassengebühren, Fahrzeugmiete oder Hafengebühren, fallen
 dadurch nur einmal an, unabhängig davon, wie viele Sendungen das Fahrzeug
 nutzen.
 
@@ -98,7 +98,7 @@ Aktivierung insgesamt günstiger und emissionsärmer sein.
 
 == Zielkonflikte und Abwägungen
 
-Die drei Optimierungsziele -- Kosten, Zeit und Emissionen -- stehen im Konflikt zueinander:
+Die drei Optimierungsziele Kosten, Zeit und Emissionen stehen im Konflikt zueinander:
 
 - Die *kostengünstigste* Route nutzt häufig den Straßentransport, da hier
   keine hohen Fixkosten für die Fahrzeugbereitstellung anfallen und die
@@ -120,10 +120,8 @@ betrachtet wird, umfasst die Entscheidung hier sowohl die Aktivierung von
 Transportverbindungen (Fahrzeugbereitstellung) als auch die Zuweisung der
 Sendungsflüsse auf diese Verbindungen. Die Fixkosten der Aktivierung und
 die variablen Transportkosten bilden zusammen die ökonomische Zielfunktion.
-Darüber hinaus erweitert das Modell die klassische CMND-Formulierung (siehe TODO Kapitel)
-
-um
-eine zeitliche Dimension (zeitexpandiertes Netzwerk), eine
+Darüber hinaus erweitert das Modell die in @ch:theory eingeführte klassische
+CMND-Formulierung um eine zeitliche Dimension (zeitexpandiertes Netzwerk), eine
 Mehrzieloptimierung (Kosten, Zeit, Emissionen) sowie weiche Restriktionen
 für Lieferfristen und Budgets.
 
@@ -142,7 +140,7 @@ Für eine zulässige Transportplanung müssen im Modell verschiedene betrieblich
 
 Das zeitexpandierte Netzwerk modelliert alle Transportmöglichkeiten über diskrete Zeitschritte hinweg. Bei kleinen und mittleren Instanzen kann das resultierende gemischt-ganzzahlige lineare Programm (MILP) noch mit exakten Solvern (wie PuLP oder OR-Tools) in angemessener Zeit gelöst werden.
 
-Bei realistischen Großinstanzen -- beispielsweise 50.000 Sendungen über einen Planungshorizont von 30 Tagen auf einem Netzwerk mit tausenden zeitexpandierten Kanten -- führt dies jedoch zu einer kombinatorischen Explosion. Die Anzahl der Entscheidungsvariablen wächst derart massiv, dass exakte Verfahren an Speicher- und Laufzeitgrenzen stoßen.
+Bei realistischen Großinstanzen, beispielsweise 50.000 Sendungen über einen Planungshorizont von 30 Tagen auf einem Netzwerk mit tausenden zeitexpandierten Kanten, führt dies jedoch zu einer kombinatorischen Explosion. Die Anzahl der Entscheidungsvariablen wächst derart massiv, dass exakte Verfahren an Speicher- und Laufzeitgrenzen stoßen.
 
 Aus diesem Grund liegt der methodische Fokus dieser Arbeit auf der Entwicklung und Evaluation heuristischer Verfahren. Durch die Implementierung effizienter Dijkstra- und zielgerichteter $A^*$-Router, kombiniert mit lokalen Suchverfahren (Local Search, Large Neighborhood Search), lassen sich qualitativ hochwertige Transportpläne in wenigen Minuten statt Stunden ermitteln.
 

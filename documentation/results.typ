@@ -95,8 +95,8 @@ teilen sich denselben Korridor (`ALG_185 -> ANT_1109`) mit mittleren Lasten (\~1
   ),
 ) <fig:consolidation-gap>
 
-@fig:consolidation-gap zeigt, dass die Heuristik hier -- anders als bei den
-kapazitäts-unkritischen Instanzen -- einen echten Optimality Gap aufweist.
+@fig:consolidation-gap zeigt, dass die Heuristik hier, anders als bei den
+kapazitäts-unkritischen Instanzen, einen echten Optimality Gap aufweist.
 Solange freie Kapazität vorhanden ist (bis etwa sechs Sendungen), bleibt er
 vernachlässigbar; sobald die Sendungen die Fahrzeuge tatsächlich füllen, springt
 er auf rund 3--4 %. Dass es sich nicht um das oben genannte Normalisierungs-
@@ -144,7 +144,7 @@ Der Vergleich der
 letzten drei Zeilen zeigt den Effekt des Horizonts bei fixierter
 Sendungsanzahl: Eine Verlängerung von 2 auf 5 Tage vergrößert den Graphen
 um den Faktor 2,6 (sowohl Knoten als auch Kanten), die Laufzeit jedoch um
-den Faktor 16,4. Beide Wachstumsachsen -- Sendungsanzahl und Zeithorizont --
+den Faktor 16,4. Beide Wachstumsachsen, Sendungsanzahl und Zeithorizont,
 tragen damit überlinear zur Rechenzeit bei und bestätigen die in
 @ch:problem-description beschriebene kombinatorische Explosion des
 zeitexpandierten MILP bei realistischen Planungshorizonten (Wochen bis
@@ -180,7 +180,7 @@ Zielhubs wurden gleichverteilt aus dem Netzwerk gezogen.
 @fig:heuristic-scaling zeigt drei zentrale Befunde:
 
 + *Sublineare Laufzeitskalierung:* Die durchschnittliche Berechnungsdauer
-  pro Sendung sinkt mit steigender Sendungsanzahl deutlich -- von rund
+  pro Sendung sinkt mit steigender Sendungsanzahl deutlich: von rund
   47 Sekunden bei einer einzelnen Sendung auf unter 3 Sekunden ab
   500 Sendungen. Dieser Effekt entsteht, weil der Aufbau des
   zeitexpandierten Netzwerks (~30 s) und die Vorberechnung der
@@ -235,15 +235,15 @@ Modal-Split-Entscheidung gegenüber Änderungen der wichtigsten Modell- und
 Datenannahmen ist. Methodisch geschieht dies über _Parameter-Sweeps_: Ein
 einzelner Parameter wird systematisch über einen Wertebereich variiert, während
 alle übrigen fixiert bleiben, und der Verlauf der Zielgrößen wird aufgezeichnet.
-Betrachtet werden drei Parametergruppen: die Zielgewichte, ein internalisierter
-CO₂-Preis samt modusspezifischer Kosten- und Emissionsfaktoren sowie die
-Fahrzeugkapazitäten.
+Im Mittelpunkt steht dabei die wichtigste Stellgröße der Modalwahl: die
+Zielgewichte, mit denen der Anwender die Abwägung zwischen Kosten, Zeit und
+Emissionen steuert.
 
 Als Referenzszenario dient das kleine Netzwerk mit einem festen, reproduzierbaren
 Satz von 30 Sendungen. Entscheidend ist ein realistischer Planungshorizont von
 60 Tagen: Da die Hubs global verteilt sind, benötigt Seefracht interkontinental
 mehrere Wochen. Bei zu kurzen Fristen wäre für weite Relationen ausschließlich die
-Luftfracht zulässig — der Modal Split wäre dann ein reines Feasibility-Artefakt und
+Luftfracht zulässig; der Modal Split wäre dann ein reines Feasibility-Artefakt und
 nicht das Ergebnis einer echten Abwägung. Die dichten Parameter-Sweeps werden mit
 der schnellen A\*-Heuristik gerechnet.
 
@@ -297,5 +297,5 @@ Aus der Sensitivitätsanalyse lassen sich mehrere Entscheidungshinweise ableiten
 - *Der kritische Hebel ist die Zeit:* Die Empfehlung reagiert am empfindlichsten
   auf das Zeitgewicht. Zeitkritische Sendungen sollten daher gezielt und einzeln
   auf die Luftfracht gelegt werden, nicht pauschal über ein hohes globales
-  Zeitgewicht — Letzteres verlagert unnötig viel Volumen auf den teuersten und
+  Zeitgewicht; Letzteres verlagert unnötig viel Volumen auf den teuersten und
   emissionsintensivsten Modus.
