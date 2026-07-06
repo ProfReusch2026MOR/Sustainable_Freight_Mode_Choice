@@ -1,20 +1,137 @@
 = Diskussion & Limitationen <ch:discussion>
 
-== Interpretation der Ergebnisse und Entscheidungshilfe
-Die Sensitivitätsanalyse (@sec:sensitivity) liefert für die Verkehrsmittelwahl mehrere robuste Kernaussagen. Erstens besteht zwischen *Kosten und Emissionen praktisch kein Zielkonflikt*: Im betrachteten Netzwerk ist die konsolidierte Seefracht zugleich der günstigste und der emissionsärmste Verkehrsträger, sodass sich das Kostengewicht ohne ökologischen Zielkonflikt erhöhen lässt. Der eigentliche Zielkonflikt verläuft zwischen *Geschwindigkeit und Nachhaltigkeit* -- erst ein hohes Zeitgewicht verschiebt den Modal Split drastisch zur emissions- und kostenintensiven Luftfracht.
+Dieses Kapitel benennt die Grenzen des Modells, der Lösungsverfahren und
+der Datengrundlage. Drei Leitfragen stehen im Mittelpunkt: Welche
+realweltlichen Faktoren fehlen? Wie könnten sie die Empfehlung verändern?
+Und wann sollte der Empfehlung _nicht_ vertraut werden?
 
-Für Logistikmanager ergeben sich daraus konkrete Handlungshinweise:
-- Zeitkritische Sendungen sollten gezielt und einzeln auf die Luftfracht gelegt werden, statt pauschal über ein hohes globales Zeitgewicht Volumen auf den teuersten Modus zu verlagern.
-- Ein reiner CO₂-Preis bleibt wirkungslos, wo innerhalb der Lieferfrist keine emissionsärmere Alternative existiert; wirksamer sind längere Vorlaufzeiten und eine bessere multimodale Anbindung.
-- Die empfohlene Lösung ist gegenüber $plus.minus 30 %$-Störungen der Kosten- und Emissionsfaktoren sowie moderaten Kapazitätsänderungen stabil; erst eine drastische Kapazitätsreduktion bricht Konsolidierung und Sendungsabdeckung ein.
+== Modellannahmen und Vereinfachungen <sec:model-assumptions>
 
-== Genauigkeit der Heuristik und Einordnung des Optimality Gaps
-Die in @sec:stress-test ausgewiesenen Gap-Werte bedürfen einer differenzierten Einordnung. Auf den zufälligen Instanzen des Sendungsanzahl-Sweeps zerfällt das Problem -- mangels Kapazitätskonkurrenz -- in unabhängige Kürzeste-Weg-Probleme, die die Heuristik exakt löst; der Gap liegt hier bei $approx 0 %$. Die bei $N=50$ und $N=55$ sichtbaren $7$--$9 %$ sind kein echtes Qualitätsdefizit, sondern ein *Normalisierungsartefakt*, da MILP und Heuristik ihre analytischen Normierungsgrenzen unabhängig voneinander pro Lauf schätzen (vgl. @sec:normalization). Ein *echter* Optimality Gap tritt hingegen unter gezieltem Konsolidierungsdruck auf (@sec:consolidation-gap): Sobald sich viele Sendungen dieselbe knappe Fahrzeugkapazität teilen, bleibt die greedy Einfügung um bis zu $approx 4 %$ hinter dem beweisbaren Optimum zurück -- nachweislich als echte Verschlechterung in Kosten, Emissionen und Zeit zugleich, die auch die LNS-Nachoptimierung nicht vollständig schließt. Die Heuristik ist somit *kein* exaktes Verfahren; ihre praktische Verlustfreiheit gilt für kapazitäts-unkritische Instanzen, während unter starker Bündelungskonkurrenz der exakte Solver die bessere Lösung liefert.
+*Determinismus.* Alle Parameter -- Fahrzeiten, Umschlagdauern, Kosten- und
+Emissionsfaktoren -- gelten als im Voraus bekannt. Reale Schwankungen
+(Wetter, Streiks, Hafenstaus) können Transportzeiten um Stunden bis Tage
+verschieben. Die Ergebnisse sind daher _Soll-Planungen_ für den
+Normalbetrieb; für störungsanfällige Korridore sollten Sicherheitspuffer
+bei Lieferfristen eingeplant werden.
 
-== Modell- und Datenlimitationen
-Das aktuelle Optimierungsmodell beruht auf mehreren vereinfachenden Annahmen:
-1. *Deterministische Daten:* Fahrzeiten, Umschlagzeiten und Kapazitäten werden als konstant angenommen. In der Realität führen Stau, Verspätungen und Wetter zu Unsicherheiten (Stochastik).
-2. *Fahrplangebundene Ereigniszeiten:* Abfahrten und Fahrtdauern werden minutengenau aus festen Fahrplänen abgeleitet. Kontinuierliche Zeitdynamiken (z. B. lastabhängige Fahrzeiten oder frei wählbare Abfahrtszeitpunkte) werden dadurch abstrahiert.
-3. *Lineare Emissionsmodelle:* CO₂-Emissionen hängen in der Realität nicht-linear von der Fahrzeugauslastung, dem Streckenprofil (Steigungen) und der Geschwindigkeit ab.
-4. *Begrenzte Rückwege:* Im aktuellen Datenmodell fehlen teilweise Rückrichtungen für Transportmittel, was die Umlaufplanung (Vehicle Scheduling) einschränkt.
-5. *Begrenzte experimentelle Abdeckung:* Die Auswertungen beruhen auf deterministischen Teilnetzen -- dem Stresstest bis 55 Sendungen bzw. 5 Planungstagen, der Sensitivitätsanalyse mit 30 Sendungen sowie dem Heuristikvergleich bis 100 Sendungen. Sie zeigen das Modellverhalten in reproduzierbaren Szenarien, erlauben aber keine allgemeine Aussage über die Wirksamkeit eines Modal Shifts in realen, stochastischen Gesamtnetzen.
+*Statisches Netzwerk.* Das Netzwerk wird einmalig aufgebaut und bleibt
+über den Planungshorizont unverändert. Ein dynamisches Re-Routing bei
+Störungen ist nicht vorgesehen -- besonders relevant bei langen Horizonten
+(mehrere Wochen), wo Netzwerkänderungen wahrscheinlicher werden.
+
+*Vernachlässigte Kosten.* Nicht abgebildet sind u. a. mengenbezogene
+Lagergebühren an Hubs, Zölle und Hafengebühren bei interkontinentalem
+Transport sowie vertragliche Konventionalstrafen. Würden diese modelliert,
+könnte der in @sec:sensitivity-weights gezeigte Befund -- dass Kosten und
+Emissionen kaum konfligieren -- kippen, da Seefracht mit Hafengebühren und
+Zöllen nicht mehr zwingend die günstigste Option wäre.
+
+== Skalierbarkeit und Rechengrenzen <sec:scalability-discussion>
+
+*Exakter Solver.* Die Stresstests (@sec:stress-test) zeigen, dass HiGHS
+bei wachsender Instanzgröße an seine Grenzen stößt. Die binären
+Routingvariablen $x_(a,k)$ wachsen als $|A^T| dot |K|$ und erreichen auf
+dem großen Netzwerk bereits 4,3 Mio. Die Lösungszeit hängt zudem von der
+konkreten Instanzstruktur ab, was sich in der nicht-monotonen
+Laufzeitkurve (@tab:stress-shipments) zeigt. Für operative Szenarien
+(Hunderte Sendungen, wochenlange Horizonte) ist der exakte Solver _nicht
+praktikabel_. Denkbare Verbesserungen wären Schnittebenen und
+symmetriebrechende Constraints, Benders- oder Lagrange-Dekomposition
+sowie ein Rolling-Horizon-Ansatz.
+
+*Heuristik.* Die A\*-Heuristik mit LNS bleibt stets unter 1,2 Sekunden,
+hat aber strukturelle Grenzen: Die feste Sortierreihenfolge (absteigend
+nach Gewicht) beeinflusst die Lösung erheblich, und LNS schließt den Gap
+bei kapazitätskritischen Instanzen kaum, da Ruin-and-Recreate auf
+demselben greedy Mechanismus beruht. Der Optimality Gap beträgt dort bis
+zu 4 % mit real höheren Kosten, Emissionen und Lieferzeiten
+(@sec:consolidation-gap). Zudem gilt die Optimalitätsgarantie von A\* nur
+für Einzelsendungen -- bei Mehrfachplanung geht sie verloren.
+
+*Arbeitsteilung.* Der Solver eignet sich als Referenz und für kleine
+operative Entscheidungen; für taktische Planung mit vielen Sendungen oder
+langen Horizonten ist die Heuristik das einzig praktikable Verfahren.
+Diese Arbeitsteilung wurde in @sec:sensitivity-validation für ein kleines
+Szenario bestätigt; ob die Approximationsgüte auf größere oder strukturell
+andere Netzwerke generalisierbar ist, bleibt offen.
+
+== Normalisierung <sec:normalization-discussion>
+
+Die analytische Min-Max-Skalierung (@sec:normalization) ist
+rechenzeiteffizient, bringt aber zwei Einschränkungen mit sich. Erstens
+hängen die Normalisierungsbereiche $Delta C_k$, $Delta T_k$, $Delta E_k$
+vom heuristisch gewählten Umwegfaktor $beta = 3$ ab -- liegt die optimale
+Route deutlich außerhalb der Schätzgrenzen, kann ein Zielkriterium
+unbeabsichtigt über- oder untergewichtet werden. Zweitens schätzen MILP
+und Heuristik ihre Grenzen unabhängig, sodass normierte Zielfunktionswerte
+_nicht_ direkt zwischen Verfahren oder Instanzen vergleichbar sind. Für
+präzise Vergleiche müssen die Rohgrößen (EUR, kg CO₂, min) herangezogen
+werden, wie im Konsolidierungstest (@sec:consolidation-gap) geschehen.
+
+== Limitationen der Datengrundlage <sec:data-limitations>
+
+*Netzwerktopologie.* Beide Netzwerke (handkuratiert bzw. aus Geodaten
+generiert, vgl. @sec:data-collection) repräsentieren nicht die operative
+Realität eines bestimmten Logistikdienstleisters. Fahrplanannahmen und
+Kapazitätswerte sind vereinfachte Schätzungen; in einem realen Einsatz
+würden sie aus operativen Systemen stammen und nach Strecke, Tageszeit
+und Saison variieren.
+
+*Sendungserzeugung.* Die Sendungen werden per Zufallsverfahren mit festem
+Seed erzeugt. In der Praxis konzentrieren sich Güterströme auf bestimmte
+Korridore (z. B. Asien--Europa) und folgen saisonalen Mustern. Die
+gleichmäßige Streuung kann Engpässe auf Hauptkorridoren unterschätzen.
+
+*Emissionsfaktoren.* Die globalen Durchschnittswerte (kg CO₂/tkm)
+differenzieren nicht nach Antriebstechnologie oder Auslastungsgrad. Ein
+LNG-Frachter emittiert deutlich weniger als ein Schweröl-Schiff; ein
+elektrischer Güterzug nahezu null. Die pauschale Zuordnung kann den
+Emissionsvorteil einzelner Modi systematisch verzerren.
+
+== Fehlende realweltliche Faktoren <sec:missing-factors>
+
+*Stochastik und Resilienz.* Lieferkettenunterbrechungen (Hafensperrungen,
+Extremwetter, geopolitische Konflikte) können nicht bewertet werden. Ein
+stochastisches Modell könnte zeigen, dass ein diversifizierter Modal Split
+resilienter ist als die vom deterministischen Modell bevorzugte
+Seefrachtstrategie.
+
+*Regulierung.* Nicht modelliert sind innerstädtische Fahrverbote,
+länderspezifische Mautsysteme (z. B. deutsche LKW-Maut) sowie
+regulatorische CO₂-Instrumente wie absolute Emissionsobergrenzen. Die
+Sensitivitätsanalyse (@sec:sensitivity-carbon) zeigt bereits, dass ein
+CO₂-Preis nur bei vorhandenen Ausweichoptionen wirkt -- härtere
+Regulierung könnte stärkere Effekte haben.
+
+*Betriebliche Restriktionen.* Lenk- und Ruhezeiten (EG Nr. 561/2006),
+Gefahrgutvorschriften und reale Terminalzeitfenster sind nicht abgebildet
+und könnten das Routing auf langen Straßenverbindungen einschränken.
+
+*Nachfrageseitige Faktoren.* Warenwert, Verderblichkeit und explizite
+Kundenpräferenzen (z. B. Ausschluss der Luftfracht aus
+Nachhaltigkeitsgründen) könnten als zusätzliche Restriktionen modelliert
+werden.
+
+== Grenzen der Handlungsempfehlung <sec:trust-boundaries>
+
+Die Empfehlung aus @sec:sensitivity-interpretation -- Seefracht als
+Standard und Luftfracht gezielt für zeitkritische Sendungen -- ist unter
+folgenden Bedingungen _nicht vertrauenswürdig_:
+
++ *Stark gestörte Netzwerke:* Bei Ausfällen ganzer Korridore (z. B.
+  Sperrung des Suezkanals) verliert die statische Planung ihre Gültigkeit.
++ *Abweichende Kostenstruktur:* Hafengebühren, Zölle oder
+  Versicherungskosten, die die pauschalen Parameter übersteigen,
+  verschieben die Kostenoptimalität der Seefracht.
++ *Kapazitätskritische Szenarien:* Bei starkem Konsolidierungsdruck
+  beruht die Empfehlung auf einer Heuristiklösung mit bis zu 4 % Gap.
++ *Extreme Gewichtungen:* Ein global hohes Zeitgewicht verschiebt
+  unnötig viel Volumen auf die Luftfracht.
++ *Technologiewandel:* Alternative Antriebe (BEV-LKW, Wasserstoff,
+  LNG-Schifffahrt) könnten die relative Emissionsposition der Modi
+  innerhalb weniger Jahre verändern.
+
+Die Modellergebnisse sollten daher als _strukturelle Orientierung_
+verstanden werden: Sie zeigen zuverlässig die Richtung der Zielkonflikte,
+die konkreten Zahlenwerte sind aber im Licht dieser Einschränkungen zu
+interpretieren.
